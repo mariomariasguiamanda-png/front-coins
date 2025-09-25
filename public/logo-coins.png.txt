@@ -1,0 +1,4 @@
+# Placeholder para logo-coins.png
+# Esta é a logo do sistema Coins for Study
+# Substitua por uma imagem real de 200x200px ou maior (quadrada)
+# Formato recomendado: PNG com transparência
