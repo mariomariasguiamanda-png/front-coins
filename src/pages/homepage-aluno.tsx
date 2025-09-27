@@ -15,14 +15,14 @@ import {
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/Card";
 
-import Atividades from "../modules/aluno/Atividades";
-import MinhasNotas from "../modules/aluno/MinhasNotas";
-import Videoaulas from "../modules/aluno/Videoaulas";
-import Resumos from "../modules/aluno/Resumos";
-import ComprarPontos from "../modules/aluno/ComprarPontos";
-import Frequencia from "../modules/aluno/Frequencia";
-import Perfil from "../modules/aluno/Perfil";
-import Ajuda from "../modules/aluno/Ajuda";
+import Atividades from "@/modules/aluno/Atividades";
+import MinhasNotas from "@/modules/aluno/MinhasNotas";
+import Videoaulas from "@/modules/aluno/Videoaulas";
+import Resumos from "@/modules/aluno/Resumos";
+import ComprarPontos from "@/modules/aluno/ComprarPontos";
+import Frequencia from "@/modules/aluno/Frequencia";
+import Perfil from "@/modules/aluno/Perfil";
+import Ajuda from "@/modules/aluno/Ajuda";
 
 const roboto = Roboto({ subsets: ["latin"], weight: ["400", "500", "700"] });
 

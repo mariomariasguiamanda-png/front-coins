@@ -1,6 +1,1 @@
-{
-  "/_app": "pages/_app.js",
-  "/_document": "pages/_document.js",
-  "/_error": "pages/_error.js",
-  "/homepage-aluno": "pages/homepage-aluno.js"
-}
+{"/_document":"pages/_document.js","/404":"pages/404.html","/_app":"pages/_app.js","/_error":"pages/_error.js","/cadastro":"pages/cadastro.html","/esqueci-senha":"pages/esqueci-senha.html","/homepage-aluno":"pages/homepage-aluno.html","/login":"pages/login.html","/dashboard":"pages/dashboard.js","/":"pages/index.js","/ajuda":"pages/ajuda.js","/perfil":"pages/perfil.js"}
