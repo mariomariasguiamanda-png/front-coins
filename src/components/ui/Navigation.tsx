@@ -2,7 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { useRouter } from "next/router";
 
 interface NavigationItem {
   href: string;
@@ -19,7 +19,7 @@ export const Navigation: React.FC<NavigationProps> = ({
   items,
   className = "",
 }) => {
-  const pathname = usePathname();
+  const { pathname } = useRouter();
 
   return (
     <nav className={`bg-white shadow-sm ${className}`}>

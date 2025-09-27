@@ -48,8 +48,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
   useEffect(() => {
     // Simula a verificação de token/sessão no localStorage
     const storedUser = localStorage.getItem("user");
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
+    if (storedUser && storedUser !== "undefined") {
+      try {
+        setUser(JSON.parse(storedUser));
+      } catch (error) {
+        console.error("Erro ao fazer parse do usuário armazenado:", error);
+        localStorage.removeItem("user"); // Remove dados corrompidos
+      }
     }
     setIsLoading(false);
   }, []);

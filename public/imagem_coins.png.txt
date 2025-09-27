@@ -1,4 +1,0 @@
-# Placeholder para imagem_coins.png
-# Esta é uma imagem de fundo para a página de login
-# Substitua por uma imagem real de 1920x1080px ou maior
-# Formato recomendado: PNG ou JPG

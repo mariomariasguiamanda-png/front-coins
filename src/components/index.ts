@@ -7,7 +7,8 @@ export { Label } from "./ui/Label";
 export { Eye, EyeOff } from "./ui/Icons";
 
 // Layout Components
-export { MainLayout } from "./layout/MainLayout";
+export { default as AppLayout } from "./layout/AppLayout";
+export { default as AuthLayout } from "./layout/AuthLayout";
 
 // Form Components
 export { LoginForm } from "./forms/LoginForm";
