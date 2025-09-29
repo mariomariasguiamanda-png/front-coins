@@ -1,5 +1,6 @@
 import Head from "next/head";
 import Image from "next/image";
+import { useRouter } from "next/router";
 import { Roboto } from "next/font/google";
 import GoogleG from "@/components/icons/GoogleG";
 import { Eye, EyeOff } from "@/components/ui/Icons";
@@ -8,13 +9,44 @@ import { FormEvent, useState } from "react";
 const roboto = Roboto({ subsets: ["latin"], weight: ["400", "500", "700"] });
 
 export default function LoginPage() {
+  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const onSubmit = (e: FormEvent) => {
+  const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    console.log({ email, password });
+    setError(null);
+    setIsLoading(true);
+
+    try {
+      const response = await fetch("http://localhost:3001/api/usuarios/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, senha: password }),
+      });
+
+      if (!response.ok) {
+        const text = await response.text(); // pode ser HTML de erro
+        console.error(`Erro ${response.status}:`, text);
+        throw new Error(`Erro ${response.status}: ${text.includes('<!DOCTYPE') ? 'Servidor indisponível' : text}`);
+      }
+
+      const data = await response.json();
+      console.log("✅ Login realizado:", data);
+
+      // Salvar o token
+      localStorage.setItem("token", data.token);
+
+      // Redirecionar para a página inicial do usuário logado
+      router.push("/homepage-aluno");
+    } catch (err: any) {
+      setError(err.message || "Não foi possível fazer login.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -114,24 +146,38 @@ export default function LoginPage() {
                   </div>
                 </div>
 
+                {error && (
+                  <div className="text-red-400 text-sm text-center">
+                    {error}
+                  </div>
+                )}
+
                 {/* Submit */}
                 <button
                   type="submit"
-                  className="h-[46px] w-full rounded-md bg-[#06B6D4] hover:bg-[#0891B2] text-black font-bold transition"
+                  disabled={isLoading}
+                  className="h-[46px] w-full rounded-md bg-[#06B6D4] hover:bg-[#0891B2] text-black font-bold transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
-                  Entrar
+                  {isLoading ? (
+                    <>
+                      <span className="animate-spin h-5 w-5 border-2 border-black border-t-transparent rounded-full"></span>
+                      Entrando...
+                    </>
+                  ) : (
+                    "Entrar"
+                  )}
                 </button>
               </form>
 
               {/* Divider */}
               <div className="flex items-center gap-3 my-6">
                 <div className="h-px bg-white/20 flex-1" />
-                <span className="text-xs text-white/70">Ou se preferir</span>
+                {/* <span className="text-xs text-white/70">Ou se preferir</span> */}
                 <div className="h-px bg-white/20 flex-1" />
               </div>
 
               {/* Google button */}
-              <a
+              {/* <a
                 href="#"
                 className="h-[46px] w-full rounded-md bg-transparent border border-white/20 text-white hover:bg-white/10 flex items-center justify-center transition"
                 onClick={(e) => {
@@ -142,7 +188,7 @@ export default function LoginPage() {
               >
                 <GoogleG className="h-4 w-4 mr-3" />
                 <span className="text-sm font-medium">Entre com Google</span>
-              </a>
+              </a> */}
             </div>
 
             {/* CTA */}

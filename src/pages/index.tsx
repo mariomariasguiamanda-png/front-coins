@@ -4,7 +4,7 @@ const Index = () => null;
 
 export const getServerSideProps: GetServerSideProps = async () => ({
   redirect: {
-    destination: "/homepage",
+    destination: "/login",
     permanent: false,
   },
 });
