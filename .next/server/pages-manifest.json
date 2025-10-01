@@ -3,7 +3,6 @@
   "/_error": "pages/_error.js",
   "/_document": "pages/_document.js",
   "/login": "pages/login.js",
-  "/esqueci-senha": "pages/esqueci-senha.js",
   "/homepage-aluno": "pages/homepage-aluno.js",
-  "/redefinir-senha": "pages/redefinir-senha.js"
+  "/disciplina/[id]": "pages/disciplina/[id].js"
 }
