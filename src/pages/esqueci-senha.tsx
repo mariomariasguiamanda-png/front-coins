@@ -7,10 +7,34 @@ const roboto = Roboto({ subsets: ["latin"], weight: ["400", "500", "700"] });
 
 export default function EsqueciSenhaPage() {
   const [email, setEmail] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
-  const onSubmit = (e: FormEvent) => {
+  const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    console.log("Solicitar recuperação de senha para:", email);
+    setIsLoading(true);
+
+    try {
+      const res = await fetch("http://localhost:3001/api/senha/forgot", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+
+      if (!res.ok) {
+        const text = await res.text(); // pode ser HTML de erro
+        console.error(`Erro ${res.status}:`, text);
+        throw new Error(`Erro ${res.status}: ${text.includes('<!DOCTYPE') ? 'Servidor indisponível' : text}`);
+      }
+
+      const data = await res.json();
+      console.log("Resposta:", data);
+      alert("Se o e-mail existir, enviaremos o link!");
+    } catch (err) {
+      console.error("Erro:", err);
+      alert("Erro ao enviar link de recuperação");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -70,9 +94,14 @@ export default function EsqueciSenhaPage() {
                 {/* Submit */}
                 <button
                   type="submit"
-                  className="h-[46px] w-full rounded-md bg-[#FACC15] hover:bg-[#FBBF24] text-black font-bold transition"
+                  disabled={isLoading}
+                  className="h-[46px] w-full rounded-md bg-[#FACC15] hover:bg-[#FBBF24] text-black font-bold transition disabled:opacity-50 flex items-center justify-center"
                 >
-                  Enviar link de recuperação
+                  {isLoading ? (
+                    <span className="animate-spin h-5 w-5 border-2 border-black border-t-transparent rounded-full"></span>
+                  ) : (
+                    "Enviar link de recuperação"
+                  )}
                 </button>
               </form>
             </div>

@@ -1,6 +1,8 @@
 {
   "/_app": "pages/_app.js",
-  "/_document": "pages/_document.js",
   "/_error": "pages/_error.js",
-  "/homepage-aluno": "pages/homepage-aluno.js"
+  "/_document": "pages/_document.js",
+  "/login": "pages/login.js",
+  "/homepage-aluno": "pages/homepage-aluno.js",
+  "/disciplina/[id]": "pages/disciplina/[id].js"
 }

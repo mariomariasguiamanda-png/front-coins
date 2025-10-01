@@ -1,5 +1,6 @@
 import Head from "next/head";
 import Image from "next/image";
+import { useRouter } from "next/router";
 import { Roboto } from "next/font/google";
 import GoogleG from "@/components/icons/GoogleG";
 import { Eye, EyeOff } from "@/components/ui/Icons";
@@ -10,6 +11,7 @@ const roboto = Roboto({ subsets: ["latin"], weight: ["400", "500", "700"] });
 
 export default function CadastroPage() {
   const { register: registerUser, isLoading } = useAuth();
+  const router = useRouter();
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -21,19 +23,51 @@ export default function CadastroPage() {
   const [role, setRole] = useState<"student" | "teacher" | "admin">("student");
   const [institution, setInstitution] = useState("");
   const [phone, setPhone] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError(null);
+    setIsSubmitting(true);
+
     if (password !== confirmPassword) {
       setError("As senhas não coincidem.");
       return;
     }
+
     try {
-      // Envia apenas os campos suportados atualmente pelo AuthContext
-      await registerUser({ name, email, password });
-    } catch (err) {
-      setError("Não foi possível criar a conta. Tente novamente.");
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/cadastros`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          nome: name,
+          email,
+          senha: password,
+          perfil: role,
+          instituicao: institution,
+          telefone: phone,
+        }),
+      });
+
+      if (!res.ok) {
+        const text = await res.text(); // pode ser HTML de erro
+        console.error(`Erro ${res.status}:`, text);
+        setError(`Erro ${res.status}: ${text.includes('<!DOCTYPE') ? 'Servidor indisponível' : text}`);
+        return;
+      }
+
+      const data = await res.json();
+      console.log("✅ Cadastro criado:", data);
+
+      // Mostrar feedback de sucesso incluindo informação sobre email
+      alert(
+        "Cadastro realizado com sucesso! 🎉 Verifique seu e-mail para mais informações."
+      );
+      router.push("/login");
+    } catch (err: any) {
+      setError(err.message || "Não foi possível criar a conta.");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -265,10 +299,17 @@ export default function CadastroPage() {
                 {/* Submit */}
                 <button
                   type="submit"
-                  disabled={isLoading}
-                  className="h-[46px] w-full rounded-md bg-[#06B6D4] hover:bg-[#0891B2] text-black font-bold transition"
+                  disabled={isSubmitting}
+                  className="h-[46px] w-full rounded-md bg-[#06B6D4] hover:bg-[#0891B2] text-black font-bold transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
-                  {isLoading ? "Criando conta..." : "Criar conta"}
+                  {isSubmitting ? (
+                    <>
+                      <span className="animate-spin h-5 w-5 border-2 border-black border-t-transparent rounded-full"></span>
+                      Criando conta...
+                    </>
+                  ) : (
+                    "Criar conta"
+                  )}
                 </button>
               </form>
 
