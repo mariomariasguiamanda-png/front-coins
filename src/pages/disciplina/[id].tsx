@@ -15,26 +15,32 @@ export default function DisciplinaPage() {
 
   if (!disc) {
     return (
-      <div className="min-h-dvh grid place-items-center bg-gradient-to-br from-[#C084FC] via-[#7C3AED] to-[#0B0614] text-white p-6">
-        <Card className="rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 max-w-xl w-full">
-          <CardContent className="p-6 text-center">Disciplina não encontrada.</CardContent>
+      <div className="min-h-dvh grid place-items-center bg-white text-black p-6">
+        <Card className="rounded-2xl bg-white border border-gray-200 max-w-xl w-full">
+          <CardContent className="p-6 text-center">
+            Disciplina não encontrada.
+          </CardContent>
         </Card>
       </div>
     );
   }
 
   return (
-    <div className="min-h-dvh bg-gradient-to-br from-[#C084FC] via-[#7C3AED] to-[#0B0614] text-white p-6">
+    <div className="min-h-dvh bg-white text-black p-6">
       <div className="max-w-5xl mx-auto space-y-4">
         <div>
-          <h1 className="text-2xl font-bold" style={{ color: disc.cor }}>{disc.nome}</h1>
-          <p className="text-sm text-white/80">Moedas: {disc.moedas} • Progresso: {disc.progresso}%</p>
+          <h1 className="text-2xl font-bold" style={{ color: disc.cor }}>
+            {disc.nome}
+          </h1>
+          <p className="text-sm text-gray-700">
+            Moedas: {disc.moedas} • Progresso: {disc.progresso}%
+          </p>
         </div>
 
-        <Card className="rounded-2xl bg-white/10 backdrop-blur-md border border-white/20">
+        <Card className="rounded-2xl bg-white border border-gray-200">
           <CardContent className="p-4">
             <Tabs defaultValue="atividades">
-              <TabsList className="bg-white/10">
+              <TabsList className="bg-gray-100">
                 <TabsTrigger value="atividades">Atividades</TabsTrigger>
                 <TabsTrigger value="resumos">Resumos</TabsTrigger>
                 <TabsTrigger value="videos">Videoaulas</TabsTrigger>
@@ -42,11 +48,16 @@ export default function DisciplinaPage() {
               <TabsContent value="atividades">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
                   {acts.length === 0 ? (
-                    <p className="text-sm text-white/80">Sem atividades.</p>
+                    <p className="text-sm text-gray-700">Sem atividades.</p>
                   ) : (
                     acts.map((a) => (
-                      <div key={a.id} className="rounded-xl bg-white/5 border border-white/15 p-3">
-                        <div className="text-xs text-white/70">Prazo {new Date(a.prazo).toLocaleDateString("pt-BR")}</div>
+                      <div
+                        key={a.id}
+                        className="rounded-xl bg-gray-50 border border-gray-200 p-3"
+                      >
+                        <div className="text-xs text-gray-600">
+                          Prazo {new Date(a.prazo).toLocaleDateString("pt-BR")}
+                        </div>
                         <div className="font-semibold">{a.titulo}</div>
                       </div>
                     ))
@@ -56,12 +67,17 @@ export default function DisciplinaPage() {
               <TabsContent value="resumos">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
                   {sums.length === 0 ? (
-                    <p className="text-sm text-white/80">Sem resumos.</p>
+                    <p className="text-sm text-gray-700">Sem resumos.</p>
                   ) : (
                     sums.map((r) => (
-                      <div key={r.id} className="rounded-xl bg-white/5 border border-white/15 p-3">
+                      <div
+                        key={r.id}
+                        className="rounded-xl bg-gray-50 border border-gray-200 p-3"
+                      >
                         <div className="font-semibold">{r.titulo}</div>
-                        <div className="text-xs text-white/80">{r.atividadeVinculada || ""}</div>
+                        <div className="text-xs text-gray-700">
+                          {r.atividadeVinculada || ""}
+                        </div>
                       </div>
                     ))
                   )}
@@ -70,16 +86,27 @@ export default function DisciplinaPage() {
               <TabsContent value="videos">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
                   {vids.length === 0 ? (
-                    <p className="text-sm text-white/80">Sem videoaulas.</p>
+                    <p className="text-sm text-gray-700">Sem videoaulas.</p>
                   ) : (
                     vids.map((v) => (
-                      <div key={v.id} className="rounded-xl bg-white/5 border border-white/15 overflow-hidden">
+                      <div
+                        key={v.id}
+                        className="rounded-xl bg-white border border-gray-200 overflow-hidden"
+                      >
                         <div className="aspect-video">
-                          <iframe className="w-full h-full" src={`https://www.youtube.com/embed/${v.youtubeId}`} title={v.titulo} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen />
+                          <iframe
+                            className="w-full h-full"
+                            src={`https://www.youtube.com/embed/${v.youtubeId}`}
+                            title={v.titulo}
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                            allowFullScreen
+                          />
                         </div>
                         <div className="p-3">
                           <div className="font-semibold">{v.titulo}</div>
-                          <div className="text-xs text-white/80">{v.descricao}</div>
+                          <div className="text-xs text-gray-700">
+                            {v.descricao}
+                          </div>
                         </div>
                       </div>
                     ))

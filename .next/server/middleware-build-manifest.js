@@ -19,10 +19,10 @@ self.__BUILD_MANIFEST = {
       "static/chunks/main.js",
       "static/chunks/pages/_error.js"
     ],
-    "/disciplina/[id]": [
+    "/disciplinas/[id]": [
       "static/chunks/webpack.js",
       "static/chunks/main.js",
-      "static/chunks/pages/disciplina/[id].js"
+      "static/chunks/pages/disciplinas/[id].js"
     ],
     "/homepage-aluno": [
       "static/chunks/webpack.js",

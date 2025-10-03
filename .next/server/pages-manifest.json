@@ -2,7 +2,7 @@
   "/_app": "pages/_app.js",
   "/_error": "pages/_error.js",
   "/_document": "pages/_document.js",
-  "/login": "pages/login.js",
   "/homepage-aluno": "pages/homepage-aluno.js",
-  "/disciplina/[id]": "pages/disciplina/[id].js"
+  "/disciplinas/[id]": "pages/disciplinas/[id].js",
+  "/notas": "pages/notas.js"
 }
