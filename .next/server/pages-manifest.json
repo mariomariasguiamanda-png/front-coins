@@ -1,8 +1,0 @@
-{
-  "/_app": "pages/_app.js",
-  "/_error": "pages/_error.js",
-  "/_document": "pages/_document.js",
-  "/homepage-aluno": "pages/homepage-aluno.js",
-  "/disciplinas/[id]": "pages/disciplinas/[id].js",
-  "/notas": "pages/notas.js"
-}
