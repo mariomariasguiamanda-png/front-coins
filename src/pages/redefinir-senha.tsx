@@ -51,7 +51,11 @@ export default function RedefinirSenhaPage() {
       if (!res.ok) {
         const text = await res.text(); // pode ser HTML de erro
         console.error(`Erro ${res.status}:`, text);
-        throw new Error(`Erro ${res.status}: ${text.includes('<!DOCTYPE') ? 'Servidor indisponível' : text}`);
+        throw new Error(
+          `Erro ${res.status}: ${
+            text.includes("<!DOCTYPE") ? "Servidor indisponível" : text
+          }`
+        );
       }
 
       const data = await res.json();
@@ -73,7 +77,7 @@ export default function RedefinirSenhaPage() {
 
       {/* Root container (mesmo design do cadastro) */}
       <div
-        className={`${roboto.className} h-screen w-screen overflow-hidden text-white grid md:grid-cols-[minmax(0,1fr)_440px] bg-gradient-to-br from-[#C084FC] via-[#7C3AED] to-[#1E1E1E]`}
+        className={`${roboto.className} h-screen w-screen overflow-hidden text-black grid md:grid-cols-[minmax(0,1fr)_440px] bg-white`}
       >
         {/* Left side image (desktop only) */}
         <div className="relative hidden md:block h-screen">
@@ -91,18 +95,18 @@ export default function RedefinirSenhaPage() {
         <div className="h-screen overflow-y-auto flex items-start justify-center p-6">
           <div className="w-full max-w-[360px] py-6">
             {/* Title */}
-            <h1 className="text-2xl font-bold text-white text-center mb-6">
+            <h1 className="text-2xl font-bold text-black text-center mb-6">
               Redefinir senha
             </h1>
 
             {/* Card/painel - glassmorphism */}
-            <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-8">
+            <div className="bg-white border border-gray-200 rounded-2xl p-8">
               <form className="space-y-5" onSubmit={onSubmit}>
                 {/* Nova senha */}
                 <div>
                   <label
                     htmlFor="senha"
-                    className="block text-sm font-semibold text-white/90 mb-1"
+                    className="block text-sm font-semibold text-gray-800 mb-1"
                   >
                     Nova senha
                   </label>
@@ -113,7 +117,7 @@ export default function RedefinirSenhaPage() {
                       type={showPassword ? "text" : "password"}
                       value={senha}
                       onChange={(e) => setSenha(e.target.value)}
-                      className="h-[46px] w-full rounded-md border border-white/20 bg-transparent pl-3 pr-11 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#7C3AED]"
+                      className="h-[46px] w-full rounded-md border border-gray-300 bg-white pl-3 pr-11 text-black placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-black/20"
                       placeholder="********"
                       required
                     />
@@ -123,7 +127,7 @@ export default function RedefinirSenhaPage() {
                       aria-label={
                         showPassword ? "Ocultar senha" : "Mostrar senha"
                       }
-                      className="absolute inset-y-0 right-0 px-3 flex items-center text-white/70 hover:text-white focus:outline-none"
+                      className="absolute inset-y-0 right-0 px-3 flex items-center text-gray-600 hover:text-black focus:outline-none"
                     >
                       {showPassword ? (
                         <EyeOff className="h-5 w-5" />
@@ -138,7 +142,7 @@ export default function RedefinirSenhaPage() {
                 <div>
                   <label
                     htmlFor="confirmSenha"
-                    className="block text-sm font-semibold text-white/90 mb-1"
+                    className="block text-sm font-semibold text-gray-800 mb-1"
                   >
                     Confirmar nova senha
                   </label>
@@ -149,7 +153,7 @@ export default function RedefinirSenhaPage() {
                       type={showConfirm ? "text" : "password"}
                       value={confirmSenha}
                       onChange={(e) => setConfirmSenha(e.target.value)}
-                      className="h-[46px] w-full rounded-md border border-white/20 bg-transparent pl-3 pr-11 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#7C3AED]"
+                      className="h-[46px] w-full rounded-md border border-gray-300 bg-white pl-3 pr-11 text-black placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-black/20"
                       placeholder="********"
                       required
                     />
@@ -161,7 +165,7 @@ export default function RedefinirSenhaPage() {
                           ? "Ocultar confirmação de senha"
                           : "Mostrar confirmação de senha"
                       }
-                      className="absolute inset-y-0 right-0 px-3 flex items-center text-white/70 hover:text-white focus:outline-none"
+                      className="absolute inset-y-0 right-0 px-3 flex items-center text-gray-600 hover:text-black focus:outline-none"
                     >
                       {showConfirm ? (
                         <EyeOff className="h-5 w-5" />

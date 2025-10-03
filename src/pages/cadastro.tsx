@@ -52,7 +52,11 @@ export default function CadastroPage() {
       if (!res.ok) {
         const text = await res.text(); // pode ser HTML de erro
         console.error(`Erro ${res.status}:`, text);
-        setError(`Erro ${res.status}: ${text.includes('<!DOCTYPE') ? 'Servidor indisponível' : text}`);
+        setError(
+          `Erro ${res.status}: ${
+            text.includes("<!DOCTYPE") ? "Servidor indisponível" : text
+          }`
+        );
         return;
       }
 
@@ -79,7 +83,7 @@ export default function CadastroPage() {
 
       {/* Root container (mesmo design do login) */}
       <div
-        className={`${roboto.className} h-screen w-screen overflow-hidden text-white grid md:grid-cols-[minmax(0,1fr)_440px] bg-gradient-to-br from-[#C084FC] via-[#7C3AED] to-[#1E1E1E]`}
+        className={`${roboto.className} h-screen w-screen overflow-hidden text-black grid md:grid-cols-[minmax(0,1fr)_440px] bg-white`}
       >
         {/* Left side image (desktop only) */}
         <div className="relative hidden md:block h-screen">
@@ -97,18 +101,18 @@ export default function CadastroPage() {
         <div className="h-screen overflow-y-auto flex items-start justify-center p-6">
           <div className="w-full max-w-[360px] py-6">
             {/* Title */}
-            <h1 className="text-2xl font-bold text-white text-center mb-6">
+            <h1 className="text-2xl font-bold text-black text-center mb-6">
               Crie sua conta
             </h1>
 
             {/* Card/painel - glassmorphism */}
-            <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-8">
+            <div className="bg-white border border-gray-200 rounded-2xl p-8">
               <form className="space-y-5" onSubmit={onSubmit}>
                 {/* Nome completo */}
                 <div>
                   <label
                     htmlFor="name"
-                    className="block text-sm font-semibold text-white/90 mb-1"
+                    className="block text-sm font-semibold text-gray-800 mb-1"
                   >
                     Nome completo
                   </label>
@@ -119,7 +123,7 @@ export default function CadastroPage() {
                     autoComplete="name"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    className="h-[46px] w-full rounded-md border border-white/20 bg-transparent px-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#7C3AED]"
+                    className="h-[46px] w-full rounded-md border border-gray-300 bg-white px-3 text-black placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-black/20"
                     placeholder="Seu nome completo"
                     required
                   />
@@ -129,7 +133,7 @@ export default function CadastroPage() {
                 <div>
                   <label
                     htmlFor="email"
-                    className="block text-sm font-semibold text-white/90 mb-1"
+                    className="block text-sm font-semibold text-gray-800 mb-1"
                   >
                     E-mail institucional (ex: nome@escola.edu)
                   </label>
@@ -140,7 +144,7 @@ export default function CadastroPage() {
                     autoComplete="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="h-[46px] w-full rounded-md border border-white/20 bg-transparent px-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#7C3AED]"
+                    className="h-[46px] w-full rounded-md border border-gray-300 bg-white px-3 text-black placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-black/20"
                     placeholder="nome@escola.edu"
                     required
                   />
@@ -150,7 +154,7 @@ export default function CadastroPage() {
                 <div>
                   <label
                     htmlFor="role"
-                    className="block text-sm font-semibold text-white/90 mb-1"
+                    className="block text-sm font-semibold text-gray-800 mb-1"
                   >
                     Perfil
                   </label>
@@ -161,7 +165,7 @@ export default function CadastroPage() {
                     onChange={(e) =>
                       setRole(e.target.value as "student" | "teacher" | "admin")
                     }
-                    className="h-[46px] w-full rounded-md border border-white/20 bg-transparent px-3 text-white focus:outline-none focus:ring-2 focus:ring-[#7C3AED]"
+                    className="h-[46px] w-full rounded-md border border-gray-300 bg-white px-3 text-black focus:outline-none focus:ring-2 focus:ring-black/20"
                   >
                     <option className="bg-[#1E1E1E] text-white" value="student">
                       Aluno
@@ -179,7 +183,7 @@ export default function CadastroPage() {
                 <div>
                   <label
                     htmlFor="password"
-                    className="block text-sm font-semibold text-white/90 mb-1"
+                    className="block text-sm font-semibold text-gray-800 mb-1"
                   >
                     Senha
                   </label>
@@ -191,7 +195,7 @@ export default function CadastroPage() {
                       autoComplete="new-password"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      className="h-[46px] w-full rounded-md border border-white/20 bg-transparent pl-3 pr-11 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#7C3AED]"
+                      className="h-[46px] w-full rounded-md border border-gray-300 bg-white pl-3 pr-11 text-black placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-black/20"
                       placeholder="********"
                       required
                     />
@@ -201,7 +205,7 @@ export default function CadastroPage() {
                       aria-label={
                         showPassword ? "Ocultar senha" : "Mostrar senha"
                       }
-                      className="absolute inset-y-0 right-0 px-3 flex items-center text-white/70 hover:text-white focus:outline-none"
+                      className="absolute inset-y-0 right-0 px-3 flex items-center text-gray-600 hover:text-black focus:outline-none"
                     >
                       {showPassword ? (
                         <EyeOff className="h-5 w-5" />
@@ -216,7 +220,7 @@ export default function CadastroPage() {
                 <div>
                   <label
                     htmlFor="confirmPassword"
-                    className="block text-sm font-semibold text-white/90 mb-1"
+                    className="block text-sm font-semibold text-gray-800 mb-1"
                   >
                     Confirmar senha
                   </label>
@@ -228,7 +232,7 @@ export default function CadastroPage() {
                       autoComplete="new-password"
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
-                      className="h-[46px] w-full rounded-md border border-white/20 bg-transparent pl-3 pr-11 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#7C3AED]"
+                      className="h-[46px] w-full rounded-md border border-gray-300 bg-white pl-3 pr-11 text-black placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-black/20"
                       placeholder="********"
                       required
                     />
@@ -240,7 +244,7 @@ export default function CadastroPage() {
                           ? "Ocultar confirmação de senha"
                           : "Mostrar confirmação de senha"
                       }
-                      className="absolute inset-y-0 right-0 px-3 flex items-center text-white/70 hover:text-white focus:outline-none"
+                      className="absolute inset-y-0 right-0 px-3 flex items-center text-gray-600 hover:text-black focus:outline-none"
                     >
                       {showConfirm ? (
                         <EyeOff className="h-5 w-5" />
@@ -255,7 +259,7 @@ export default function CadastroPage() {
                 <div>
                   <label
                     htmlFor="institution"
-                    className="block text-sm font-semibold text-white/90 mb-1"
+                    className="block text-sm font-semibold text-gray-800 mb-1"
                   >
                     Instituição / Escola (opcional)
                   </label>
@@ -265,7 +269,7 @@ export default function CadastroPage() {
                     type="text"
                     value={institution}
                     onChange={(e) => setInstitution(e.target.value)}
-                    className="h-[46px] w-full rounded-md border border-white/20 bg-transparent px-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#7C3AED]"
+                    className="h-[46px] w-full rounded-md border border-gray-300 bg-white px-3 text-black placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-black/20"
                     placeholder="Ex.: Escola Estadual XYZ"
                   />
                 </div>
@@ -274,7 +278,7 @@ export default function CadastroPage() {
                 <div>
                   <label
                     htmlFor="phone"
-                    className="block text-sm font-semibold text-white/90 mb-1"
+                    className="block text-sm font-semibold text-gray-800 mb-1"
                   >
                     Telefone (opcional)
                   </label>
@@ -285,7 +289,7 @@ export default function CadastroPage() {
                     inputMode="tel"
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
-                    className="h-[46px] w-full rounded-md border border-white/20 bg-transparent px-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#7C3AED]"
+                    className="h-[46px] w-full rounded-md border border-gray-300 bg-white px-3 text-black placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-black/20"
                     placeholder="(11) 99999-9999"
                   />
                 </div>
@@ -315,15 +319,15 @@ export default function CadastroPage() {
 
               {/* Divider */}
               <div className="flex items-center gap-3 my-6">
-                <div className="h-px bg-white/20 flex-1" />
-                <span className="text-xs text-white/70">Ou</span>
-                <div className="h-px bg-white/20 flex-1" />
+                <div className="h-px bg-gray-200 flex-1" />
+                <span className="text-xs text-gray-600">Ou</span>
+                <div className="h-px bg-gray-200 flex-1" />
               </div>
 
               {/* Google button */}
               <a
                 href="#"
-                className="h-[46px] w-full rounded-md bg-transparent border border-white/20 text-white hover:bg-white/10 flex items-center justify-center transition"
+                className="h-[46px] w-full rounded-md bg-transparent border border-gray-300 text-black hover:bg-gray-50 flex items-center justify-center transition"
                 onClick={(e) => {
                   e.preventDefault();
                   console.log("OAuth Google (cadastro): TODO");
@@ -338,11 +342,11 @@ export default function CadastroPage() {
             </div>
 
             {/* CTA */}
-            <div className="mt-6 bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-4 text-center text-sm">
+            <div className="mt-6 bg-white border border-gray-200 rounded-2xl p-4 text-center text-sm">
               <span className="mr-1">Já tem uma conta?</span>
               <a
                 href="/login"
-                className="text-[#F97316] hover:text-[#EA580C] font-medium"
+                className="text-blue-600 hover:text-blue-700 font-medium"
               >
                 Entrar
               </a>

@@ -62,13 +62,13 @@ export default function PaginaProfessor() {
         return <MoedasPorAtividade />;
       case "perfil":
         return (
-          <div className="text-center text-white">
+          <div className="text-center text-black">
             Módulo em desenvolvimento
           </div>
         );
       case "ajuda":
         return (
-          <div className="text-center text-white">
+          <div className="text-center text-black">
             Módulo em desenvolvimento
           </div>
         );
@@ -79,10 +79,10 @@ export default function PaginaProfessor() {
 
   return (
     <div
-      className={`${roboto.className} h-screen w-screen overflow-hidden grid md:grid-cols-[260px_minmax(0,1fr)] bg-gradient-to-br from-[#C084FC] via-[#7C3AED] to-[#1E1E1E] text-white`}
+      className={`${roboto.className} h-screen w-screen overflow-hidden grid md:grid-cols-[260px_minmax(0,1fr)] bg-white text-black`}
     >
       {/* Sidebar fixa (estilo vidro) */}
-      <aside className="h-full bg-white/10 backdrop-blur-lg border-r border-white/20 p-4 flex flex-col gap-4">
+      <aside className="h-full bg-gradient-to-br from-[#C084FC] via-[#7C3AED] to-[#1E1E1E] text-white border-r border-white/20 backdrop-blur-lg p-4 flex flex-col gap-4">
         <div className="px-2 flex items-center gap-2">
           <GraduationCap className="h-6 w-6" />
           <div>
@@ -130,12 +130,12 @@ export default function PaginaProfessor() {
         <div className="max-w-6xl mx-auto space-y-4">
           <div>
             <h2 className="text-xl font-bold">Bem-vindo, Professor</h2>
-            <p className="text-sm text-white/80">
+            <p className="text-sm text-gray-700">
               Gerencie conteúdos, moedas e pontos dos seus alunos.
             </p>
           </div>
 
-          <Card className="rounded-2xl bg-white/10 backdrop-blur-md border border-white/20">
+          <Card className="rounded-2xl bg-white border border-gray-200">
             <CardContent className="p-6">{renderActive()}</CardContent>
           </Card>
         </div>
