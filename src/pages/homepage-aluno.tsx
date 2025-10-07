@@ -1,69 +1,81 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Roboto } from "next/font/google";
-import {
-  BookOpen,
-  BarChart3,
-  Film,
-  BookMarked,
-  Medal,
-  CalendarDays,
-  Settings,
-  HelpCircle,
-  GraduationCap,
-} from "lucide-react";
+import { BarChart3, Medal, CalendarDays, HelpCircle } from "lucide-react";
+import { PiBooksBold } from "react-icons/pi";
+import { FaUserAlt } from "react-icons/fa";
+import { IoHome } from "react-icons/io5";
 import { Card, CardContent } from "@/components/ui/Card";
+import AlunoHeader from "@/components/layout/AlunoHeader";
+import SidebarAluno from "@/components/layout/SidebarAluno";
+import {
+  aluno,
+  atividades as mockAtividades,
+  disciplinas,
+  moedasPorMes,
+  rankingTurma,
+} from "@/lib/mock/aluno";
 
-import Atividades from "@/modules/aluno/Atividades";
+import Disciplinas from "@/modules/aluno/Disciplinas";
 import MinhasNotas from "@/modules/aluno/MinhasNotas";
-import Videoaulas from "@/modules/aluno/Videoaulas";
-import Resumos from "@/modules/aluno/Resumos";
 import ComprarPontos from "@/modules/aluno/ComprarPontos";
 import Frequencia from "@/modules/aluno/Frequencia";
 import Perfil from "@/modules/aluno/Perfil";
 import Ajuda from "@/modules/aluno/Ajuda";
+import Dashboard from "@/modules/aluno/Dashboard";
 
 const roboto = Roboto({ subsets: ["latin"], weight: ["400", "500", "700"] });
 
 type TabKey =
-  | "atividades"
+  | "dashboard"
+  | "disciplinas"
   | "notas"
-  | "videoaulas"
-  | "resumos"
   | "comprar"
   | "frequencia"
   | "perfil"
   | "ajuda";
 
 export default function PaginaAluno() {
-  const [active, setActive] = useState<TabKey>("atividades");
+  const [active, setActive] = useState<TabKey>("dashboard");
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const saldoTotal = aluno.saldoTotal;
 
   const menu: Array<{
     key: TabKey;
     label: string;
-    icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
+    icon: React.ElementType;
   }> = [
-    { key: "atividades", label: "Atividades", icon: BookOpen },
+    { key: "dashboard", label: "Início", icon: IoHome },
+    { key: "disciplinas", label: "Disciplinas", icon: PiBooksBold },
     { key: "notas", label: "Minhas Notas", icon: BarChart3 },
-    { key: "videoaulas", label: "Videoaulas", icon: Film },
-    { key: "resumos", label: "Resumos", icon: BookMarked },
     { key: "comprar", label: "Comprar Pontos", icon: Medal },
-    { key: "frequencia", label: "Frequência", icon: CalendarDays },
-    { key: "perfil", label: "Meu Perfil", icon: Settings },
+    { key: "perfil", label: "Meu Perfil", icon: FaUserAlt },
+    { key: "frequencia", label: "Calendário", icon: CalendarDays },
     { key: "ajuda", label: "Ajuda", icon: HelpCircle },
   ];
 
   const renderActive = () => {
     switch (active) {
-      case "atividades":
-        return <Atividades />;
+      case "dashboard":
+        return (
+          <Dashboard
+            aluno={{
+              nome: aluno.nome,
+              matricula: aluno.matricula,
+              saldoTotal: saldoTotal,
+            }}
+            moedasPorMes={moedasPorMes}
+            rankingTurma={rankingTurma}
+            proximoPrazo={new Date(
+              mockAtividades[0]?.prazo || Date.now()
+            ).toLocaleDateString("pt-BR")}
+          />
+        );
+      case "disciplinas":
+        return <Disciplinas />;
       case "notas":
         return <MinhasNotas />;
-      case "videoaulas":
-        return <Videoaulas />;
-      case "resumos":
-        return <Resumos />;
       case "comprar":
         return <ComprarPontos />;
       case "frequencia":
@@ -73,62 +85,48 @@ export default function PaginaAluno() {
       case "ajuda":
         return <Ajuda />;
       default:
-        return <Atividades />;
+        return (
+          <Dashboard
+            aluno={{
+              nome: aluno.nome,
+              matricula: aluno.matricula,
+              saldoTotal: saldoTotal,
+            }}
+            moedasPorMes={moedasPorMes}
+            rankingTurma={rankingTurma}
+            proximoPrazo={new Date(
+              mockAtividades[0]?.prazo || Date.now()
+            ).toLocaleDateString("pt-BR")}
+          />
+        );
     }
   };
 
   return (
     <div
-      className={`${roboto.className} h-screen w-screen overflow-hidden grid md:grid-cols-[260px_minmax(0,1fr)] bg-gradient-to-br from-[#C084FC] via-[#7C3AED] to-[#1E1E1E] text-white`}
+      className={`${roboto.className} min-h-screen w-screen bg-white text-black`}
     >
-      {/* Sidebar fixa (estilo vidro) */}
-      <aside className="h-full bg-white/10 backdrop-blur-lg border-r border-white/20 p-4 flex flex-col gap-4">
-        <div className="px-2 flex items-center gap-2">
-          <GraduationCap className="h-6 w-6" />
-          <div>
-            <h1 className="text-lg font-bold leading-tight">Área do Aluno</h1>
-            <p className="text-xs text-white/70">Coins for Study</p>
+      <AlunoHeader
+        onToggleSidebar={() => setSidebarOpen((v) => !v)}
+        sidebarOpen={sidebarOpen}
+      />
+      <div className="flex">
+        <SidebarAluno
+          open={sidebarOpen}
+          active={active}
+          items={menu}
+          onChange={(k) => setActive(k as TabKey)}
+        />
+
+        {/* Painel principal rolável */}
+        <main className="p-6 flex-1">
+          <div className="max-w-5xl mx-auto">
+            <Card className="rounded-2xl bg-white border border-gray-200">
+              <CardContent className="p-6">{renderActive()}</CardContent>
+            </Card>
           </div>
-        </div>
-
-        <nav className="mt-2 space-y-1">
-          {menu.map((item) => {
-            const Icon = item.icon;
-            const isActive = active === item.key;
-            return (
-              <button
-                key={item.key}
-                onClick={() => setActive(item.key)}
-                className={`flex items-center gap-3 w-full rounded-lg px-3 py-2 text-sm hover:bg-white/10 transition ${
-                  isActive
-                    ? "bg-white/20 text-white font-bold"
-                    : "text-white/80"
-                }`}
-                aria-current={isActive ? "page" : undefined}
-              >
-                <Icon className="h-5 w-5" />
-                <span>{item.label}</span>
-              </button>
-            );
-          })}
-        </nav>
-      </aside>
-
-      {/* Painel principal rolável com Card vidro */}
-      <main className="h-full overflow-y-auto p-6">
-        <div className="max-w-5xl mx-auto space-y-4">
-          <div>
-            <h2 className="text-xl font-bold">Bem-vindo</h2>
-            <p className="text-sm text-white/80">
-              Revisões, notas e recompensas por aprendizado.
-            </p>
-          </div>
-
-          <Card className="rounded-2xl bg-white/10 backdrop-blur-md border border-white/20">
-            <CardContent className="p-6">{renderActive()}</CardContent>
-          </Card>
-        </div>
-      </main>
+        </main>
+      </div>
     </div>
   );
 }

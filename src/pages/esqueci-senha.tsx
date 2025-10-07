@@ -23,7 +23,11 @@ export default function EsqueciSenhaPage() {
       if (!res.ok) {
         const text = await res.text(); // pode ser HTML de erro
         console.error(`Erro ${res.status}:`, text);
-        throw new Error(`Erro ${res.status}: ${text.includes('<!DOCTYPE') ? 'Servidor indisponível' : text}`);
+        throw new Error(
+          `Erro ${res.status}: ${
+            text.includes("<!DOCTYPE") ? "Servidor indisponível" : text
+          }`
+        );
       }
 
       const data = await res.json();
@@ -45,7 +49,7 @@ export default function EsqueciSenhaPage() {
 
       {/* Root container (mesmo design do cadastro) */}
       <div
-        className={`${roboto.className} h-screen w-screen overflow-hidden text-white grid md:grid-cols-[minmax(0,1fr)_440px] bg-gradient-to-br from-[#C084FC] via-[#7C3AED] to-[#1E1E1E]`}
+        className={`${roboto.className} h-screen w-screen overflow-hidden text-black grid md:grid-cols-[minmax(0,1fr)_440px] bg-white`}
       >
         {/* Left side image (desktop only) */}
         <div className="relative hidden md:block h-screen">
@@ -63,18 +67,18 @@ export default function EsqueciSenhaPage() {
         <div className="h-screen overflow-y-auto flex items-start justify-center p-6">
           <div className="w-full max-w-[360px] py-6">
             {/* Title */}
-            <h1 className="text-2xl font-bold text-white text-center mb-6">
+            <h1 className="text-2xl font-bold text-black text-center mb-6">
               Recuperar acesso
             </h1>
 
             {/* Card/painel - glassmorphism */}
-            <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-8">
+            <div className="bg-white border border-gray-200 rounded-2xl p-8">
               <form className="space-y-5" onSubmit={onSubmit}>
                 {/* E-mail institucional */}
                 <div>
                   <label
                     htmlFor="email"
-                    className="block text-sm font-semibold text-white/90 mb-1"
+                    className="block text-sm font-semibold text-gray-800 mb-1"
                   >
                     E-mail institucional (ex: nome@escola.edu)
                   </label>
@@ -85,7 +89,7 @@ export default function EsqueciSenhaPage() {
                     autoComplete="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="h-[46px] w-full rounded-md border border-white/20 bg-transparent px-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#7C3AED]"
+                    className="h-[46px] w-full rounded-md border border-gray-300 bg-white px-3 text-black placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-black/20"
                     placeholder="nome@escola.edu"
                     required
                   />
@@ -107,10 +111,10 @@ export default function EsqueciSenhaPage() {
             </div>
 
             {/* CTA */}
-            <div className="mt-6 bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-4 text-center text-sm">
+            <div className="mt-6 bg-white border border-gray-200 rounded-2xl p-4 text-center text-sm">
               <a
                 href="/login"
-                className="text-[#F97316] hover:text-[#EA580C] font-medium"
+                className="text-blue-600 hover:text-blue-700 font-medium"
               >
                 Voltar ao login
               </a>
