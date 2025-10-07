@@ -11,6 +11,7 @@ import {
   Award,
   Clock,
   CheckCircle,
+  TrendingUp,
 } from "lucide-react";
 import {
   FaCalculator,
@@ -408,7 +409,7 @@ const Disciplinas = () => {
                         : selecionada.nome.toLowerCase() === "artes"
                         ? "art"
                         : String(selecionada.id);
-                    router.push(`/disciplinas/${slug}/resumos`);
+                    router.push(`/homepage-aluno/disciplinas/${slug}/resumos`);
                   }
                 }}
                 onKeyDown={(e: React.KeyboardEvent<HTMLDivElement>) => {
@@ -649,20 +650,73 @@ const Disciplinas = () => {
         exclusivos.
       </p>
 
-      <div className="grid grid-cols-1 gap-6">
+      {/* Cards de Estatísticas */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
+        <Card className="border border-gray-200 rounded-xl bg-white shadow-sm hover:shadow-md transition-all">
+          <CardContent className="p-4 flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">
+                Total de Disciplinas
+              </p>
+              <p className="text-2xl font-bold text-violet-700">
+                {disciplinas.length}
+              </p>
+            </div>
+            <div className="p-3 rounded-xl text-white bg-gradient-to-br from-violet-400 to-violet-500">
+              <BookOpen className="h-5 w-5" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border border-gray-200 rounded-xl bg-white shadow-sm hover:shadow-md transition-all">
+          <CardContent className="p-4 flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">
+                Progresso Médio
+              </p>
+              <p className="text-2xl font-bold text-violet-700">
+                {Math.round(
+                  disciplinas.reduce((acc, d) => acc + d.progresso, 0) /
+                    disciplinas.length
+                )}
+                %
+              </p>
+            </div>
+            <div className="p-3 rounded-xl text-white bg-gradient-to-br from-green-400 to-green-500">
+              <TrendingUp className="h-5 w-5" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border border-gray-200 rounded-xl bg-white shadow-sm hover:shadow-md transition-all">
+          <CardContent className="p-4 flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">
+                Total de Moedas
+              </p>
+              <p className="text-2xl font-bold text-violet-700">
+                {disciplinas.reduce((acc, d) => acc + d.moedas, 0)}
+              </p>
+            </div>
+            <div className="p-3 rounded-xl text-white bg-gradient-to-br from-yellow-400 to-yellow-500">
+              <Award className="h-5 w-5" />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
         {disciplinas.map((disciplina) => {
           const t = cores[disciplina.cor];
           const Icon = disciplina.icon;
           return (
             <Card
               key={disciplina.id}
-              className={`overflow-hidden rounded-2xl border ${t.border} hover:shadow-xl transition`}
+              className="border border-gray-200 rounded-xl bg-white shadow-sm hover:shadow-md transition-all duration-300 h-[140px]"
             >
-              <CardContent className="p-0">
+              <CardContent className="p-4 h-full">
                 <div
-                  className="cursor-pointer"
-                  role="button"
-                  tabIndex={0}
+                  className="cursor-pointer h-full flex flex-col justify-between"
                   onClick={() => {
                     const n = disciplina.nome.toLowerCase();
                     const slug =
@@ -702,162 +756,35 @@ const Disciplinas = () => {
                       query: { tema },
                     });
                   }}
-                  onKeyDown={(e: React.KeyboardEvent<HTMLDivElement>) => {
-                    if (e.key === "Enter") {
-                      const n = disciplina.nome.toLowerCase();
-                      const slug =
-                        n === "matemática"
-                          ? "mat"
-                          : n === "português"
-                          ? "port"
-                          : n === "história" || n === "historia"
-                          ? "hist"
-                          : n === "geografia"
-                          ? "geo"
-                          : n === "biologia"
-                          ? "bio"
-                          : n === "física" || n === "fisica"
-                          ? "fis"
-                          : n === "artes"
-                          ? "art"
-                          : String(disciplina.id);
-                      const tema =
-                        n === "matemática"
-                          ? "matematica"
-                          : n === "português"
-                          ? "portugues"
-                          : n === "história" || n === "historia"
-                          ? "historia"
-                          : n === "geografia"
-                          ? "geografia"
-                          : n === "biologia"
-                          ? "biologia"
-                          : n === "física" || n === "fisica"
-                          ? "fisica"
-                          : n === "artes"
-                          ? "artes"
-                          : "matematica";
-                      router.push({
-                        pathname: `/disciplinas/${slug}`,
-                        query: { tema },
-                      });
-                    }
-                  }}
                 >
-                  {/* Header colorido */}
-                  <div
-                    className={`p-6 md:p-7 bg-gradient-to-br ${t.grad} min-h-28 flex items-center`}
-                  >
-                    <div className="flex items-center justify-between w-full">
-                      <div className="flex items-center gap-3">
-                        <Icon className="h-8 w-8" />
-                        <div className="text-black">
-                          <h3 className="text-2xl font-bold leading-tight text-gray-900">
-                            {disciplina.nome}
-                          </h3>
-                          <p className="text-sm text-gray-900">
-                            {disciplina.moedas} moedas
-                          </p>
-                        </div>
-                      </div>
-                      <Award className="h-7 w-7 text-black/80" />
+                  <div className="flex items-center gap-3">
+                    <div
+                      className={`p-2 rounded-lg text-white bg-gradient-to-br ${t.grad}`}
+                    >
+                      <Icon className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-gray-900 text-sm">
+                        {disciplina.nome}
+                      </h3>
+                      <p className="text-xs text-gray-600">
+                        {disciplina.moedas} moedas conquistadas
+                      </p>
                     </div>
                   </div>
 
-                  {/* Conteúdo do card */}
-                  <div className="p-6 md:p-7 space-y-5 bg-white text-gray-900">
-                    {/* Barra de progresso */}
-                    <div>
-                      <div className="flex justify-between items-center mb-2">
-                        <span className="text-sm font-medium text-gray-900">
-                          Progresso
-                        </span>
-                        <span className={`text-sm font-bold text-gray-900`}>
-                          {disciplina.progresso}%
-                        </span>
-                      </div>
-                      <div className="h-3 bg-gray-200 rounded-full overflow-hidden">
-                        <div
-                          className={`h-full bg-gradient-to-r ${t.grad} transition-all duration-500`}
-                          style={{ width: `${disciplina.progresso}%` }}
-                        />
-                      </div>
-                    </div>
-
-                    {/* Estatísticas rápidas */}
-                    <div className="grid grid-cols-3 gap-4 pt-2 text-gray-900">
-                      <div className="text-center">
-                        <div className={`text-lg font-bold text-gray-900`}>
-                          {disciplina.atividades.concluidas}
-                        </div>
-                        <div className="text-xs text-gray-900">Atividades</div>
-                      </div>
-                      <div className="text-center">
-                        <div className={`text-lg font-bold text-gray-900`}>
-                          {disciplina.resumos}
-                        </div>
-                        <div className="text-xs text-gray-900">Resumos</div>
-                      </div>
-                      <div className="text-center">
-                        <div className={`text-lg font-bold text-gray-900`}>
-                          {disciplina.videoaulas.assistidas}
-                        </div>
-                        <div className="text-xs text-gray-900">Vídeos</div>
-                      </div>
-                    </div>
-
-                    {/* Botão de entrada */}
-                    <div className="flex items-center justify-between pt-2">
-                      <span className="text-sm text-gray-900">
-                        {disciplina.atividades.pendentes} pendentes
+                  <div className="mt-3">
+                    <div className="flex justify-between text-xs text-gray-600 mb-1">
+                      <span>Progresso</span>
+                      <span className="font-medium text-violet-700">
+                        {disciplina.progresso}%
                       </span>
-                      <button
-                        className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-black shadow-sm hover:opacity-95 transition bg-white`}
-                        onClick={() => {
-                          const n = disciplina.nome.toLowerCase();
-                          const slug =
-                            n === "matemática"
-                              ? "mat"
-                              : n === "português"
-                              ? "port"
-                              : n === "história" || n === "historia"
-                              ? "hist"
-                              : n === "geografia"
-                              ? "geo"
-                              : n === "biologia"
-                              ? "bio"
-                              : n === "física" || n === "fisica"
-                              ? "fis"
-                              : n === "artes"
-                              ? "art"
-                              : String(disciplina.id);
-                          const tema =
-                            n === "matemática"
-                              ? "matematica"
-                              : n === "português"
-                              ? "portugues"
-                              : n === "história" || n === "historia"
-                              ? "historia"
-                              : n === "geografia"
-                              ? "geografia"
-                              : n === "biologia"
-                              ? "biologia"
-                              : n === "física" || n === "fisica"
-                              ? "fisica"
-                              : n === "artes"
-                              ? "artes"
-                              : "matematica";
-                          router.push({
-                            pathname: `/disciplinas/${slug}`,
-                            query: { tema },
-                          });
-                        }}
-                      >
-                        <span className="text-sm font-semibold text-black">
-                          Entrar
-                        </span>
-                        <ArrowRight className="h-4 w-4" />
-                      </button>
+                    </div>
+                    <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                      <div
+                        className={`h-full bg-gradient-to-r ${t.grad}`}
+                        style={{ width: `${disciplina.progresso}%` }}
+                      />
                     </div>
                   </div>
                 </div>

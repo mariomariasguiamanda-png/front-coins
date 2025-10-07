@@ -90,7 +90,7 @@ export default function DisciplinaDetalhePage() {
         {/* Header */}
         <div className="flex items-center gap-4">
           <button
-            onClick={() => back()}
+            onClick={() => push(`/homepage-aluno/${id}`)}
             className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors"
             aria-label="Voltar"
           >

@@ -1,87 +1,199 @@
+import { CalendarDays } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/Card";
-import { Button } from "@/components/ui/Button";
-import { atividades as mockAtividades, disciplinas } from "@/lib/mock/aluno";
-import { CalendarDays, CircleDot, Clock, Coins } from "lucide-react";
+
+// Tipos para os dados
+interface Atividade {
+  id: string;
+  disciplina: string;
+  titulo: string;
+  prazo: string;
+  moedas: number;
+  status: "pendente" | "enviado" | "corrigida";
+}
+
+// Mapeamento de cores por disciplina
+const coresDisciplinas = {
+  Matemática: "blue",
+  História: "amber",
+  Biologia: "emerald",
+  Física: "purple",
+  Geografia: "teal",
+  Artes: "pink",
+  Português: "orange",
+} as const;
 
 export default function Atividades() {
-  const atividades = mockAtividades;
-  const getDisciplina = (id: string) => disciplinas.find((d) => d.id === id);
+  // Dados mockados das atividades
+  const atividades: Atividade[] = [
+    {
+      id: "1",
+      disciplina: "Matemática",
+      titulo: "Revisão - Funções",
+      prazo: "2025-10-01",
+      moedas: 10,
+      status: "pendente",
+    },
+    {
+      id: "2",
+      disciplina: "História",
+      titulo: "Revolução Industrial",
+      prazo: "2025-10-05",
+      moedas: 15,
+      status: "enviado",
+    },
+    {
+      id: "3",
+      disciplina: "Biologia",
+      titulo: "Sistema Circulatório",
+      prazo: "2025-10-08",
+      moedas: 12,
+      status: "corrigida",
+    },
+  ];
+
+  // Função para obter a cor da disciplina (assumindo primeira disciplina para o tema geral)
+  const disciplinaPrincipal = atividades[0]?.disciplina || "Matemática";
+  const corPrincipal =
+    coresDisciplinas[disciplinaPrincipal as keyof typeof coresDisciplinas] ||
+    "blue";
+
+  const getStatusConfig = (status: string, disciplina: string) => {
+    const cor =
+      coresDisciplinas[disciplina as keyof typeof coresDisciplinas] || "blue";
+
+    switch (status) {
+      case "pendente":
+        return {
+          class: `bg-${cor}-100 text-${cor}-700`,
+          text: "Pendente",
+        };
+      case "enviado":
+        return {
+          class: "bg-violet-100 text-violet-700",
+          text: "Enviado",
+        };
+      case "corrigida":
+        return {
+          class: "bg-emerald-100 text-emerald-700",
+          text: "Corrigida",
+        };
+      default:
+        return {
+          class: "bg-gray-100 text-gray-700",
+          text: status,
+        };
+    }
+  };
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h2 className="text-xl font-bold mb-1">📚 Atividades</h2>
-          <p className="text-white/80 text-sm">
-            Visualize e envie atividades para ganhar moedas e acompanhar seu
-            progresso.
-          </p>
+    <div className="space-y-6">
+      {/* 1. Cabeçalho da seção */}
+      <div className="p-6">
+        <div className="flex items-center gap-2 mb-2">
+          <CalendarDays className="h-6 w-6 text-violet-700" />
+          <h1 className="text-3xl font-bold text-violet-700">Atividades</h1>
         </div>
-        <Button size="sm" className="bg-purple-600 hover:bg-purple-700">Nova atividade</Button>
+        <p className="text-gray-600">Envie revisões e colete moedas.</p>
       </div>
 
-      {/* Lista de atividades */}
-      {atividades.length === 0 ? (
-        <Card className="rounded-xl bg-white/5 border border-white/15">
-          <CardContent className="p-6 text-sm text-white/80">
-            Nenhuma atividade disponível no momento.
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {atividades.map((a) => {
-            const d = getDisciplina(a.disciplinaId);
-            const prazo = new Date(a.prazo).toLocaleDateString("pt-BR");
-            const statusColor = a.status === "pendente" ? "bg-amber-400" : a.status === "enviado" ? "bg-blue-400" : "bg-emerald-400";
-            return (
-              <Card key={a.id} className="rounded-xl bg-white/5 border border-white/15">
-                <CardContent className="p-4">
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-semibold" style={{ color: d?.cor }}>{d?.nome}</span>
-                        <span className={`inline-flex items-center gap-1 text-[11px] rounded px-1.5 py-0.5 bg-white/10`}>
-                          <span className={`h-1.5 w-1.5 rounded-full ${statusColor}`} /> {a.status}
-                        </span>
-                      </div>
-                      <h3 className="mt-1 font-semibold">{a.titulo}</h3>
-                      <div className="mt-2 flex items-center gap-3 text-xs text-white/80">
-                        <span className="inline-flex items-center gap-1"><CalendarDays className="h-3.5 w-3.5" /> {prazo}</span>
-                        <span className="inline-flex items-center gap-1"><Coins className="h-3.5 w-3.5" /> {a.moedas} moedas</span>
-                      </div>
-                    </div>
-                    <div className="flex gap-2">
-                      <Button size="sm" className="bg-white/10 hover:bg-white/20">Abrir</Button>
-                      <Button size="sm" variant="outline">Enviar</Button>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
-      )}
+      {/* 2. Revisão espaçada (Ebbinghaus) */}
+      <Card
+        className={`bg-${corPrincipal}-50 border border-${corPrincipal}-100 rounded-xl`}
+      >
+        <CardContent className="p-5">
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">
+            Revisão espaçada (Ebbinghaus)
+          </h3>
+          <p className="text-gray-600 text-sm mb-4">
+            Sugestão de calendário: 1d, 3d, 7d, 15d.
+          </p>
 
-      {/* Caixa de revisão espaçada */}
-      <Card className="rounded-xl bg-white/5 border border-white/15">
-        <CardContent className="p-4">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="font-semibold">Revisão espaçada</h3>
-            <span className="text-xs text-white/80">1d • 3d • 7d • 15d</span>
-          </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            {[1, 3, 7, 15].map((d) => (
-              <div key={d} className="rounded-lg bg-white/5 border border-white/10 p-3 flex items-center justify-between">
-                <div>
-                  <p className="text-xs text-white/80">Revisar em</p>
-                  <p className="text-sm font-semibold">{d} dia{d > 1 ? "s" : ""}</p>
-                </div>
-                <CircleDot className="h-4 w-4" />
-              </div>
+          {/* Checkboxes horizontais */}
+          <div className="flex flex-wrap gap-4 mb-6">
+            {[
+              { label: "Dia 1", checked: true },
+              { label: "Dia 3", checked: false },
+              { label: "Dia 7", checked: false },
+              { label: "Dia 15", checked: false },
+            ].map((item) => (
+              <label
+                key={item.label}
+                className="flex items-center gap-2 cursor-pointer"
+              >
+                <input
+                  type="checkbox"
+                  checked={item.checked}
+                  className={`accent-${corPrincipal}-600 w-4 h-4`}
+                  readOnly
+                />
+                <span className="text-sm text-gray-700">{item.label}</span>
+              </label>
             ))}
           </div>
+
+          {/* Botão gerar revisão */}
+          <button
+            className={`bg-gradient-to-r from-${corPrincipal}-500 to-${corPrincipal}-600 text-white px-6 py-3 rounded-full font-medium hover:shadow-lg transition-all duration-200 hover:from-${corPrincipal}-600 hover:to-${corPrincipal}-700`}
+          >
+            Gerar revisão de hoje
+          </button>
         </CardContent>
       </Card>
+
+      {/* 3. Lista de atividades */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+        {atividades.map((atividade) => {
+          const cor =
+            coresDisciplinas[
+              atividade.disciplina as keyof typeof coresDisciplinas
+            ] || "blue";
+          const statusConfig = getStatusConfig(
+            atividade.status,
+            atividade.disciplina
+          );
+
+          return (
+            <Card
+              key={atividade.id}
+              className="border border-gray-200 rounded-xl bg-white shadow-sm hover:shadow-md transition-all duration-200"
+            >
+              <CardContent className="p-4 space-y-3">
+                {/* Nome da disciplina */}
+                <p className={`text-${cor}-700 text-sm font-medium`}>
+                  {atividade.disciplina}
+                </p>
+
+                {/* Título da atividade */}
+                <h3 className="font-semibold text-gray-900">
+                  {atividade.titulo}
+                </h3>
+
+                {/* Prazo e moedas */}
+                <div className="space-y-1 text-sm text-gray-600">
+                  <p>Prazo: {atividade.prazo}</p>
+                  <p>Moedas: {atividade.moedas}</p>
+                </div>
+
+                {/* Tag de status */}
+                <div className="flex items-center justify-between">
+                  <span
+                    className={`px-3 py-1 rounded-full text-xs font-medium ${statusConfig.class}`}
+                  >
+                    {statusConfig.text}
+                  </span>
+                </div>
+
+                {/* Botão Abrir */}
+                <button
+                  className={`w-full bg-gradient-to-r from-${cor}-500 to-${cor}-600 text-white py-2 px-4 rounded-lg font-medium hover:shadow-md transition-all duration-200 hover:from-${cor}-600 hover:to-${cor}-700`}
+                >
+                  Abrir
+                </button>
+              </CardContent>
+            </Card>
+          );
+        })}
+      </div>
     </div>
   );
 }
