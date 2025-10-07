@@ -1,12 +1,14 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import React from "react";
 
 type MenuItem = {
   key: string;
   label: string;
   icon: React.ElementType;
+  href: string;
 };
 
 type SidebarAlunoProps = {
@@ -46,9 +48,9 @@ export default function SidebarAluno({
           const Icon = item.icon;
           const isActive = active === item.key;
           return (
-            <button
+            <Link
               key={item.key}
-              onClick={() => onChange(item.key)}
+              href={item.href}
               className={`flex items-center w-full rounded-xl py-3 transition-all duration-300 group relative ${
                 open
                   ? "px-4 justify-start hover:bg-[#7C3AED]/30"
@@ -80,7 +82,7 @@ export default function SidebarAluno({
                   </span>
                 )}
               </div>
-            </button>
+            </Link>
           );
         })}
       </nav>

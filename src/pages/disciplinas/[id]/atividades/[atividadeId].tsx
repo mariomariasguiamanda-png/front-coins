@@ -24,7 +24,7 @@ function badgeColor(status: string) {
 }
 
 export default function AtividadeDetalhePage() {
-  const { query, back } = useRouter();
+  const { query, back, push } = useRouter();
   const id = String(query.id || "");
   const atividadeId = String(query.atividadeId || "");
   const [resposta, setResposta] = useState("");
@@ -52,7 +52,7 @@ export default function AtividadeDetalhePage() {
       <div className="max-w-4xl mx-auto space-y-4">
         <div className="flex items-center gap-3">
           <button
-            onClick={() => back()}
+            onClick={() => push(`/homepage-aluno/disciplinas/${id}/atividades`)}
             className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200"
             aria-label="Voltar"
           >

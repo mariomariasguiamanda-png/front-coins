@@ -10,7 +10,7 @@ import { ArrowLeft, FileText } from "lucide-react";
 import { resolverTema } from "@/modules/aluno/tema";
 
 export default function ResumoDetalhePage() {
-  const { query, back } = useRouter();
+  const { query, back, push } = useRouter();
   const id = String(query.id || "");
   const resumoId = String(query.resumoId || "");
 
@@ -33,7 +33,7 @@ export default function ResumoDetalhePage() {
       <div className="max-w-4xl mx-auto space-y-4">
         <div className="flex items-center gap-3">
           <button
-            onClick={() => back()}
+            onClick={() => push(`/homepage-aluno/disciplinas/${id}/resumos`)}
             className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200"
             aria-label="Voltar"
           >
