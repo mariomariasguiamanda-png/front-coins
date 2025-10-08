@@ -42,7 +42,7 @@ export default function VideoaulaDetalhePage() {
             Videoaula não encontrada
           </h2>
           <button
-            onClick={() => push(`/homepage-aluno/disciplinas/${id}/videoaulas`)}
+            onClick={() => push(`/aluno/disciplinas/${id}/videoaulas`)}
             className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
           >
             Voltar às Videoaulas
@@ -61,7 +61,7 @@ export default function VideoaulaDetalhePage() {
         {/* Cabeçalho */}
         <div className="flex items-start gap-4">
           <button
-            onClick={() => push(`/homepage-aluno/disciplinas/${id}/videoaulas`)}
+            onClick={() => push(`/aluno/disciplinas/${id}/videoaulas`)}
             className="px-3 py-1.5 rounded-lg bg-gray-100 hover:bg-gray-200 text-sm flex items-center gap-2"
           >
             <ArrowLeft className="h-4 w-4" />
@@ -160,16 +160,14 @@ export default function VideoaulaDetalhePage() {
               </a>
 
               <button
-                onClick={() =>
-                  push(`/homepage-aluno/disciplinas/${id}/videoaulas`)
-                }
+                onClick={() => push(`/aluno/disciplinas/${id}/videoaulas`)}
                 className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
               >
                 Outras Videoaulas
               </button>
 
               <button
-                onClick={() => push(`/homepage-aluno/disciplinas/${id}`)}
+                onClick={() => push(`/aluno/disciplinas/${id}`)}
                 className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
               >
                 Voltar à Disciplina

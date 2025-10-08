@@ -196,10 +196,8 @@ const Disciplinas = () => {
             <ArrowLeft className="h-5 w-5" />
           </button>
           <div className="flex items-center gap-3">
-            <div
-              className={`p-3 rounded-xl bg-gradient-to-br ${t.grad} text-white`}
-            >
-              <Icon className="h-6 w-6" />
+            <div className={`p-3 rounded-xl bg-gradient-to-br ${t.grad}`}>
+              <Icon className="h-6 w-6 text-white" />
             </div>
             <div>
               <h1 className="text-2xl font-bold text-gray-900">
@@ -409,7 +407,7 @@ const Disciplinas = () => {
                         : selecionada.nome.toLowerCase() === "artes"
                         ? "art"
                         : String(selecionada.id);
-                    router.push(`/homepage-aluno/disciplinas/${slug}/resumos`);
+                    router.push(`/aluno/disciplinas/${slug}/resumos`);
                   }
                 }}
                 onKeyDown={(e: React.KeyboardEvent<HTMLDivElement>) => {
@@ -431,7 +429,7 @@ const Disciplinas = () => {
                           : selecionada.nome.toLowerCase() === "artes"
                           ? "art"
                           : String(selecionada.id);
-                      router.push(`/disciplinas/${slug}/resumos`);
+                      router.push(`/aluno/disciplinas/${slug}/resumos`);
                     }
                   }
                 }}
@@ -480,7 +478,7 @@ const Disciplinas = () => {
                         : selecionada.nome.toLowerCase() === "artes"
                         ? "art"
                         : String(selecionada.id);
-                    router.push(`/disciplinas/${slug}/atividades`);
+                    router.push(`/aluno/disciplinas/${slug}/atividades`);
                   }
                 }}
                 onKeyDown={(e: React.KeyboardEvent<HTMLDivElement>) => {
@@ -502,7 +500,7 @@ const Disciplinas = () => {
                           : selecionada.nome.toLowerCase() === "artes"
                           ? "art"
                           : String(selecionada.id);
-                      router.push(`/disciplinas/${slug}/atividades`);
+                      router.push(`/aluno/disciplinas/${slug}/atividades`);
                     }
                   }
                 }}
@@ -565,7 +563,7 @@ const Disciplinas = () => {
                         : selecionada.nome.toLowerCase() === "artes"
                         ? "art"
                         : String(selecionada.id);
-                    router.push(`/disciplinas/${slug}/videoaulas`);
+                    router.push(`/aluno/disciplinas/${slug}/videoaulas`);
                   }
                 }}
                 onKeyDown={(e: React.KeyboardEvent<HTMLDivElement>) => {
@@ -587,7 +585,7 @@ const Disciplinas = () => {
                           : selecionada.nome.toLowerCase() === "artes"
                           ? "art"
                           : String(selecionada.id);
-                      router.push(`/disciplinas/${slug}/videoaulas`);
+                      router.push(`/aluno/disciplinas/${slug}/videoaulas`);
                     }
                   }
                 }}
@@ -752,16 +750,16 @@ const Disciplinas = () => {
                         ? "artes"
                         : "matematica";
                     router.push({
-                      pathname: `/disciplinas/${slug}`,
+                      pathname: `/aluno/disciplinas/${slug}`,
                       query: { tema },
                     });
                   }}
                 >
                   <div className="flex items-center gap-3">
                     <div
-                      className={`p-2 rounded-lg text-white bg-gradient-to-br ${t.grad}`}
+                      className={`p-2 rounded-lg bg-gradient-to-br ${t.grad}`}
                     >
-                      <Icon className="h-5 w-5" />
+                      <Icon className="h-5 w-5 text-white" />
                     </div>
                     <div>
                       <h3 className="font-semibold text-gray-900 text-sm">

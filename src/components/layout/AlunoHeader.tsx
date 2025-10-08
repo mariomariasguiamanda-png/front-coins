@@ -89,10 +89,7 @@ export default function AlunoHeader({
               )}
             </button>
           )}
-          <Link
-            href="/homepage-aluno/inicio"
-            className="flex items-center gap-2 group"
-          >
+          <Link href="/aluno/inicio" className="flex items-center gap-2 group">
             <Image
               src="/logo-coins.png"
               alt="Coins for Study"
@@ -217,7 +214,7 @@ export default function AlunoHeader({
             )}
           </div>
           <Link
-            href="/homepage-aluno/perfil"
+            href="/aluno/perfil"
             className="flex items-center gap-2 rounded-lg bg-white/10 hover:bg-white/20 px-2 py-1 transition"
           >
             <div className="h-7 w-7 rounded-full bg-gradient-to-br from-purple-400 to-purple-700 grid place-items-center text-xs font-bold text-[#fff]">

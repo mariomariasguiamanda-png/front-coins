@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { useRouter } from "next/router";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import {
@@ -13,6 +14,7 @@ import {
   Clock,
   AlertCircle,
   X,
+  ExternalLink,
 } from "lucide-react";
 
 // ==================== TIPOS E INTERFACES ====================
@@ -24,6 +26,9 @@ type RevisionEvent = {
   subject: string;
   type: "revision" | "study" | "exam";
   completed: boolean;
+  linkType?: "atividade" | "resumo";
+  disciplinaId?: string;
+  itemId?: string;
 };
 
 type CalendarDay = {
@@ -39,11 +44,14 @@ type CalendarDay = {
 const mockRevisionEvents: RevisionEvent[] = [
   {
     id: "1",
-    title: "Revisar Funções Afins",
+    title: "Quiz - Funções Matemáticas",
     date: "2025-10-07", // Hoje
     subject: "Matemática",
     type: "revision",
     completed: false,
+    linkType: "atividade",
+    disciplinaId: "mat",
+    itemId: "a9",
   },
   {
     id: "2",
@@ -52,36 +60,51 @@ const mockRevisionEvents: RevisionEvent[] = [
     subject: "História",
     type: "revision",
     completed: false,
+    linkType: "resumo",
+    disciplinaId: "hist",
+    itemId: "r3",
   },
   {
     id: "3",
-    title: "Estudo Equações Quadráticas",
+    title: "Lista de Equações 1",
     date: "2025-10-12",
     subject: "Matemática",
     type: "study",
     completed: false,
+    linkType: "atividade",
+    disciplinaId: "mat",
+    itemId: "a1",
   },
   {
     id: "4",
-    title: "Prova de Literatura",
+    title: "Quiz - Figuras de Linguagem",
     date: "2025-10-15",
     subject: "Português",
     type: "exam",
     completed: false,
+    linkType: "atividade",
+    disciplinaId: "port",
+    itemId: "a12",
   },
   {
     id: "5",
-    title: "Revisar Células",
+    title: "Quiz - Sistema Digestório",
     date: "2025-10-18",
     subject: "Biologia",
     type: "revision",
     completed: false,
+    linkType: "atividade",
+    disciplinaId: "bio",
+    itemId: "a10",
   },
 ];
 
 // ==================== COMPONENTE PRINCIPAL ====================
 
 export default function Frequencia() {
+  // ==================== HOOKS ====================
+  const router = useRouter();
+  
   // ==================== ESTADOS ====================
   const [mounted, setMounted] = useState(false);
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -223,6 +246,17 @@ export default function Frequencia() {
   const handleCompleteEvent = (eventId: string) => {
     // Aqui você pode implementar a lógica para marcar como concluído
     console.log("Evento concluído:", eventId);
+  };
+
+  const handleNavigateToItem = (event: RevisionEvent) => {
+    if (event.linkType && event.disciplinaId && event.itemId) {
+      if (event.linkType === "atividade") {
+        router.push(`/aluno/disciplinas/${event.disciplinaId}/atividades/${event.itemId}`);
+      } else if (event.linkType === "resumo") {
+        router.push(`/aluno/disciplinas/${event.disciplinaId}/resumos`);
+      }
+      setShowDayModal(false);
+    }
   };
 
   // ==================== RENDER ====================
@@ -455,8 +489,21 @@ export default function Frequencia() {
                       </div>
                     </div>
 
-                    {/* Botão de Ação */}
-                    <div className="flex justify-end">
+                    {/* Botões de Ação */}
+                    <div className="flex justify-between items-center gap-3">
+                      {/* Botão para acessar atividade/resumo */}
+                      {event.linkType && event.disciplinaId && event.itemId && (
+                        <Button
+                          onClick={() => handleNavigateToItem(event)}
+                          className="bg-violet-500 hover:bg-violet-600 text-white shadow-md hover:shadow-lg smooth-transition flex items-center gap-2"
+                          size="sm"
+                        >
+                          <ExternalLink className="h-4 w-4" />
+                          {event.linkType === "atividade" ? "Ir para Atividade" : "Ir para Resumo"}
+                        </Button>
+                      )}
+                      
+                      {/* Botão para marcar como concluído */}
                       <Button
                         onClick={() => handleCompleteEvent(event.id)}
                         className={`${

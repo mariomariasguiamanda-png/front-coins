@@ -127,7 +127,7 @@ export default function ComprarPontosDisciplina() {
 
     setErro("");
     router.push(
-      `/homepage-aluno/comprar-pontos/${disciplina}/confirmar?pontos=${pontos}&total=${total}`
+      `/aluno/comprar-pontos/${disciplina}/confirmar?pontos=${pontos}&total=${total}`
     );
   };
 
@@ -187,7 +187,7 @@ export default function ComprarPontosDisciplina() {
                       setPontos(value);
                       setErro("");
                     }}
-                    className="w-20 h-10 text-center text-lg font-bold border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+                    className="w-20 h-10 text-center text-lg font-bold border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent"
                   />
                   <button
                     onClick={() => setPontos(Math.min(10, pontos + 1))}
