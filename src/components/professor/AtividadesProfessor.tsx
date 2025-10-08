@@ -40,7 +40,10 @@ export function AtividadesProfessor({
             <div className="grid gap-4 md:grid-cols-2">
               <div>
                 <Label>Título</Label>
-                <Input placeholder="Ex: Lista de Exercícios 1" className="rounded-xl" />
+                <Input
+                  placeholder="Ex: Lista de Exercícios 1"
+                  className="rounded-xl"
+                />
               </div>
               <div>
                 <Label>Data de entrega</Label>
@@ -50,7 +53,10 @@ export function AtividadesProfessor({
 
             <div>
               <Label>Descrição</Label>
-              <Textarea placeholder="Instruções, objetivos..." className="rounded-xl" />
+              <Textarea
+                placeholder="Instruções, objetivos..."
+                className="rounded-xl bg-white"
+              />
             </div>
 
             <div className="grid gap-4 md:grid-cols-2">
@@ -86,17 +92,25 @@ export function AtividadesProfessor({
                   <Button variant="outline" size="sm" className="rounded-xl">
                     Editar
                   </Button>
-                  <Button variant="outline" size="sm" className="rounded-xl text-red-600 hover:bg-red-50">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="rounded-xl text-red-600 hover:bg-red-50"
+                  >
                     Excluir
                   </Button>
                 </div>
               </div>
 
-              <p className="mt-2 text-sm text-muted-foreground">{activity.description}</p>
+              <p className="mt-2 text-sm text-muted-foreground">
+                {activity.description}
+              </p>
 
               <div className="mt-4 flex flex-wrap gap-4 text-sm">
                 <div>
-                  <span className="text-muted-foreground">Data de entrega:</span>{" "}
+                  <span className="text-muted-foreground">
+                    Data de entrega:
+                  </span>{" "}
                   <span className="font-medium">{activity.dueDate}</span>
                 </div>
                 <div>
@@ -105,11 +119,15 @@ export function AtividadesProfessor({
                 </div>
                 <div>
                   <span className="text-muted-foreground">Status:</span>{" "}
-                  <span className={`font-medium ${
-                    activity.status === "pendente" ? "text-yellow-600" :
-                    activity.status === "entregue" ? "text-blue-600" :
-                    "text-green-600"
-                  }`}>
+                  <span
+                    className={`font-medium ${
+                      activity.status === "pendente"
+                        ? "text-yellow-600"
+                        : activity.status === "entregue"
+                        ? "text-blue-600"
+                        : "text-green-600"
+                    }`}
+                  >
                     {activity.status}
                   </span>
                 </div>

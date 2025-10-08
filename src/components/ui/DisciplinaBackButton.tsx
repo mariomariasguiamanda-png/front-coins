@@ -23,18 +23,18 @@ export const DisciplinaBackButton: React.FC<DisciplinaBackButtonProps> = ({
     // Animação de saída suave
     setTimeout(() => {
       if (router.query.id && typeof router.query.id === "string") {
-        // Determinar se estamos no contexto homepage-aluno ou disciplinas
+        // Determinar se estamos no contexto aluno ou disciplinas
         const currentPath = router.asPath;
-        const isHomepageAluno = currentPath.includes("/homepage-aluno/");
+        const isHomepageAluno = currentPath.includes("/aluno/");
 
         if (isHomepageAluno) {
-          // Se estamos em homepage-aluno, voltar para homepage-aluno/[materia]
-          router.push(`/homepage-aluno/${router.query.id}`, undefined, {
+          // Se estamos em aluno, voltar para aluno/[materia]
+          router.push(`/aluno/${router.query.id}`, undefined, {
             scroll: false,
           });
         } else {
-          // Se estamos em disciplinas, voltar para homepage-aluno/[materia]
-          router.push(`/homepage-aluno/${router.query.id}`, undefined, {
+          // Se estamos em disciplinas, voltar para aluno/[materia]
+          router.push(`/aluno/${router.query.id}`, undefined, {
             scroll: false,
           });
         }

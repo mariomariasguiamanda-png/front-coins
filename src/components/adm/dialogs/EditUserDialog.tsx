@@ -1,36 +1,47 @@
-import { useState } from "react"
+import { useState } from "react";
 import {
   Dialog,
   DialogContent,
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog"
-import { Input } from "@/components/ui/Input"
-import { Label } from "@/components/ui/Label"
-import { Button } from "@/components/ui/Button"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/Input";
+import { Label } from "@/components/ui/Label";
+import { Button } from "@/components/ui/Button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface EditUserDialogProps {
-  open: boolean
-  onClose: () => void
+  open: boolean;
+  onClose: () => void;
   onSave: (user: {
-    id: string
-    name: string
-    email: string
-    type: "student" | "teacher"
-    status: "active" | "inactive" | "pending"
-  }) => void
+    id: string;
+    name: string;
+    email: string;
+    type: "student" | "teacher";
+    status: "active" | "inactive" | "pending";
+  }) => void;
   user: {
-    id: string
-    name: string
-    email: string
-    type: "student" | "teacher"
-    status: "active" | "inactive" | "pending"
-  } | null
+    id: string;
+    name: string;
+    email: string;
+    type: "student" | "teacher";
+    status: "active" | "inactive" | "pending";
+  } | null;
 }
 
-export function EditUserDialog({ open, onClose, onSave, user }: EditUserDialogProps) {
+export function EditUserDialog({
+  open,
+  onClose,
+  onSave,
+  user,
+}: EditUserDialogProps) {
   const [formData, setFormData] = useState(
     user || {
       id: "",
@@ -39,13 +50,13 @@ export function EditUserDialog({ open, onClose, onSave, user }: EditUserDialogPr
       type: "student" as const,
       status: "pending" as const,
     }
-  )
+  );
 
   const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    onSave(formData)
-    onClose()
-  }
+    e.preventDefault();
+    onSave(formData);
+    onClose();
+  };
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
@@ -88,7 +99,7 @@ export function EditUserDialog({ open, onClose, onSave, user }: EditUserDialogPr
                   setFormData({ ...formData, type: value })
                 }
               >
-                <SelectTrigger id="type" className="rounded-xl">
+                <SelectTrigger id="type" className="rounded-xl bg-white">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -105,7 +116,7 @@ export function EditUserDialog({ open, onClose, onSave, user }: EditUserDialogPr
                   setFormData({ ...formData, status: value })
                 }
               >
-                <SelectTrigger id="status" className="rounded-xl">
+                <SelectTrigger id="status" className="rounded-xl bg-white">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -117,7 +128,12 @@ export function EditUserDialog({ open, onClose, onSave, user }: EditUserDialogPr
             </div>
           </div>
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={onClose} className="rounded-xl">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onClose}
+              className="rounded-xl"
+            >
               Cancelar
             </Button>
             <Button type="submit" className="rounded-xl">
@@ -127,5 +143,5 @@ export function EditUserDialog({ open, onClose, onSave, user }: EditUserDialogPr
         </form>
       </DialogContent>
     </Dialog>
-  )
+  );
 }

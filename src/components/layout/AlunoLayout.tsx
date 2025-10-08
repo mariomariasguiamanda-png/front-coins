@@ -9,6 +9,7 @@ import {
   CalendarDays,
   HelpCircle,
   Trophy,
+  Activity,
 } from "lucide-react";
 import { PiBooksBold } from "react-icons/pi";
 import { FaUserAlt } from "react-icons/fa";
@@ -30,9 +31,9 @@ export default function AlunoLayout({ children }: AlunoLayoutProps) {
   // Detecta a rota ativa baseada na URL atual
   const getActiveKey = () => {
     const path = router.asPath;
-    if (path === "/homepage-aluno" || path === "/homepage-aluno/")
-      return "dashboard";
+    if (path === "/aluno" || path === "/aluno/") return "dashboard";
     if (path.includes("/disciplinas")) return "disciplinas";
+    if (path.includes("/atividades")) return "atividades";
     if (path.includes("/minhas-notas")) return "notas";
     if (path.includes("/comprar-pontos")) return "comprar";
     if (path.includes("/calendario")) return "frequencia";
@@ -47,49 +48,55 @@ export default function AlunoLayout({ children }: AlunoLayoutProps) {
       key: "dashboard",
       label: "Início",
       icon: IoHome,
-      href: "/homepage-aluno/inicio",
+      href: "/aluno/inicio",
     },
     {
       key: "disciplinas",
       label: "Disciplinas",
       icon: PiBooksBold,
-      href: "/homepage-aluno/disciplinas",
+      href: "/aluno/disciplinas",
+    },
+    {
+      key: "atividades",
+      label: "Painel de Desempenho",
+      icon: Activity,
+      href: "/aluno/atividades",
     },
     {
       key: "notas",
       label: "Minhas Notas",
       icon: BarChart3,
-      href: "/homepage-aluno/minhas-notas",
+      href: "/aluno/minhas-notas",
     },
     {
       key: "ranking",
       label: "Ranking",
       icon: Trophy,
-      href: "/homepage-aluno/ranking",
+      href: "/aluno/ranking",
     },
     {
       key: "comprar",
       label: "Comprar Pontos",
       icon: Medal,
-      href: "/homepage-aluno/comprar-pontos",
+      href: "/aluno/comprar-pontos",
     },
     {
       key: "frequencia",
       label: "Calendário",
       icon: CalendarDays,
-      href: "/homepage-aluno/calendario",
+      href: "/aluno/calendario",
     },
     {
       key: "perfil",
       label: "Meu Perfil",
       icon: FaUserAlt,
-      href: "/homepage-aluno/perfil",
+      href: "/aluno/perfil",
     },
     {
       key: "ajuda",
       label: "Ajuda",
       icon: HelpCircle,
-      href: "/homepage-aluno/ajuda",
+      href: "/aluno/ajuda",
     },
   ];
 

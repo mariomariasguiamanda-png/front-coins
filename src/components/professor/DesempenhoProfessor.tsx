@@ -1,6 +1,12 @@
 import { Button } from "@/components/ui/Button";
 import { Card, CardContent } from "@/components/ui/Card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { BarChart2, Download, Filter, TrendingUp } from "lucide-react";
 
 interface PerformanceData {
@@ -62,8 +68,10 @@ export function DesempenhoProfessor({
           </div>
 
           <div className="grid gap-4 md:grid-cols-3">
-            <Select onValueChange={(value) => onFilterChange({ discipline: value })}>
-              <SelectTrigger className="rounded-xl">
+            <Select
+              onValueChange={(value) => onFilterChange({ discipline: value })}
+            >
+              <SelectTrigger className="rounded-xl bg-white">
                 <SelectValue placeholder="Disciplina" />
               </SelectTrigger>
               <SelectContent>
@@ -74,7 +82,7 @@ export function DesempenhoProfessor({
             </Select>
 
             <Select onValueChange={(value) => onFilterChange({ class: value })}>
-              <SelectTrigger className="rounded-xl">
+              <SelectTrigger className="rounded-xl bg-white">
                 <SelectValue placeholder="Turma" />
               </SelectTrigger>
               <SelectContent>
@@ -84,8 +92,10 @@ export function DesempenhoProfessor({
               </SelectContent>
             </Select>
 
-            <Select onValueChange={(value) => onFilterChange({ period: value })}>
-              <SelectTrigger className="rounded-xl">
+            <Select
+              onValueChange={(value) => onFilterChange({ period: value })}
+            >
+              <SelectTrigger className="rounded-xl bg-white">
                 <SelectValue placeholder="Período" />
               </SelectTrigger>
               <SelectContent>
