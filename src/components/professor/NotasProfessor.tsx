@@ -70,7 +70,7 @@ export function NotasProfessor({
               <div>
                 <Label>Disciplina</Label>
                 <Select>
-                  <SelectTrigger className="rounded-xl">
+                  <SelectTrigger className="rounded-xl bg-white">
                     <SelectValue placeholder="Selecione a disciplina" />
                   </SelectTrigger>
                   <SelectContent>
@@ -83,7 +83,7 @@ export function NotasProfessor({
               <div>
                 <Label>Turma</Label>
                 <Select>
-                  <SelectTrigger className="rounded-xl">
+                  <SelectTrigger className="rounded-xl bg-white">
                     <SelectValue placeholder="Selecione a turma" />
                   </SelectTrigger>
                   <SelectContent>
@@ -96,7 +96,7 @@ export function NotasProfessor({
               <div>
                 <Label>Atividade</Label>
                 <Select>
-                  <SelectTrigger className="rounded-xl">
+                  <SelectTrigger className="rounded-xl bg-white">
                     <SelectValue placeholder="Selecione a atividade" />
                   </SelectTrigger>
                   <SelectContent>
@@ -112,7 +112,7 @@ export function NotasProfessor({
               <div>
                 <Label>Aluno</Label>
                 <Select>
-                  <SelectTrigger className="rounded-xl">
+                  <SelectTrigger className="rounded-xl bg-white">
                     <SelectValue placeholder="Selecione o aluno" />
                   </SelectTrigger>
                   <SelectContent>
@@ -124,7 +124,13 @@ export function NotasProfessor({
               </div>
               <div>
                 <Label>Nota</Label>
-                <Input type="number" min="0" max="10" step="0.1" className="rounded-xl" />
+                <Input
+                  type="number"
+                  min="0"
+                  max="10"
+                  step="0.1"
+                  className="rounded-xl"
+                />
               </div>
               <div>
                 <Label>Data</Label>

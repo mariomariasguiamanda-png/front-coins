@@ -117,11 +117,11 @@ export default function CompraSucesso() {
   }, []);
 
   const handleNovaCompra = () => {
-    router.push("/homepage-aluno/comprar-pontos");
+    router.push("/aluno/comprar-pontos");
   };
 
   const handleVoltar = () => {
-    router.push("/homepage-aluno/inicio");
+    router.push("/aluno/inicio");
   };
 
   if (!mounted || typeof disciplina !== "string") {

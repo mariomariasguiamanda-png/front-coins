@@ -85,7 +85,7 @@ export default function ComprarPontosPage() {
   }, []);
 
   const handleSelectDisciplina = (disciplinaId: string) => {
-    router.push(`/homepage-aluno/comprar-pontos/${disciplinaId}`);
+    router.push(`/aluno/comprar-pontos/${disciplinaId}`);
   };
 
   if (!mounted) return null;

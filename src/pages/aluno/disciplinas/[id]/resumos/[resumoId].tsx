@@ -39,7 +39,7 @@ export default function ResumoDetalhePage() {
             Resumo não encontrado
           </h2>
           <button
-            onClick={() => push(`/homepage-aluno/disciplinas/${id}/resumos`)}
+            onClick={() => push(`/aluno/disciplinas/${id}/resumos`)}
             className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
           >
             Voltar aos Resumos
@@ -58,7 +58,7 @@ export default function ResumoDetalhePage() {
         {/* Cabeçalho */}
         <div className="flex items-start gap-4">
           <button
-            onClick={() => push(`/homepage-aluno/disciplinas/${id}/resumos`)}
+            onClick={() => push(`/aluno/disciplinas/${id}/resumos`)}
             className="px-3 py-1.5 rounded-lg bg-gray-100 hover:bg-gray-200 text-sm flex items-center gap-2"
           >
             <ArrowLeft className="h-4 w-4" />
@@ -106,24 +106,20 @@ export default function ResumoDetalhePage() {
             {/* Ações */}
             <div className="flex gap-3 mt-8">
               <button
-                onClick={() =>
-                  push(`/homepage-aluno/disciplinas/${id}/resumos`)
-                }
+                onClick={() => push(`/aluno/disciplinas/${id}/resumos`)}
                 className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
               >
                 Ver Outros Resumos
               </button>
               <button
-                onClick={() => push(`/homepage-aluno/disciplinas/${id}`)}
+                onClick={() => push(`/aluno/disciplinas/${id}`)}
                 className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
               >
                 Voltar à Disciplina
               </button>
               {resumo.atividadeVinculada && (
                 <button
-                  onClick={() =>
-                    push(`/homepage-aluno/disciplinas/${id}/atividades`)
-                  }
+                  onClick={() => push(`/aluno/disciplinas/${id}/atividades`)}
                   className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
                 >
                   Ver Atividades

@@ -119,7 +119,7 @@ export default function ConfirmarCompra() {
     // Simular processamento
     setTimeout(() => {
       router.push(
-        `/homepage-aluno/comprar-pontos/${disciplina}/sucesso?pontos=${pontos}&total=${total}&saldoAntes=${disciplinaData.saldoAtual}&saldoDepois=${saldoApos}`
+        `/aluno/comprar-pontos/${disciplina}/sucesso?pontos=${pontos}&total=${total}&saldoAntes=${disciplinaData.saldoAtual}&saldoDepois=${saldoApos}`
       );
     }, 1500);
   };

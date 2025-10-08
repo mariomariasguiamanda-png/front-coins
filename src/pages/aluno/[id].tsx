@@ -183,7 +183,7 @@ export default function MateriaDashboardPage() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div
             className="hover:shadow-lg transition-shadow cursor-pointer"
-            onClick={() => push(`/disciplinas/${id}/atividades`)}
+            onClick={() => push(`/aluno/disciplinas/${id}/atividades`)}
           >
             <Card className="border border-gray-200 rounded-2xl">
               <CardContent className="p-6">
@@ -207,7 +207,7 @@ export default function MateriaDashboardPage() {
 
           <div
             className="hover:shadow-lg transition-shadow cursor-pointer"
-            onClick={() => push(`/disciplinas/${id}/videoaulas`)}
+            onClick={() => push(`/aluno/disciplinas/${id}/videoaulas`)}
           >
             <Card className="border border-gray-200 rounded-2xl">
               <CardContent className="p-6">
@@ -230,7 +230,7 @@ export default function MateriaDashboardPage() {
 
           <div
             className="hover:shadow-lg transition-shadow cursor-pointer"
-            onClick={() => push(`/disciplinas/${id}/resumos`)}
+            onClick={() => push(`/aluno/disciplinas/${id}/resumos`)}
           >
             <Card className="border border-gray-200 rounded-2xl">
               <CardContent className="p-6">

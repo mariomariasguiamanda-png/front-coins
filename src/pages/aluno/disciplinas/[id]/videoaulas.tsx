@@ -9,7 +9,27 @@ import {
   videoaulas as mockVideos,
 } from "@/lib/mock/aluno";
 import { Video, ArrowLeft, Play } from "lucide-react";
+import {
+  FaCalculator,
+  FaFlask,
+  FaGlobeAmericas,
+  FaBook,
+  FaAtom,
+  FaPalette,
+} from "react-icons/fa";
 import { resolverTema } from "@/modules/aluno/tema";
+
+type IconComponent = (props: { className?: string }) => JSX.Element;
+
+const iconByDisciplina: Record<string, IconComponent> = {
+  mat: (p) => <FaCalculator {...p} />,
+  port: (p) => <FaBook {...p} />,
+  hist: (p) => <FaBook {...p} />,
+  geo: (p) => <FaGlobeAmericas {...p} />,
+  bio: (p) => <FaFlask {...p} />,
+  fis: (p) => <FaAtom {...p} />,
+  art: (p) => <FaPalette {...p} />,
+};
 
 function nomePorSlug(id: string) {
   const mapa: Record<string, string> = {
@@ -36,6 +56,7 @@ export default function VideoaulasPage() {
 
   const tituloDisciplina = disc?.nome || nomePorSlug(id);
   const tema = resolverTema({ id, nome: disc?.nome, queryTema: query.tema });
+  const IconComponent = iconByDisciplina[id] || FaBook;
 
   return (
     <AlunoLayout>
@@ -43,17 +64,15 @@ export default function VideoaulasPage() {
         {/* Cabeçalho */}
         <div className="flex items-start gap-4">
           <button
-            onClick={() => push(`/homepage-aluno/disciplinas/${id}`)}
+            onClick={() => push(`/aluno/disciplinas/${id}`)}
             className="px-3 py-1.5 rounded-lg bg-gray-100 hover:bg-gray-200 text-sm flex items-center gap-2"
           >
             <ArrowLeft className="h-4 w-4" />
             Voltar
           </button>
           <div className="flex items-center gap-3">
-            <div
-              className={`p-2 rounded-lg bg-gradient-to-br ${tema.grad} bg-opacity-10`}
-            >
-              <Video className={`h-5 w-5 ${tema.text}`} />
+            <div className={`p-3 rounded-lg bg-gradient-to-br ${tema.grad}`}>
+              <IconComponent className="h-6 w-6 text-white" />
             </div>
             <div>
               <h1
@@ -103,17 +122,20 @@ export default function VideoaulasPage() {
 
                   {/* Informações do vídeo */}
                   <div>
-                    <h3 className="font-semibold text-lg mb-2">
-                      {video.titulo}
-                    </h3>
+                    <div className="flex items-center gap-3 mb-2">
+                      <div
+                        className={`p-2 rounded-lg bg-gradient-to-br ${tema.grad}`}
+                      >
+                        <IconComponent className="h-4 w-4 text-white" />
+                      </div>
+                      <h3 className="font-semibold text-lg">{video.titulo}</h3>
+                    </div>
                     <p className="text-sm text-gray-600 mb-3 line-clamp-2">
                       {video.descricao}
                     </p>
                     <button
                       onClick={() =>
-                        push(
-                          `/homepage-aluno/disciplinas/${id}/videoaulas/${video.id}`
-                        )
+                        push(`/aluno/disciplinas/${id}/videoaulas/${video.id}`)
                       }
                       className="w-full px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition"
                     >

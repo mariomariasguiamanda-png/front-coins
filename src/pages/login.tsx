@@ -45,7 +45,7 @@ export default function LoginPage() {
       localStorage.setItem("token", data.token);
 
       // Redirecionar para a página inicial do usuário logado
-      router.push("/homepage-aluno");
+      router.push("/aluno");
     } catch (err: any) {
       setError(err.message || "Não foi possível fazer login.");
     } finally {

@@ -26,7 +26,7 @@ export const BackButton: React.FC<BackButtonProps> = ({
         router.push(targetRoute, undefined, { scroll: false });
       } else if (router.query.id && typeof router.query.id === "string") {
         // Se estamos em uma página de disciplina, voltar para a disciplina base
-        router.push(`/disciplinas/${router.query.id}`, undefined, {
+        router.push(`/aluno/disciplinas/${router.query.id}`, undefined, {
           scroll: false,
         });
       } else {
