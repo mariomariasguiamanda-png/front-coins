@@ -1,14 +1,36 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import AlunoLayout from "@/components/layout/AlunoLayout";
 import { Card, CardContent } from "@/components/ui/Card";
-import { Trophy, Medal, Award } from "lucide-react";
+import { Button } from "@/components/ui/Button";
+import {
+  Trophy,
+  Medal,
+  Award,
+  ChevronDown,
+  ChevronUp,
+  Users,
+} from "lucide-react";
 import { rankingTurma } from "@/lib/mock/aluno";
 
 export default function RankingPage() {
+  const [showFullRanking, setShowFullRanking] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) return null;
+
+  // Mostrar apenas os top 3 inicialmente
+  const topRanking = rankingTurma.slice(0, 3);
+  const displayedRanking = showFullRanking ? rankingTurma : topRanking;
+
   return (
     <AlunoLayout>
-      <div className="space-y-6">
+      <div className="page-enter space-y-6">
         <div className="flex items-center gap-3">
           <div className="p-2 rounded-lg bg-gradient-to-br from-amber-500 to-amber-600 bg-opacity-10">
             <Trophy className="h-5 w-5 text-amber-600" />
@@ -23,76 +45,141 @@ export default function RankingPage() {
           </div>
         </div>
 
-        <Card className="rounded-2xl bg-white border border-gray-200">
+        <Card className="rounded-2xl bg-white border border-gray-200 card-bounce card-bounce-delay-1">
           <CardContent className="p-6">
-            <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-              <Medal className="h-5 w-5 text-amber-500" />
-              Ranking Geral por Moedas
-            </h2>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold flex items-center gap-2">
+                <Medal className="h-5 w-5 text-amber-500" />
+                Ranking Geral por Moedas
+              </h2>
+
+              <Button
+                onClick={() => setShowFullRanking(!showFullRanking)}
+                size="sm"
+                className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white border-0 shadow-md hover:shadow-lg smooth-transition"
+              >
+                <Users className="h-4 w-4 mr-2" />
+                <span className="font-medium">
+                  {showFullRanking ? "Ver Top 3" : "Ver Ranking Completo"}
+                </span>
+                {showFullRanking ? (
+                  <ChevronUp className="h-4 w-4 ml-2" />
+                ) : (
+                  <ChevronDown className="h-4 w-4 ml-2" />
+                )}
+              </Button>
+            </div>
 
             <div className="space-y-3">
-              {rankingTurma.map((aluno, index) => (
-                <div
-                  key={aluno.nome}
-                  className={`flex items-center justify-between p-4 rounded-lg border ${
-                    index === 0
-                      ? "bg-gradient-to-r from-amber-50 to-yellow-50 border-amber-200"
-                      : index === 1
-                      ? "bg-gradient-to-r from-gray-50 to-slate-50 border-gray-200"
-                      : index === 2
-                      ? "bg-gradient-to-r from-orange-50 to-amber-50 border-orange-200"
-                      : "bg-gray-50 border-gray-200"
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <div
-                      className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${
-                        index === 0
-                          ? "bg-amber-500 text-white"
-                          : index === 1
-                          ? "bg-gray-400 text-white"
-                          : index === 2
-                          ? "bg-orange-500 text-white"
-                          : "bg-gray-300 text-gray-700"
-                      }`}
-                    >
-                      {index + 1}
-                    </div>
-                    <div>
-                      <p className="font-medium">{aluno.nome}</p>
-                      <p className="text-sm text-gray-600">
-                        Posição #{aluno.posicao}
-                      </p>
-                    </div>
-                  </div>
+              {displayedRanking.map((aluno, displayIndex) => {
+                const isCurrentUser = aluno.nome === "Ana Souza";
+                const actualPosition = aluno.posicao - 1; // Índice real baseado na posição
 
-                  <div className="flex items-center gap-2">
-                    <Award className="h-4 w-4 text-amber-500" />
-                    <span className="font-semibold text-amber-600">
-                      {aluno.moedas} moedas
-                    </span>
+                return (
+                  <div
+                    key={aluno.nome}
+                    className={`flex items-center justify-between p-4 rounded-lg border smooth-transition ${
+                      isCurrentUser
+                        ? "bg-gradient-to-r from-violet-50 to-purple-50 border-violet-200 ring-2 ring-violet-200"
+                        : actualPosition === 0
+                        ? "bg-gradient-to-r from-amber-50 to-yellow-50 border-amber-200"
+                        : actualPosition === 1
+                        ? "bg-gradient-to-r from-gray-50 to-slate-50 border-gray-200"
+                        : actualPosition === 2
+                        ? "bg-gradient-to-r from-orange-50 to-amber-50 border-orange-200"
+                        : "bg-gray-50 border-gray-200 hover:bg-gray-100"
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div
+                        className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${
+                          isCurrentUser
+                            ? "bg-violet-500 text-white"
+                            : actualPosition === 0
+                            ? "bg-amber-500 text-white"
+                            : actualPosition === 1
+                            ? "bg-gray-400 text-white"
+                            : actualPosition === 2
+                            ? "bg-orange-500 text-white"
+                            : "bg-gray-300 text-gray-700"
+                        }`}
+                      >
+                        {aluno.posicao}
+                      </div>
+                      <div>
+                        <p
+                          className={`font-medium ${
+                            isCurrentUser ? "text-violet-700" : ""
+                          }`}
+                        >
+                          {aluno.nome}
+                          {isCurrentUser && (
+                            <span className="ml-2 px-2 py-1 bg-violet-100 text-violet-700 text-xs rounded-full">
+                              Você
+                            </span>
+                          )}
+                        </p>
+                        <p className="text-sm text-gray-600">
+                          {actualPosition < 3
+                            ? actualPosition === 0
+                              ? "🥇 Primeiro lugar"
+                              : actualPosition === 1
+                              ? "🥈 Segundo lugar"
+                              : "🥉 Terceiro lugar"
+                            : `Posição #${aluno.posicao}`}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <Award
+                        className={`h-4 w-4 ${
+                          isCurrentUser ? "text-violet-500" : "text-amber-500"
+                        }`}
+                      />
+                      <span
+                        className={`font-semibold ${
+                          isCurrentUser ? "text-violet-600" : "text-amber-600"
+                        }`}
+                      >
+                        {aluno.moedas} moedas
+                      </span>
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
+
+            {!showFullRanking && rankingTurma.length > 3 && (
+              <div className="mt-4 text-center text-sm text-gray-500">
+                Mostrando top 3 de {rankingTurma.length} alunos
+              </div>
+            )}
+
+            {showFullRanking && (
+              <div className="mt-4 text-center text-sm text-gray-500">
+                Exibindo todos os {rankingTurma.length} alunos da turma
+              </div>
+            )}
           </CardContent>
         </Card>
 
-        <Card className="rounded-2xl bg-white border border-gray-200">
+        <Card className="rounded-2xl bg-white border border-gray-200 card-bounce card-bounce-delay-2">
           <CardContent className="p-6">
-            <h2 className="text-lg font-semibold mb-4">
+            <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+              <Trophy className="h-5 w-5 text-blue-500" />
               Estatísticas da Turma
             </h2>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="text-center p-4 bg-blue-50 rounded-lg">
+              <div className="text-center p-4 bg-blue-50 rounded-lg hover-lift smooth-transition">
                 <div className="text-2xl font-bold text-blue-600">
                   {rankingTurma.length}
                 </div>
                 <div className="text-sm text-blue-700">Total de Alunos</div>
               </div>
 
-              <div className="text-center p-4 bg-green-50 rounded-lg">
+              <div className="text-center p-4 bg-green-50 rounded-lg hover-lift smooth-transition">
                 <div className="text-2xl font-bold text-green-600">
                   {Math.round(
                     rankingTurma.reduce((acc, aluno) => acc + aluno.moedas, 0) /
@@ -102,7 +189,7 @@ export default function RankingPage() {
                 <div className="text-sm text-green-700">Média de Moedas</div>
               </div>
 
-              <div className="text-center p-4 bg-purple-50 rounded-lg">
+              <div className="text-center p-4 bg-purple-50 rounded-lg hover-lift smooth-transition">
                 <div className="text-2xl font-bold text-purple-600">
                   {Math.max(...rankingTurma.map((aluno) => aluno.moedas))}
                 </div>
