@@ -410,16 +410,10 @@ export default function Frequencia() {
 
       {/* ==================== MODAL DE ATIVIDADES DO DIA ==================== */}
       {showDayModal && selectedDate && (
-        <div
-          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
-          onClick={handleCloseDayModal}
-        >
-          <div
-            className="bg-white rounded-2xl shadow-2xl max-w-lg w-full max-h-[80vh] overflow-hidden card-bounce"
-            onClick={(e) => e.stopPropagation()}
-          >
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full max-h-[80vh] overflow-hidden card-bounce">
             {/* Header do Modal */}
-            <div className="bg-[#4B2992] p-6 text-white border-b border-[#3a206b]">
+            <div className="bg-gradient-to-r from-violet-500 to-violet-600 p-6 text-white">
               <div className="flex items-center justify-between">
                 <div>
                   <h3 className="text-xl font-bold">Atividades do Dia</h3>

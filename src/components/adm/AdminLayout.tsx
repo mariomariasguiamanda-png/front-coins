@@ -1,4 +1,6 @@
-import { ReactNode } from "react";
+"use client";
+
+import { ReactNode, useState } from "react";
 import { HeaderAdm } from "./HeaderAdm";
 import { SidebarAdm } from "./SidebarAdm";
 
@@ -7,16 +9,29 @@ interface AdminLayoutProps {
 }
 
 export function AdminLayout({ children }: AdminLayoutProps) {
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+
   return (
     <div className="min-h-screen bg-violet-50">
-      <HeaderAdm />
-      
-      <div className="flex pt-16">
-        <aside className="fixed h-[calc(100vh-4rem)] w-64 border-r bg-white">
+      <HeaderAdm
+        onToggleSidebar={() => setSidebarOpen((v) => !v)}
+        sidebarOpen={sidebarOpen}
+      />
+
+      <div className="flex">
+        <aside
+          className={`fixed h-[calc(100vh-3.5rem)] border-r bg-white transition-all duration-300 ${
+            sidebarOpen ? "w-64" : "w-0 overflow-hidden"
+          }`}
+        >
           <SidebarAdm />
         </aside>
-        
-        <main className="ml-64 flex-1 p-6">
+
+        <main
+          className={`flex-1 p-6 transition-all duration-300 ${
+            sidebarOpen ? "ml-64" : "ml-0"
+          }`}
+        >
           {children}
         </main>
       </div>
