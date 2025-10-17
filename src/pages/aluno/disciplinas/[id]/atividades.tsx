@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/router";
 import AlunoLayout from "@/components/layout/AlunoLayout";
 import { Card, CardContent } from "@/components/ui/Card";
+import NotificationCard from "@/components/ui/NotificationCard";
 import {
   disciplinas as mockDisciplinas,
   atividades as mockAtividades,
@@ -85,16 +86,21 @@ export default function AtividadesPage() {
     );
   };
 
+  const [showNotification, setShowNotification] = useState(false);
+  const [notificationMessage, setNotificationMessage] = useState("");
+
   const gerarRevisaoHoje = () => {
     if (diasRevisao.length === 0) {
-      alert("Selecione pelo menos um intervalo de revisão!");
+      setNotificationMessage("Selecione pelo menos um intervalo de revisão!");
+      setShowNotification(true);
       return;
     }
-    alert(
+    setNotificationMessage(
       `Revisão programada para os dias: ${diasRevisao.join(
         ", "
       )}. Bons estudos!`
     );
+    setShowNotification(true);
   };
 
   const atividades = atividadesBase;
@@ -117,7 +123,7 @@ export default function AtividadesPage() {
             Voltar
           </button>
           <div className="flex items-center gap-3">
-            <div className={`p-3 rounded-lg bg-gradient-to-br ${tema.grad}`}>
+            <div className="p-3 rounded-lg" style={{ backgroundColor: cor }}>
               <IconComponent className="h-6 w-6 text-white" />
             </div>
             <div>
@@ -257,6 +263,14 @@ export default function AtividadesPage() {
           </Card>
         )}
       </div>
+
+      {/* Componente de Notificação */}
+      <NotificationCard
+        show={showNotification}
+        onClose={() => setShowNotification(false)}
+        message={notificationMessage}
+        type={notificationMessage.includes("Selecione") ? "warning" : "success"}
+      />
     </AlunoLayout>
   );
 }

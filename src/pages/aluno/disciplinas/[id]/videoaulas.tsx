@@ -71,7 +71,10 @@ export default function VideoaulasPage() {
             Voltar
           </button>
           <div className="flex items-center gap-3">
-            <div className={`p-3 rounded-lg bg-gradient-to-br ${tema.grad}`}>
+            <div
+              className="p-3 rounded-lg"
+              style={{ backgroundColor: disc?.cor || "#6B7280" }}
+            >
               <IconComponent className="h-6 w-6 text-white" />
             </div>
             <div>

@@ -1,50 +1,128 @@
-import { Bell, User } from "lucide-react";
-import Image from "next/image";
-import Link from "next/link";
-import { ReactNode } from "react";
-import { SidebarProfessor } from "./SidebarProfessor";
-import { Button } from "../ui/Button";
+"use client";
+
+import { ReactNode, useState } from "react";
+import { useRouter } from "next/router";
+import { Roboto } from "next/font/google";
+import {
+  BarChart3,
+  Medal,
+  CalendarDays,
+  HelpCircle,
+  Trophy,
+  Activity,
+  Users,
+  BookOpen,
+  Settings,
+} from "lucide-react";
+import { PiBooksBold } from "react-icons/pi";
+import { FaUserAlt } from "react-icons/fa";
+import { IoHome } from "react-icons/io5";
+import ProfessorHeader from "@/components/layout/ProfessorHeader";
+import SidebarProfessor from "@/components/layout/SidebarProfessor";
+
+const roboto = Roboto({ subsets: ["latin"], weight: ["400", "500", "700"] });
 
 interface ProfessorLayoutProps {
   children: ReactNode;
 }
 
 export function ProfessorLayout({ children }: ProfessorLayoutProps) {
-  return (
-    <div className="min-h-screen bg-violet-50">
-      {/* Header */}
-      <header className="fixed top-0 z-50 w-full border-b bg-white shadow-sm">
-        <div className="flex h-16 items-center px-4 md:px-6">
-          <Link href="/" className="mr-6">
-            <Image
-              src="/logo-coins.png"
-              alt="Coins for Study"
-              width={120}
-              height={40}
-              className="dark:brightness-200"
-            />
-          </Link>
-          <div className="ml-auto flex items-center gap-4">
-            <Button variant="outline" size="sm" className="relative w-10 h-10 p-0">
-              <Bell className="h-5 w-5" />
-              <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] text-white">
-                3
-              </span>
-            </Button>
-            <Button variant="outline" size="sm" className="w-10 h-10 p-0">
-              <User className="h-5 w-5" />
-            </Button>
-          </div>
-        </div>
-      </header>
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const router = useRouter();
 
-      {/* Sidebar and Main Content */}
-      <div className="flex pt-16">
-        <aside className="fixed h-[calc(100vh-4rem)] w-64 border-r bg-white">
-          <SidebarProfessor />
-        </aside>
-        
-        <main className="ml-64 flex-1 p-6">
+  // Detecta a rota ativa baseada na URL atual
+  const getActiveKey = () => {
+    const path = router.asPath;
+    if (path === "/professor" || path === "/professor/") return "dashboard";
+    if (path.includes("/disciplinas")) return "disciplinas";
+    if (path.includes("/desempenho")) return "desempenho";
+    if (path.includes("/notas")) return "notas";
+    if (path.includes("/config-moedas")) return "moedas";
+    if (path.includes("/pontos-precos")) return "pontos";
+    if (path.includes("/resumos")) return "resumos";
+    if (path.includes("/videoaulas")) return "videoaulas";
+    if (path.includes("/atividades")) return "atividades";
+    if (path.includes("/perfil")) return "perfil";
+    if (path.includes("/dashboard")) return "dashboard";
+    return "dashboard";
+  };
+
+  const menu = [
+    {
+      key: "dashboard",
+      label: "Dashboard",
+      icon: IoHome,
+      href: "/professor/dashboard",
+    },
+    {
+      key: "atividades",
+      label: "Atividades",
+      icon: Activity,
+      href: "/professor/atividades",
+    },
+    {
+      key: "resumos",
+      label: "Resumos",
+      icon: BookOpen,
+      href: "/professor/resumos",
+    },
+    {
+      key: "videoaulas",
+      label: "Videoaulas",
+      icon: PiBooksBold,
+      href: "/professor/videoaulas",
+    },
+    {
+      key: "notas",
+      label: "Notas",
+      icon: BarChart3,
+      href: "/professor/notas",
+    },
+    {
+      key: "desempenho",
+      label: "Desempenho",
+      icon: Trophy,
+      href: "/professor/desempenho",
+    },
+    {
+      key: "moedas",
+      label: "Configurar Pontos",
+      icon: Settings,
+      href: "/professor/config-moedas",
+    },
+    {
+      key: "perfil",
+      label: "Perfil",
+      icon: FaUserAlt,
+      href: "/professor/perfil",
+    },
+  ];
+
+  const handleMenuChange = (key: string) => {
+    const menuItem = menu.find((item) => item.key === key);
+    if (menuItem) {
+      router.push(menuItem.href);
+    }
+  };
+
+  return (
+    <div
+      className={`${roboto.className} min-h-screen w-screen bg-white text-black`}
+    >
+      <ProfessorHeader
+        onToggleSidebar={() => setSidebarOpen((v) => !v)}
+        sidebarOpen={sidebarOpen}
+      />
+      <div className="flex">
+        <SidebarProfessor
+          open={sidebarOpen}
+          active={getActiveKey()}
+          items={menu}
+          onChange={handleMenuChange}
+        />
+
+        {/* Painel principal rolável */}
+        <main className="flex-1 overflow-y-auto px-10 py-6 bg-gray-50 w-full max-w-[1600px] mx-auto">
           {children}
         </main>
       </div>

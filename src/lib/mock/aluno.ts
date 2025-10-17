@@ -73,12 +73,13 @@ export const aluno = {
 };
 
 export const disciplinas: Disciplina[] = [
-  { id: "mat", nome: "Matemática", cor: "#8B5CF6", moedas: 120, progresso: 72 },
-  { id: "port", nome: "Português", cor: "#A78BFA", moedas: 80, progresso: 58 },
-  { id: "hist", nome: "História", cor: "#7C3AED", moedas: 60, progresso: 44 },
-  { id: "geo", nome: "Geografia", cor: "#6D28D9", moedas: 40, progresso: 37 },
-  { id: "bio", nome: "Biologia", cor: "#5B21B6", moedas: 70, progresso: 63 },
-  { id: "fis", nome: "Física", cor: "#4C1D95", moedas: 50, progresso: 41 },
+  { id: "mat", nome: "Matemática", cor: "#2563EB", moedas: 120, progresso: 72 }, // Azul
+  { id: "port", nome: "Português", cor: "#DC2626", moedas: 80, progresso: 58 }, // Vermelho
+  { id: "hist", nome: "História", cor: "#D97706", moedas: 60, progresso: 44 }, // Laranja
+  { id: "geo", nome: "Geografia", cor: "#059669", moedas: 40, progresso: 37 }, // Verde
+  { id: "bio", nome: "Biologia", cor: "#7C3AED", moedas: 70, progresso: 63 }, // Roxo
+  { id: "fis", nome: "Física", cor: "#1F2937", moedas: 50, progresso: 41 }, // Cinza escuro
+  { id: "art", nome: "Artes", cor: "#EC4899", moedas: 30, progresso: 25 }, // Rosa
 ];
 
 export const rankingTurma = [

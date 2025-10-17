@@ -4,6 +4,7 @@ import { useRouter } from "next/router";
 import { useState } from "react";
 import AlunoLayout from "@/components/layout/AlunoLayout";
 import { Card, CardContent } from "@/components/ui/Card";
+import ResultCard from "@/components/ui/ResultCard";
 import {
   disciplinas as mockDisciplinas,
   atividades as mockAtividades,
@@ -34,11 +35,24 @@ export default function AtividadeDetalhePage() {
   const [respostasMultipla, setRespostasMultipla] = useState<
     Record<string, number>
   >({});
+  const [showResult, setShowResult] = useState(false);
+  const [resultData, setResultData] = useState({
+    acertos: 0,
+    total: 0,
+    nota: 0,
+    moedas: 0,
+  });
 
   const handleEnviar = () => {
     if (resposta.trim()) {
       setEnviado(true);
-      alert("Resposta enviada com sucesso!");
+      setResultData({
+        acertos: 1,
+        total: 1,
+        nota: 10,
+        moedas: atividade?.moedas || 0,
+      });
+      setShowResult(true);
     }
   };
 
@@ -55,12 +69,16 @@ export default function AtividadeDetalhePage() {
           acertos++;
         }
       });
-      const nota = (acertos / (atividade?.questoes?.length || 1)) * 10;
-      alert(
-        `Respostas enviadas! Você acertou ${acertos} de ${
-          atividade?.questoes?.length
-        } questões. Nota: ${nota.toFixed(1)}`
-      );
+      const total = atividade?.questoes?.length || 1;
+      const nota = (acertos / total) * 10;
+
+      setResultData({
+        acertos,
+        total,
+        nota,
+        moedas: atividade?.moedas || 0,
+      });
+      setShowResult(true);
     }
   };
 
@@ -102,9 +120,10 @@ export default function AtividadeDetalhePage() {
           </button>
           <div className="flex items-center gap-3">
             <div
-              className={`p-2 rounded-lg bg-gradient-to-br ${tema.grad} bg-opacity-10`}
+              className="p-3 rounded-lg"
+              style={{ backgroundColor: disc?.cor || "#6B7280" }}
             >
-              <ClipboardList className={`h-5 w-5 ${tema.text}`} />
+              <ClipboardList className="h-5 w-5 text-white" />
             </div>
             <div>
               <h1
@@ -307,6 +326,18 @@ export default function AtividadeDetalhePage() {
           </>
         )}
       </div>
+
+      {/* Componente de Resultado */}
+      <ResultCard
+        show={showResult}
+        onClose={() => setShowResult(false)}
+        acertos={resultData.acertos}
+        totalQuestoes={resultData.total}
+        nota={resultData.nota}
+        moedas={resultData.moedas}
+        tipo="atividade"
+        disciplina={tituloDisciplina}
+      />
     </AlunoLayout>
   );
 }

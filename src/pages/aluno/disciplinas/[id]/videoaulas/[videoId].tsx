@@ -69,9 +69,10 @@ export default function VideoaulaDetalhePage() {
           </button>
           <div className="flex items-center gap-3">
             <div
-              className={`p-2 rounded-lg bg-gradient-to-br ${tema.grad} bg-opacity-10`}
+              className="p-3 rounded-lg"
+              style={{ backgroundColor: disc?.cor || "#6B7280" }}
             >
-              <Play className={`h-5 w-5 ${tema.text}`} />
+              <Play className="h-5 w-5 text-white" />
             </div>
             <div>
               <h1

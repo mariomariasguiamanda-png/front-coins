@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/router";
 import AlunoLayout from "@/components/layout/AlunoLayout";
 import { Card, CardContent } from "@/components/ui/Card";
+import NotificationCard from "@/components/ui/NotificationCard";
 import {
   disciplinas as mockDisciplinas,
   resumos as mockResumos,
@@ -64,8 +65,10 @@ export default function ResumosPage() {
     );
   };
 
+  const [showNotification, setShowNotification] = useState(false);
+
   const gerarRevisaoHoje = () => {
-    alert("Revisão de resumos gerada com base nos dias selecionados!");
+    setShowNotification(true);
   };
 
   return (
@@ -81,7 +84,10 @@ export default function ResumosPage() {
             Voltar
           </button>
           <div className="flex items-center gap-3">
-            <div className={`p-3 rounded-lg bg-gradient-to-br ${tema.grad}`}>
+            <div
+              className="p-3 rounded-lg"
+              style={{ backgroundColor: disc?.cor || "#6B7280" }}
+            >
               <IconComponent className="h-6 w-6 text-white" />
             </div>
             <div>
@@ -205,6 +211,14 @@ export default function ResumosPage() {
           </Card>
         )}
       </div>
+
+      {/* Componente de Notificação */}
+      <NotificationCard
+        show={showNotification}
+        onClose={() => setShowNotification(false)}
+        message="Revisão de resumos gerada com base nos dias selecionados!"
+        type="success"
+      />
     </AlunoLayout>
   );
 }
