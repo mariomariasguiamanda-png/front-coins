@@ -473,6 +473,65 @@ a {
   opacity: 0;
 }
 
+/* --- Admin Select light overrides (high specificity, post-utilities) --- */
+/* Trigger inside admin layout */
+.admin-theme .sh-select-trigger {
+  background-color: #ffffff !important;
+  color: #0f172a !important; /* slate-900 */
+  border-color: #cbd5e1 !important; /* slate-300 */
+  border-radius: 0.5rem !important; /* rounded-lg */
+}
+.admin-theme .sh-select-trigger:focus {
+  outline: none !important;
+  box-shadow: 0 0 0 2px rgba(124, 58, 237, 0.6) !important; /* ring-violet-500 */
+}
+
+/* Dropdown content is rendered in a portal (outside admin-theme), so target directly */
+.sh-select-content {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  border: 1px solid #e5e7eb !important; /* gray-200 */
+}
+.sh-select-content [role="option"][data-highlighted] {
+  background-color: #f5f3ff !important; /* violet-50 */
+  color: #6d28d9 !important; /* violet-700 */
+}
+
+/* When body has admin-body (set by AdminLayout), force light select visuals globally */
+.admin-body .sh-select-trigger {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  border-color: #cbd5e1 !important;
+  border-radius: 0.5rem !important;
+}
+.admin-body .sh-select-trigger:focus {
+  outline: none !important;
+  box-shadow: 0 0 0 2px rgba(124, 58, 237, 0.6) !important;
+}
+.admin-body .sh-select-content {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  border: 1px solid #e5e7eb !important;
+}
+.admin-body .sh-select-content [role="option"][data-highlighted] {
+  background-color: #f5f3ff !important;
+  color: #6d28d9 !important;
+}
+
+/* Force light form fields inside admin dialogs (marked with .admin-form-light on DialogContent) */
+.admin-form-light select,
+.admin-form-light textarea {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  border: 1px solid #cbd5e1 !important; /* slate-300 */
+  color-scheme: light !important;
+}
+.admin-form-light select:focus,
+.admin-form-light textarea:focus {
+  outline: none !important;
+  box-shadow: 0 0 0 2px rgba(124, 58, 237, 0.6) !important; /* ring-violet-500 */
+  border-color: transparent !important;
+}
 /* Animações para ResultCard */
 @keyframes bounce-in {
   0% {
