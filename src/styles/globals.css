@@ -595,7 +595,6 @@ a {
   box-shadow: 0 0 0 2px rgba(124, 58, 237, 0.6) !important; /* ring-violet-500 */
   border-color: transparent !important;
 }
-}
 /* Animações para ResultCard */
 @keyframes bounce-in {
   0% {
