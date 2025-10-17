@@ -2,6 +2,7 @@
 
 import { Card, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
+import NotificationCard from "@/components/ui/NotificationCard";
 import {
   HelpCircle,
   Wrench,
@@ -47,6 +48,7 @@ export default function Ajuda() {
   const [expandedFaq, setExpandedFaq] = useState<number | null>(null);
   const [problemaDescricao, setProblemaDescricao] = useState("");
   const [arquivoAnexado, setArquivoAnexado] = useState<File | null>(null);
+  const [showNotification, setShowNotification] = useState(false);
 
   // ==================== HANDLERS ====================
   const toggleFaq = (index: number) => {
@@ -67,9 +69,7 @@ export default function Ajuda() {
         descricao: problemaDescricao,
         arquivo: arquivoAnexado?.name,
       });
-      alert(
-        "Ticket enviado com sucesso! Nossa equipe entrará em contato em breve."
-      );
+      setShowNotification(true);
       setProblemaDescricao("");
       setArquivoAnexado(null);
     }
@@ -232,6 +232,14 @@ export default function Ajuda() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Componente de Notificação */}
+      <NotificationCard
+        show={showNotification}
+        onClose={() => setShowNotification(false)}
+        message="Ticket enviado com sucesso! Nossa equipe entrará em contato em breve."
+        type="success"
+      />
     </div>
   );
 }

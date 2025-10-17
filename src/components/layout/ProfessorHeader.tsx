@@ -4,14 +4,17 @@ import Image from "next/image";
 import Link from "next/link";
 import { Bell, Menu, ChevronLeft, X } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
-import { admin, notificacoes, type Notificacao } from "@/lib/mock/admin";
+import { professor, notificacoes, type Notificacao } from "@/lib/mock/professor";
 
-type HeaderAdmProps = {
+type ProfessorHeaderProps = {
   onToggleSidebar?: () => void;
   sidebarOpen?: boolean;
 };
 
-export function HeaderAdm({ onToggleSidebar, sidebarOpen }: HeaderAdmProps) {
+export default function ProfessorHeader({
+  onToggleSidebar,
+  sidebarOpen,
+}: ProfessorHeaderProps) {
   const [notificacoesOpen, setNotificacoesOpen] = useState(false);
   const [listaNotificacoes, setListaNotificacoes] =
     useState<Notificacao[]>(notificacoes);
@@ -87,7 +90,7 @@ export function HeaderAdm({ onToggleSidebar, sidebarOpen }: HeaderAdmProps) {
               )}
             </button>
           )}
-          <Link href="/adm/dashboard" className="flex items-center gap-2 group">
+          <Link href="/professor/inicio" className="flex items-center gap-2 group">
             <Image
               src="/logo-coins.png"
               alt="Coins for Study"
@@ -196,7 +199,7 @@ export function HeaderAdm({ onToggleSidebar, sidebarOpen }: HeaderAdmProps) {
                               <span
                                 className={`font-medium ${notificacao.cor}`}
                               >
-                                {notificacao.tipo || "Sistema"}
+                                {notificacao.disciplina || "Sistema"}
                               </span>
                               <span className="text-gray-500">
                                 {formatarTempoRelativo(notificacao.dataHora)}
@@ -212,14 +215,14 @@ export function HeaderAdm({ onToggleSidebar, sidebarOpen }: HeaderAdmProps) {
             )}
           </div>
           <Link
-            href="/adm/perfil"
+            href="/professor/perfil"
             className="flex items-center gap-2 rounded-lg bg-white/10 hover:bg-white/20 px-2 py-1 transition"
           >
             <div className="h-7 w-7 rounded-full bg-gradient-to-br from-purple-400 to-purple-700 grid place-items-center text-xs font-bold text-[#fff]">
-              {admin.nome.split(" ")[0][0]}
+              {professor.nome.split(" ")[0][0]}
             </div>
             <span className="text-sm hidden sm:block max-w-[140px] truncate">
-              {admin.nome}
+              {professor.nome}
             </span>
           </Link>
         </div>

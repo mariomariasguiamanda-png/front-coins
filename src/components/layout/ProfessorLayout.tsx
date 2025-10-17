@@ -17,16 +17,17 @@ import {
 import { PiBooksBold } from "react-icons/pi";
 import { FaUserAlt } from "react-icons/fa";
 import { IoHome } from "react-icons/io5";
+import { Card, CardContent } from "@/components/ui/Card";
 import ProfessorHeader from "@/components/layout/ProfessorHeader";
 import SidebarProfessor from "@/components/layout/SidebarProfessor";
 
 const roboto = Roboto({ subsets: ["latin"], weight: ["400", "500", "700"] });
 
-interface ProfessorLayoutProps {
+type ProfessorLayoutProps = {
   children: ReactNode;
-}
+};
 
-export function ProfessorLayout({ children }: ProfessorLayoutProps) {
+export default function ProfessorLayout({ children }: ProfessorLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const router = useRouter();
 
@@ -36,65 +37,69 @@ export function ProfessorLayout({ children }: ProfessorLayoutProps) {
     if (path === "/professor" || path === "/professor/") return "dashboard";
     if (path.includes("/disciplinas")) return "disciplinas";
     if (path.includes("/desempenho")) return "desempenho";
-    if (path.includes("/notas")) return "notas";
-    if (path.includes("/config-moedas")) return "moedas";
+    if (path.includes("/notas-alunos")) return "notas";
+    if (path.includes("/moedas-atividade")) return "moedas";
     if (path.includes("/pontos-precos")) return "pontos";
-    if (path.includes("/resumos")) return "resumos";
-    if (path.includes("/videoaulas")) return "videoaulas";
-    if (path.includes("/atividades")) return "atividades";
+    if (path.includes("/revisoes")) return "revisoes";
     if (path.includes("/perfil")) return "perfil";
-    if (path.includes("/dashboard")) return "dashboard";
+    if (path.includes("/ajuda")) return "ajuda";
     return "dashboard";
   };
 
   const menu = [
     {
       key: "dashboard",
-      label: "Dashboard",
+      label: "Início",
       icon: IoHome,
-      href: "/professor/dashboard",
+      href: "/professor/inicio",
     },
     {
-      key: "atividades",
-      label: "Atividades",
-      icon: Activity,
-      href: "/professor/atividades",
-    },
-    {
-      key: "resumos",
-      label: "Resumos",
-      icon: BookOpen,
-      href: "/professor/resumos",
-    },
-    {
-      key: "videoaulas",
-      label: "Videoaulas",
+      key: "disciplinas",
+      label: "Disciplinas",
       icon: PiBooksBold,
-      href: "/professor/videoaulas",
-    },
-    {
-      key: "notas",
-      label: "Notas",
-      icon: BarChart3,
-      href: "/professor/notas",
+      href: "/professor/disciplinas",
     },
     {
       key: "desempenho",
-      label: "Desempenho",
-      icon: Trophy,
+      label: "Desempenho por Turma",
+      icon: Activity,
       href: "/professor/desempenho",
     },
     {
+      key: "notas",
+      label: "Notas dos Alunos",
+      icon: BarChart3,
+      href: "/professor/notas-alunos",
+    },
+    {
       key: "moedas",
-      label: "Configurar Pontos",
+      label: "Moedas por Atividade",
+      icon: Medal,
+      href: "/professor/moedas-atividade",
+    },
+    {
+      key: "pontos",
+      label: "Pontos e Preços",
       icon: Settings,
-      href: "/professor/config-moedas",
+      href: "/professor/pontos-precos",
+    },
+    {
+      key: "revisoes",
+      label: "Revisões de Resumos",
+      icon: BookOpen,
+      href: "/professor/revisoes",
     },
     {
       key: "perfil",
-      label: "Perfil",
+      label: "Meu Perfil",
       icon: FaUserAlt,
       href: "/professor/perfil",
+    },
+    {
+      key: "ajuda",
+      label: "Ajuda",
+      icon: HelpCircle,
+      href: "/professor/ajuda",
     },
   ];
 

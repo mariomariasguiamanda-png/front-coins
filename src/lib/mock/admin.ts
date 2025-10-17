@@ -1,3 +1,5 @@
+// Mock data para área do administrador
+
 export type AdminNotificacao = {
   id: string;
   titulo: string;
@@ -5,7 +7,8 @@ export type AdminNotificacao = {
   dataHora: string;
   lida: boolean;
   icone: string;
-  tipo: 'sistema' | 'usuario' | 'relatorio' | 'alerta';
+  tipo: 'sistema' | 'usuario' | 'relatorio' | 'alerta' | 'backup' | 'manutencao';
+  cor?: string;
 };
 
 export const admin = {
@@ -23,7 +26,8 @@ export const adminNotificacoes: AdminNotificacao[] = [
     dataHora: new Date(Date.now() - 1000 * 60 * 30).toISOString(), // 30 minutos atrás
     lida: false,
     icone: '👤',
-    tipo: 'usuario'
+    tipo: 'usuario',
+    cor: 'text-blue-600'
   },
   {
     id: '2',
@@ -32,7 +36,8 @@ export const adminNotificacoes: AdminNotificacao[] = [
     dataHora: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(), // 2 horas atrás
     lida: false,
     icone: '📊',
-    tipo: 'relatorio'
+    tipo: 'relatorio',
+    cor: 'text-purple-600'
   },
   {
     id: '3',
@@ -41,6 +46,27 @@ export const adminNotificacoes: AdminNotificacao[] = [
     dataHora: new Date(Date.now() - 1000 * 60 * 60 * 5).toISOString(), // 5 horas atrás
     lida: false,
     icone: '⚠️',
-    tipo: 'alerta'
+    tipo: 'alerta',
+    cor: 'text-red-600'
+  },
+  {
+    id: '4',
+    titulo: 'Sistema atualizado',
+    mensagem: 'Nova versão da plataforma foi implantada com sucesso',
+    dataHora: new Date(Date.now() - 1000 * 60 * 60 * 8).toISOString(), // 8 horas atrás
+    lida: true,
+    icone: '�',
+    tipo: 'sistema',
+    cor: 'text-green-600'
+  },
+  {
+    id: '5',
+    titulo: 'Backup concluído',
+    mensagem: 'Backup automático dos dados foi realizado com sucesso',
+    dataHora: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(), // 1 dia atrás
+    lida: true,
+    icone: '�',
+    tipo: 'backup',
+    cor: 'text-gray-600'
   }
 ];
