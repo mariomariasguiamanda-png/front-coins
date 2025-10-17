@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
 import { Badge } from "@/components/ui/badge";
-import { createNotification, composeMessages } from "@/services/api/notifications";
 import {
   BookOpen,
   Plus,
@@ -142,21 +141,8 @@ export default function Disciplinas() {
     console.log("Disciplina salva:", id);
   };
 
-  const handleExcluirDisciplina = async (id: number) => {
-    const removed = disciplinas.find((d) => d.id === id);
+  const handleExcluirDisciplina = (id: number) => {
     setDisciplinas((prev) => prev.filter((d) => d.id !== id));
-    if (removed) {
-      const { message, actionType } = composeMessages.disciplineDeleted({
-        adminNome: "Administrador (sessão)",
-        disciplina: removed.nome,
-      });
-      await createNotification({
-        message,
-        actionType,
-        recipients: ["Administrador", "Coordenador"],
-        context: { disciplinaId: removed.id },
-      });
-    }
   };
 
   const handleToggleAtiva = (id: number) => {
