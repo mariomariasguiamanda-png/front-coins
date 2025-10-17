@@ -1,5 +1,3 @@
-// Mock data para área do administrador
-
 export type AdminNotificacao = {
   id: string;
   titulo: string;

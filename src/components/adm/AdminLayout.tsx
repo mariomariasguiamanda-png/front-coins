@@ -12,7 +12,9 @@ interface AdminLayoutProps {
 export function AdminLayout({ children }: AdminLayoutProps) {
   const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [activeItem, setActiveItem] = useState(router.pathname.split("/")[2] || "dashboard");
+  const [activeItem, setActiveItem] = useState(
+    (router?.pathname?.split("/")[2] as string) || "dashboard"
+  );
 
   // Ensure portal-based overlays (Radix Dialog/Select) inherit admin theme via body class
   useEffect(() => {
@@ -32,11 +34,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
       />
 
       <div className="flex">
-        <SidebarAdm
-          open={sidebarOpen}
-          active={activeItem}
-          onChange={setActiveItem}
-        />
+        <SidebarAdm open={sidebarOpen} active={activeItem} onChange={setActiveItem} />
 
         <main
           className={`flex-1 p-6 transition-all duration-300 ${
