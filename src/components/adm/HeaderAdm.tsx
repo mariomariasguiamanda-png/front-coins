@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { Bell, Menu, ChevronLeft, X } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
-import { admin, notificacoes, type Notificacao } from "@/lib/mock/admin";
+import { admin, adminNotificacoes, type AdminNotificacao } from "@/lib/mock/admin";
 
 type HeaderAdmProps = {
   onToggleSidebar?: () => void;
@@ -14,7 +14,7 @@ type HeaderAdmProps = {
 export function HeaderAdm({ onToggleSidebar, sidebarOpen }: HeaderAdmProps) {
   const [notificacoesOpen, setNotificacoesOpen] = useState(false);
   const [listaNotificacoes, setListaNotificacoes] =
-    useState<Notificacao[]>(notificacoes);
+    useState<AdminNotificacao[]>(adminNotificacoes);
   const notificacoesRef = useRef<HTMLDivElement>(null);
 
   // Fechar dropdown ao clicar fora
