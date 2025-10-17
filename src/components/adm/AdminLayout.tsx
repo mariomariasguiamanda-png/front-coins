@@ -10,6 +10,7 @@ interface AdminLayoutProps {
 
 export function AdminLayout({ children }: AdminLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [activeItem, setActiveItem] = useState(router.pathname.split("/")[2] || "dashboard");
 
   return (
     <div className="min-h-screen bg-violet-50">
@@ -19,17 +20,15 @@ export function AdminLayout({ children }: AdminLayoutProps) {
       />
 
       <div className="flex">
-        <aside
-          className={`fixed h-[calc(100vh-3.5rem)] border-r bg-white transition-all duration-300 ${
-            sidebarOpen ? "w-64" : "w-0 overflow-hidden"
-          }`}
-        >
-          <SidebarAdm />
-        </aside>
+        <SidebarAdm
+          open={sidebarOpen}
+          active={activeItem}
+          onChange={setActiveItem}
+        />
 
         <main
           className={`flex-1 p-6 transition-all duration-300 ${
-            sidebarOpen ? "ml-64" : "ml-0"
+            sidebarOpen ? "ml-[280px]" : "ml-[80px]"
           }`}
         >
           {children}
