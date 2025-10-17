@@ -5,7 +5,6 @@ import { AuthProvider } from "@/services/auth/AuthContext";
 import { Roboto } from "next/font/google";
 import Router from "next/router";
 import { useEffect } from "react";
-import { Toaster } from "@/components/ui/Toast";
 
 const roboto = Roboto({ subsets: ["latin"], weight: ["400", "500", "700"] });
 
@@ -37,11 +36,9 @@ export default function MyApp({ Component, pageProps }: AppProps) {
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <title>Coins for Study</title>
       </Head>
-      <Toaster>
-        <div className={roboto.className}>
-          <Component {...pageProps} />
-        </div>
-      </Toaster>
+      <div className={roboto.className}>
+        <Component {...pageProps} />
+      </div>
     </AuthProvider>
   );
 }
