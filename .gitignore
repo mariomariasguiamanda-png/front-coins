@@ -64,5 +64,6 @@ logs
 tmp/
 temp/
 
-# Ignorar metadados do Windows
-*.png:Zone.Identifier
+# Bloquear metadados do Windows e OneDrive
+*.Zone.Identifier
+

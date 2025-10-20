@@ -1,4 +1,7 @@
-import { ReactNode } from "react";
+"use client";
+
+import { ReactNode, useEffect, useState } from "react";
+import { useRouter } from "next/router";
 import { HeaderAdm } from "./HeaderAdm";
 import { SidebarAdm } from "./SidebarAdm";
 
@@ -7,16 +10,37 @@ interface AdminLayoutProps {
 }
 
 export function AdminLayout({ children }: AdminLayoutProps) {
+  const router = useRouter();
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [activeItem, setActiveItem] = useState(
+    (router?.pathname?.split("/")[2] as string) || "dashboard"
+  );
+
+  // Ensure portal-based overlays (Radix Dialog/Select) inherit admin theme via body class
+  useEffect(() => {
+    if (typeof document !== "undefined") {
+      document.body.classList.add("admin-body");
+      return () => {
+        document.body.classList.remove("admin-body");
+      };
+    }
+  }, []);
+
   return (
-    <div className="min-h-screen bg-violet-50">
-      <HeaderAdm />
-      
-      <div className="flex pt-16">
-        <aside className="fixed h-[calc(100vh-4rem)] w-64 border-r bg-white">
-          <SidebarAdm />
-        </aside>
-        
-        <main className="ml-64 flex-1 p-6">
+    <div className="min-h-screen bg-violet-50 admin-theme">
+      <HeaderAdm
+        onToggleSidebar={() => setSidebarOpen((v) => !v)}
+        sidebarOpen={sidebarOpen}
+      />
+
+      <div className="flex">
+        <SidebarAdm open={sidebarOpen} active={activeItem} onChange={setActiveItem} />
+
+        <main
+          className={`flex-1 p-6 transition-all duration-300 ${
+            sidebarOpen ? "ml-[280px]" : "ml-[80px]"
+          }`}
+        >
           {children}
         </main>
       </div>

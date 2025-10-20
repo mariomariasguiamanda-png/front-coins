@@ -1,80 +1,91 @@
-import { cn } from "@/lib/utils";
-import {
-  Award,
-  BarChart2,
-  BookOpen,
-  Coins,
-  Home,
-  Layout,
-  PlayCircle,
-  Star,
-} from "lucide-react";
+"use client";
+
+import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/router";
+import React from "react";
 
-const menuItems = [
-  {
-    title: "Dashboard",
-    icon: Home,
-    href: "/professor/dashboard",
-  },
-  {
-    title: "Atividades",
-    icon: BookOpen,
-    href: "/professor/atividades",
-  },
-  {
-    title: "Resumos",
-    icon: Layout,
-    href: "/professor/resumos",
-  },
-  {
-    title: "Videoaulas",
-    icon: PlayCircle,
-    href: "/professor/videoaulas",
-  },
-  {
-    title: "Notas",
-    icon: Star,
-    href: "/professor/notas",
-  },
-  {
-    title: "Desempenho",
-    icon: BarChart2,
-    href: "/professor/desempenho",
-  },
-  {
-    title: "Configurar Pontos",
-    icon: Coins,
-    href: "/professor/config-moedas",
-  },
-];
+type MenuItem = {
+  key: string;
+  label: string;
+  icon: React.ElementType;
+  href: string;
+};
 
-export function SidebarProfessor() {
-  const router = useRouter();
+type SidebarProfessorProps = {
+  open: boolean;
+  active: string;
+  items: MenuItem[];
+  onChange: (key: string) => void;
+};
 
+export function SidebarProfessor({
+  open,
+  active,
+  items,
+  onChange,
+}: SidebarProfessorProps) {
   return (
-    <nav className="space-y-2 p-4">
-      {menuItems.map((item) => {
-        const Icon = item.icon;
-        const isActive = router.pathname === item.href;
+    <aside
+      className={`${
+        open ? "w-[280px] px-4 py-6" : "w-[80px] px-2 py-6"
+      } bg-gray-50 border-r border-gray-200 flex flex-col transition-all duration-300 ease-in-out shadow-sm`}
+    >
+      {open && (
+        <div className="flex items-center justify-center px-0 mb-4 w-full mx-[-16px]">
+          <Image
+            src="/logo-menulateral.png"
+            alt="Coins for Study"
+            width={280}
+            height={120}
+            className="w-[280px] h-auto object-contain"
+            priority
+          />
+        </div>
+      )}
 
-        return (
-          <Link
-            key={item.href}
-            href={item.href}
-            className={cn(
-              "flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition-colors",
-              isActive
-                ? "bg-violet-800 text-white"
-                : "text-violet-800 hover:bg-violet-100"
-            )}
-          >
-            <Icon className="h-5 w-5" />
-            {item.title}
-          </Link>
-        );
-      })}
-    </nav>
+      <nav className="space-y-1">
+        {items.map((item) => {
+          const Icon = item.icon;
+          const isActive = active === item.key;
+          return (
+            <Link
+              key={item.key}
+              href={item.href}
+              className={`flex items-center w-full rounded-xl py-3 transition-all duration-300 group relative ${
+                open
+                  ? "px-4 justify-start hover:bg-[#7C3AED]/30"
+                  : "px-0 justify-center md:justify-center hover:bg-[#7C3AED]/30 md:mx-2"
+              } ${
+                isActive
+                  ? "bg-[#7C3AED] text-white shadow-md"
+                  : "hover:shadow-sm"
+              }`}
+              aria-current={isActive ? "page" : undefined}
+            >
+              {isActive && (
+                <div className="absolute left-0 top-0 bottom-0 w-1 bg-[#7C3AED] rounded-r-lg" />
+              )}
+              <div className="flex items-center gap-3">
+                <Icon
+                  size={20}
+                  className={`${
+                    isActive ? "text-white" : "text-[#7C3AED]"
+                  } flex-shrink-0`}
+                />
+                {open && (
+                  <span
+                    className={`text-sm font-medium ${
+                      isActive ? "text-white" : "text-gray-700"
+                    }`}
+                  >
+                    {item.label}
+                  </span>
+                )}
+              </div>
+            </Link>
+          );
+        })}
+      </nav>
+    </aside>
   );
 }

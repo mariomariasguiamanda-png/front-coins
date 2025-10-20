@@ -104,7 +104,7 @@ const mockRevisionEvents: RevisionEvent[] = [
 export default function Frequencia() {
   // ==================== HOOKS ====================
   const router = useRouter();
-  
+
   // ==================== ESTADOS ====================
   const [mounted, setMounted] = useState(false);
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -251,7 +251,9 @@ export default function Frequencia() {
   const handleNavigateToItem = (event: RevisionEvent) => {
     if (event.linkType && event.disciplinaId && event.itemId) {
       if (event.linkType === "atividade") {
-        router.push(`/aluno/disciplinas/${event.disciplinaId}/atividades/${event.itemId}`);
+        router.push(
+          `/aluno/disciplinas/${event.disciplinaId}/atividades/${event.itemId}`
+        );
       } else if (event.linkType === "resumo") {
         router.push(`/aluno/disciplinas/${event.disciplinaId}/resumos`);
       }
@@ -408,10 +410,16 @@ export default function Frequencia() {
 
       {/* ==================== MODAL DE ATIVIDADES DO DIA ==================== */}
       {showDayModal && selectedDate && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full max-h-[80vh] overflow-hidden card-bounce">
+        <div
+          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+          onClick={handleCloseDayModal}
+        >
+          <div
+            className="bg-white rounded-2xl shadow-2xl max-w-lg w-full max-h-[80vh] overflow-hidden card-bounce"
+            onClick={(e) => e.stopPropagation()}
+          >
             {/* Header do Modal */}
-            <div className="bg-gradient-to-r from-violet-500 to-violet-600 p-6 text-white">
+            <div className="bg-[#4B2992] p-6 text-white border-b border-[#3a206b]">
               <div className="flex items-center justify-between">
                 <div>
                   <h3 className="text-xl font-bold">Atividades do Dia</h3>
@@ -499,10 +507,12 @@ export default function Frequencia() {
                           size="sm"
                         >
                           <ExternalLink className="h-4 w-4" />
-                          {event.linkType === "atividade" ? "Ir para Atividade" : "Ir para Resumo"}
+                          {event.linkType === "atividade"
+                            ? "Ir para Atividade"
+                            : "Ir para Resumo"}
                         </Button>
                       )}
-                      
+
                       {/* Botão para marcar como concluído */}
                       <Button
                         onClick={() => handleCompleteEvent(event.id)}
