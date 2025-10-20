@@ -11,7 +11,8 @@ interface AdminLayoutProps {
 
 export function AdminLayout({ children }: AdminLayoutProps) {
   const router = useRouter();
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  // Start collapsed by default; then hydrate from persisted preference
+  const [sidebarOpen, setSidebarOpen] = useState<boolean>(false);
   const [activeItem, setActiveItem] = useState(
     (router?.pathname?.split("/")[2] as string) || "dashboard"
   );
@@ -20,11 +21,23 @@ export function AdminLayout({ children }: AdminLayoutProps) {
   useEffect(() => {
     if (typeof document !== "undefined") {
       document.body.classList.add("admin-body");
+      // Hydrate sidebar state from localStorage on mount
+      const saved = localStorage.getItem("adminSidebarOpen");
+      if (saved !== null) {
+        setSidebarOpen(saved === "1");
+      }
       return () => {
         document.body.classList.remove("admin-body");
       };
     }
   }, []);
+
+  // Persist sidebar preference
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem("adminSidebarOpen", sidebarOpen ? "1" : "0");
+    }
+  }, [sidebarOpen]);
 
   return (
     <div className="min-h-screen bg-violet-50 admin-theme">
@@ -36,11 +49,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
       <div className="flex">
         <SidebarAdm open={sidebarOpen} active={activeItem} onChange={setActiveItem} />
 
-        <main
-          className={`flex-1 p-6 transition-all duration-300 ${
-            sidebarOpen ? "ml-[280px]" : "ml-[80px]"
-          }`}
-        >
+        <main className="flex-1 p-6 transition-all duration-300">
           {children}
         </main>
       </div>
