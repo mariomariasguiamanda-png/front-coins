@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { Bell, Menu, ChevronLeft, X } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
-import { admin, adminNotificacoes, type AdminNotificacao } from "@/lib/mock/admin";
+import { admin, notificacoes as adminNotificacoes, type Notificacao as AdminNotificacao } from "@/lib/mock/admin";
 
 type HeaderAdmProps = {
   onToggleSidebar?: () => void;
@@ -14,7 +14,7 @@ type HeaderAdmProps = {
 export function HeaderAdm({ onToggleSidebar, sidebarOpen }: HeaderAdmProps) {
   const [notificacoesOpen, setNotificacoesOpen] = useState(false);
   const [listaNotificacoes, setListaNotificacoes] =
-    useState<AdminNotificacao[]>(adminNotificacoes);
+    useState<AdminNotificacao[]>(adminNotificacoes ?? []);
   const notificacoesRef = useRef<HTMLDivElement>(null);
 
   // Fechar dropdown ao clicar fora
@@ -64,7 +64,7 @@ export function HeaderAdm({ onToggleSidebar, sidebarOpen }: HeaderAdmProps) {
   };
 
   // Contar notificações não lidas
-  const notificacaoNaoLidas = listaNotificacoes.filter((n) => !n.lida).length;
+  const notificacaoNaoLidas = (listaNotificacoes ?? []).filter((n) => !n.lida).length;
 
   return (
     <header className="sticky top-0 z-30 bg-gradient-to-br from-[#7C3AED] via-[#7C3AED] to-[#7C3AED] text-white border-b border-white/20">
