@@ -13,8 +13,8 @@ export default function ComprasHubPage() {
     },
     {
       href: "/adm/compras-relatorios",
-      title: "Relatórios",
-      desc: "Exportações e métricas",
+      title: "Histórico por Disciplina",
+      desc: "KPIs e histórico agrupado",
       icon: TrendingUp,
     },
     {

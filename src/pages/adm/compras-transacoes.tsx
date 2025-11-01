@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import Link from "next/link";
 import { AdminLayout } from "@/components/adm/AdminLayout";
 import { Button } from "@/components/ui/Button";
 import { Card, CardContent } from "@/components/ui/Card";
@@ -12,83 +13,36 @@ import {
   ArrowRight,
   TrendingUp,
   Calendar,
+  ArrowLeft,
 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { CancelarCompraDialog } from "@/components/adm/dialogs/CancelarCompraDialog";
 import { createNotification, composeMessages } from "@/services/api/notifications";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 
-// Interfaces
-interface Transacao {
-  id: string;
-  alunoId: string;
-  alunoNome: string;
-  alunoTurma: string;
-  disciplinaId: string;
-  disciplinaNome: string;
-  professorNome: string;
-  pontosComprados: number;
-  moedasGastas: number;
-  saldoAntes: number;
-  saldoDepois: number;
-  data: string;
-  status: "concluida" | "cancelada";
-  cancelamento?: {
-    data: string;
-    adminNome: string;
-    motivo: string;
-  };
-}
-
-// Mock data
-const mockTransacoes: Transacao[] = [
-  {
-    id: "1",
-    alunoId: "1",
-    alunoNome: "Ana Souza",
-    alunoTurma: "3º A",
-    disciplinaId: "1",
-    disciplinaNome: "Matemática",
-    professorNome: "João Silva",
-    pontosComprados: 3,
-    moedasGastas: 60,
-    saldoAntes: 150,
-    saldoDepois: 90,
-    data: "2025-10-12T10:30:00Z",
-    status: "concluida"
-  },
-  {
-    id: "2",
-    alunoId: "2",
-    alunoNome: "Pedro Santos",
-    alunoTurma: "3º B",
-    disciplinaId: "2",
-    disciplinaNome: "História",
-    professorNome: "Maria Oliveira",
-    pontosComprados: 2,
-    moedasGastas: 40,
-    saldoAntes: 100,
-    saldoDepois: 60,
-    data: "2025-10-12T09:15:00Z",
-    status: "cancelada",
-    cancelamento: {
-      data: "2025-10-12T09:30:00Z",
-      adminNome: "Admin Principal",
-      motivo: "Erro técnico no sistema"
-    }
-  }
-];
+// Shared mock
+import { Transacao, mockTransacoes } from "@/lib/mock/compras";
 
 export default function ComprasTransacoesPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [currentTab, setCurrentTab] = useState("todas");
   const [filtroTurma, setFiltroTurma] = useState("todas");
   const [filtroDisciplina, setFiltroDisciplina] = useState("todas");
+  const [filtroAluno, setFiltroAluno] = useState<string>("todos");
   const [selectedTransacao, setSelectedTransacao] = useState<Transacao | null>(null);
   const [showCancelarDialog, setShowCancelarDialog] = useState(false);
+  const [filtrosOpen, setFiltrosOpen] = useState(false);
+  const [filtroProfessor, setFiltroProfessor] = useState<string>("todos");
+  const [periodoDe, setPeriodoDe] = useState<string>("");
+  const [periodoAte, setPeriodoAte] = useState<string>("");
+  const [detalhesOpen, setDetalhesOpen] = useState(false);
+  const [logsCancelamentos, setLogsCancelamentos] = useState<Array<{id:string; quando:string; admin:string; motivo:string;}>>([]);
 
   // Dados únicos para filtros
-  const turmas = Array.from(new Set(mockTransacoes.map(t => t.alunoTurma)));
-  const disciplinas = Array.from(new Set(mockTransacoes.map(t => t.disciplinaNome)));
+  const turmas = useMemo(() => Array.from(new Set(mockTransacoes.map(t => t.alunoTurma))), []);
+  const disciplinas = useMemo(() => Array.from(new Set(mockTransacoes.map(t => t.disciplinaNome))), []);
+  const professores = useMemo(() => Array.from(new Set(mockTransacoes.map(t => t.professorNome))), []);
+  const alunos = useMemo(() => Array.from(new Set(mockTransacoes.map(t => t.alunoNome))), []);
 
   // Filtragem de transações
   const transacoesFiltradas = mockTransacoes.filter(transacao => {
@@ -108,7 +62,21 @@ export default function ComprasTransacoesPage() {
     const matchesDisciplina = 
       filtroDisciplina === "todas" || transacao.disciplinaNome === filtroDisciplina;
 
-    return matchesSearch && matchesStatus && matchesTurma && matchesDisciplina;
+    const matchesAluno =
+      filtroAluno === "todos" || transacao.alunoNome === filtroAluno;
+
+    const matchesProfessor =
+      filtroProfessor === "todos" || transacao.professorNome === filtroProfessor;
+
+    const matchesPeriodo = (() => {
+      if (!periodoDe && !periodoAte) return true;
+      const ts = new Date(transacao.data).getTime();
+      const de = periodoDe ? new Date(periodoDe).getTime() : -Infinity;
+      const ate = periodoAte ? new Date(periodoAte).getTime() + 24*60*60*1000 - 1 : Infinity;
+      return ts >= de && ts <= ate;
+    })();
+
+    return matchesSearch && matchesStatus && matchesTurma && matchesDisciplina && matchesAluno && matchesProfessor && matchesPeriodo;
   });
 
   // Cálculos de estatísticas
@@ -136,16 +104,96 @@ export default function ComprasTransacoesPage() {
                 valor: moedasGastas,
               });
               await createNotification({ message, actionType, recipients: ["Administrador", "Coordenador"], context: { motivo, transacaoId: selectedTransacao.id } });
+              setLogsCancelamentos((prev) => [
+                { id: selectedTransacao.id, quando: new Date().toISOString(), admin: "Administrador (sessão)", motivo },
+                ...prev,
+              ]);
             }
             setShowCancelarDialog(false);
             setSelectedTransacao(null);
           }}
         />
 
+        {/* Dialog de Detalhes */}
+        <Dialog open={detalhesOpen} onOpenChange={setDetalhesOpen}>
+          <DialogContent className="rounded-xl">
+            <DialogHeader>
+              <DialogTitle>Detalhes da Transação</DialogTitle>
+            </DialogHeader>
+            {selectedTransacao && (
+              <div className="space-y-3 text-sm">
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <p className="text-muted-foreground">Aluno</p>
+                    <p className="font-medium">{selectedTransacao.alunoNome}</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground">Turma</p>
+                    <p className="font-medium">{selectedTransacao.alunoTurma}</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground">Disciplina</p>
+                    <p className="font-medium">{selectedTransacao.disciplinaNome}</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground">Professor</p>
+                    <p className="font-medium">{selectedTransacao.professorNome}</p>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <p className="text-muted-foreground">Pontos comprados</p>
+                    <p className="font-semibold text-emerald-600">+{selectedTransacao.pontosComprados}</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground">Moedas gastas</p>
+                    <p className="font-semibold text-amber-600">-{selectedTransacao.moedasGastas}</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground">Saldo antes</p>
+                    <p className="font-medium">{selectedTransacao.saldoAntes}</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground">Saldo depois</p>
+                    <p className="font-medium">{selectedTransacao.saldoDepois}</p>
+                  </div>
+                </div>
+                <div>
+                  <p className="text-muted-foreground">Data/Hora</p>
+                  <p className="font-medium">{new Date(selectedTransacao.data).toLocaleString("pt-BR")}</p>
+                </div>
+              </div>
+            )}
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setDetalhesOpen(false)}>Fechar</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
         {/* Header */}
-        <header className="space-y-1">
-          <h1 className="text-2xl font-bold">Transações de Compras</h1>
-          <p className="text-muted-foreground">Gerencie e monitore as transações de compra de pontos</p>
+        <header className="flex items-center justify-between">
+          <div className="space-y-1">
+            <h1 className="text-2xl font-bold">Transações de Compras</h1>
+            <p className="text-muted-foreground">Gerencie e monitore as transações de compra de pontos</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Link href="/adm/compras" className="hidden md:block">
+              <Button variant="outline" className="rounded-xl">
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Voltar ao Hub
+              </Button>
+            </Link>
+            <Button
+              className="rounded-lg bg-violet-600 hover:bg-violet-700"
+              onClick={() => {
+                // Implementar exportação
+                console.log("Exportar relatório");
+              }}
+            >
+              <Download className="mr-2 h-4 w-4" />
+              Exportar Relatório
+            </Button>
+          </div>
         </header>
 
         {/* Overview Cards */}
@@ -229,7 +277,7 @@ export default function ComprasTransacoesPage() {
                   </SelectContent>
                 </Select>
 
-                <Button variant="outline" className="rounded-lg">
+                <Button variant="outline" className="rounded-lg" onClick={() => setFiltrosOpen(true)}>
                   <Filter className="mr-2 h-4 w-4" />
                   Mais Filtros
                 </Button>
@@ -237,6 +285,59 @@ export default function ComprasTransacoesPage() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Dialog Mais Filtros */}
+        <Dialog open={filtrosOpen} onOpenChange={setFiltrosOpen}>
+          <DialogContent className="rounded-xl">
+            <DialogHeader>
+              <DialogTitle>Filtros Avançados</DialogTitle>
+            </DialogHeader>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <p className="text-sm text-muted-foreground mb-1">Aluno</p>
+                <Select value={filtroAluno} onValueChange={setFiltroAluno}>
+                  <SelectTrigger className="w-full rounded-lg">
+                    <SelectValue placeholder="Aluno" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todos">Todos</SelectItem>
+                    {alunos.map((al) => (
+                      <SelectItem key={al} value={al}>{al}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground mb-1">Professor</p>
+                <Select value={filtroProfessor} onValueChange={setFiltroProfessor}>
+                  <SelectTrigger className="w-full rounded-lg">
+                    <SelectValue placeholder="Professor" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todos">Todos</SelectItem>
+                    {professores.map((prof) => (
+                      <SelectItem key={prof} value={prof}>{prof}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <p className="text-sm text-muted-foreground mb-1">Período - de</p>
+                  <Input type="date" value={periodoDe} onChange={(e) => setPeriodoDe(e.target.value)} />
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground mb-1">Período - até</p>
+                  <Input type="date" value={periodoAte} onChange={(e) => setPeriodoAte(e.target.value)} />
+                </div>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setFiltrosOpen(false)}>Fechar</Button>
+              <Button onClick={() => setFiltrosOpen(false)}>Aplicar</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
         {/* Tabs e Tabela */}
         <Tabs value={currentTab} onValueChange={setCurrentTab}>
@@ -275,7 +376,9 @@ export default function ComprasTransacoesPage() {
                         </td>
                         <td className="py-3 px-4">
                           <div>
-                            <p>{transacao.disciplinaNome}</p>
+                            <Link href={{ pathname: "/adm/compras-relatorios", query: { disciplina: transacao.disciplinaNome } }} className="text-violet-600 hover:underline">
+                              {transacao.disciplinaNome}
+                            </Link>
                             <p className="text-sm text-muted-foreground">Prof. {transacao.professorNome}</p>
                           </div>
                         </td>
@@ -305,6 +408,17 @@ export default function ComprasTransacoesPage() {
                             <Button
                               variant="outline"
                               size="sm"
+                              className="rounded-lg"
+                              onClick={() => {
+                                setSelectedTransacao(transacao);
+                                setDetalhesOpen(true);
+                              }}
+                            >
+                              Detalhes
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
                               className="rounded-lg text-red-600 hover:bg-red-50 hover:text-red-700"
                               onClick={() => {
                                 setSelectedTransacao(transacao);
@@ -324,6 +438,29 @@ export default function ComprasTransacoesPage() {
             </CardContent>
           </Card>
         </Tabs>
+
+        {/* Logs de cancelamento (simples) */}
+        {logsCancelamentos.length > 0 && (
+          <Card className="rounded-xl">
+            <CardContent className="p-6">
+              <h2 className="text-lg font-semibold mb-3">Registros de Cancelamento</h2>
+              <div className="space-y-2 text-sm">
+                {logsCancelamentos.map((l, idx) => (
+                  <div key={`${l.id}-${idx}`} className="flex items-center justify-between border-b py-2">
+                    <div>
+                      <p className="font-medium">Transação {l.id}</p>
+                      <p className="text-muted-foreground">Motivo: {l.motivo}</p>
+                    </div>
+                    <div className="text-right text-muted-foreground">
+                      <p>{new Date(l.quando).toLocaleString("pt-BR")}</p>
+                      <p>{l.admin}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
       </div>
     </AdminLayout>
   );
