@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
+import NotificationCard from "@/components/ui/NotificationCard";
 import {
   User,
   Camera,
@@ -54,6 +55,11 @@ export default function Perfil() {
   const [errors, setErrors] = useState<ValidationErrors>({});
   const [showSuccess, setShowSuccess] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
+  const [showNotification, setShowNotification] = useState(false);
+  const [notificationMessage, setNotificationMessage] = useState("");
+  const [notificationType, setNotificationType] = useState<
+    "success" | "warning" | "info" | "error"
+  >("info");
 
   // ==================== EFFECTS ====================
   useEffect(() => {
@@ -125,12 +131,18 @@ export default function Perfil() {
   };
 
   const handlePhotoChange = () => {
-    alert("Funcionalidade de alterar foto será implementada em breve!");
+    setNotificationMessage(
+      "Funcionalidade de alterar foto será implementada em breve!"
+    );
+    setNotificationType("info");
+    setShowNotification(true);
   };
 
   const handleLogout = () => {
     if (window.confirm("Tem certeza que deseja sair?")) {
-      alert("Logout realizado com sucesso!");
+      setNotificationMessage("Logout realizado com sucesso!");
+      setNotificationType("success");
+      setShowNotification(true);
     }
   };
 
@@ -360,6 +372,14 @@ export default function Perfil() {
           </section>
         </main>
       </div>
+
+      {/* Componente de Notificação */}
+      <NotificationCard
+        show={showNotification}
+        onClose={() => setShowNotification(false)}
+        message={notificationMessage}
+        type={notificationType}
+      />
     </div>
   );
 }

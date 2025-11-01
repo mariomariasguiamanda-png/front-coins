@@ -61,9 +61,10 @@ export function AdminLayout({ children }: AdminLayoutProps) {
           <SidebarAdm />
         </aside>
 
-        {/* conteúdo com offset variável */}
         <main
-          className={`${mainOffset} flex-1 p-6 transition-all duration-300`}
+          className={`flex-1 p-6 transition-all duration-300 ${
+            sidebarOpen ? "ml-64" : "ml-0"
+          }`}
         >
           {children}
         </main>

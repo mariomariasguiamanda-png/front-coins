@@ -18,7 +18,7 @@ type SidebarProfessorProps = {
   onChange: (key: string) => void;
 };
 
-export function SidebarProfessor({
+export default function SidebarProfessor({
   open,
   active,
   items,
