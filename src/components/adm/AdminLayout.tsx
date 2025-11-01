@@ -1,6 +1,7 @@
 "use client";
 
-import { ReactNode, useState } from "react";
+import { ReactNode, useEffect, useState } from "react";
+import { useRouter } from "next/router";
 import { HeaderAdm } from "./HeaderAdm";
 import { SidebarAdm } from "./SidebarAdm";
 
@@ -9,29 +10,46 @@ interface AdminLayoutProps {
 }
 
 export function AdminLayout({ children }: AdminLayoutProps) {
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const router = useRouter();
+  // Start collapsed by default; then hydrate from persisted preference
+  const [sidebarOpen, setSidebarOpen] = useState<boolean>(false);
+  const [activeItem, setActiveItem] = useState(
+    (router?.pathname?.split("/")[2] as string) || "dashboard"
+  );
+
+  // Ensure portal-based overlays (Radix Dialog/Select) inherit admin theme via body class
+  useEffect(() => {
+    if (typeof document !== "undefined") {
+      document.body.classList.add("admin-body");
+      // Hydrate sidebar state from localStorage on mount
+      const saved = localStorage.getItem("adminSidebarOpen");
+      if (saved !== null) {
+        setSidebarOpen(saved === "1");
+      }
+      return () => {
+        document.body.classList.remove("admin-body");
+      };
+    }
+  }, []);
+
+  // Persist sidebar preference
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem("adminSidebarOpen", sidebarOpen ? "1" : "0");
+    }
+  }, [sidebarOpen]);
 
   return (
-    <div className="min-h-screen bg-violet-50">
+    <div className="min-h-screen bg-violet-50 admin-theme">
       <HeaderAdm
         onToggleSidebar={() => setSidebarOpen((v) => !v)}
         sidebarOpen={sidebarOpen}
       />
 
       <div className="flex">
-        <aside
-          className={`fixed h-[calc(100vh-3.5rem)] border-r bg-white transition-all duration-300 ${
-            sidebarOpen ? "w-64" : "w-0 overflow-hidden"
-          }`}
-        >
-          <SidebarAdm />
-        </aside>
+        <SidebarAdm open={sidebarOpen} active={activeItem} onChange={setActiveItem} />
 
-        <main
-          className={`flex-1 p-6 transition-all duration-300 ${
-            sidebarOpen ? "ml-64" : "ml-0"
-          }`}
-        >
+        <main className="flex-1 p-6 transition-all duration-300">
           {children}
         </main>
       </div>

@@ -1,8 +1,8 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&display=swap");
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&display=swap");
 
 * {
   box-sizing: border-box;
@@ -33,6 +33,14 @@ a {
   }
 }
 
+/* Force light system controls inside Admin pages (incl. portal modals) */
+.admin-body {
+  color-scheme: light !important;
+}
+.admin-body * {
+  color-scheme: light !important;
+}
+
 /* Componentes personalizados */
 @layer components {
   .btn-primary {
@@ -44,7 +52,62 @@ a {
   }
 
   .input-field {
-    @apply w-full px-3 py-2 border border-secondary-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent;
+    /* Força visual claro (admin e geral) */
+    @apply w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent;
+    @apply dark:bg-white dark:text-slate-900 dark:placeholder-slate-400;
+  }
+
+  /* Escopo para páginas do Admin: garante inputs nativos claros mesmo sem usar o componente Input */
+  .admin-theme input[type="text"],
+  .admin-theme input[type="email"],
+  .admin-theme input[type="password"],
+  .admin-theme input[type="search"],
+  .admin-theme input:not([type]),
+  .admin-theme select,
+  .admin-theme textarea {
+    @apply bg-white text-slate-900 placeholder-slate-400 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent;
+  }
+
+  /* Ensure shadcn Select shows light theme in admin */
+  .admin-theme .sh-select-trigger {
+    @apply bg-white text-slate-900 placeholder-slate-400 border border-slate-300 focus:ring-2 focus:ring-violet-500 focus:border-transparent rounded-lg;
+  }
+  .admin-theme .sh-select-content {
+    @apply bg-white text-slate-900 border border-slate-200;
+  }
+  .admin-theme [role="option"][data-highlighted] {
+    @apply bg-violet-50 text-violet-700;
+  }
+
+  /* Portal-based modals (Radix Dialog) render outside .admin-theme. Apply light inputs via body class set by AdminLayout */
+  .admin-body input[type="text"],
+  .admin-body input[type="email"],
+  .admin-body input[type="password"],
+  .admin-body input[type="search"],
+  .admin-body input[type="tel"],
+  .admin-body input[type="url"],
+  .admin-body input[type="number"],
+  .admin-body input[type="date"],
+  .admin-body input[type="datetime-local"],
+  .admin-body input[type="time"],
+  .admin-body input:not([type]),
+  .admin-body select,
+  .admin-body textarea {
+    @apply bg-white text-slate-900 placeholder-slate-400 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent;
+  }
+
+  /* Admin: force refresh icon color to stay violet regardless of parent hover */
+  .admin-body .notif-refresh-btn {
+    color: #7c3aed !important; /* violet-600 */
+  }
+  .admin-body .notif-refresh-btn svg {
+    color: #7c3aed !important; /* violet-600 */
+  }
+  .admin-body .notif-refresh-btn:hover svg {
+    color: #6d28d9 !important; /* violet-700 */
+  }
+  .admin-body .notif-refresh-btn:disabled svg {
+    color: #7c3aed !important; /* keep same when disabled */
   }
 
   .card {
@@ -473,6 +536,65 @@ a {
   opacity: 0;
 }
 
+/* --- Admin Select light overrides (high specificity, post-utilities) --- */
+/* Trigger inside admin layout */
+.admin-theme .sh-select-trigger {
+  background-color: #ffffff !important;
+  color: #0f172a !important; /* slate-900 */
+  border-color: #cbd5e1 !important; /* slate-300 */
+  border-radius: 0.5rem !important; /* rounded-lg */
+}
+.admin-theme .sh-select-trigger:focus {
+  outline: none !important;
+  box-shadow: 0 0 0 2px rgba(124, 58, 237, 0.6) !important; /* ring-violet-500 */
+}
+
+/* Dropdown content is rendered in a portal (outside admin-theme), so target directly */
+.sh-select-content {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  border: 1px solid #e5e7eb !important; /* gray-200 */
+}
+.sh-select-content [role="option"][data-highlighted] {
+  background-color: #f5f3ff !important; /* violet-50 */
+  color: #6d28d9 !important; /* violet-700 */
+}
+
+/* When body has admin-body (set by AdminLayout), force light select visuals globally */
+.admin-body .sh-select-trigger {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  border-color: #cbd5e1 !important;
+  border-radius: 0.5rem !important;
+}
+.admin-body .sh-select-trigger:focus {
+  outline: none !important;
+  box-shadow: 0 0 0 2px rgba(124, 58, 237, 0.6) !important;
+}
+.admin-body .sh-select-content {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  border: 1px solid #e5e7eb !important;
+}
+.admin-body .sh-select-content [role="option"][data-highlighted] {
+  background-color: #f5f3ff !important;
+  color: #6d28d9 !important;
+}
+
+/* Force light form fields inside admin dialogs (marked with .admin-form-light on DialogContent) */
+.admin-form-light select,
+.admin-form-light textarea {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  border: 1px solid #cbd5e1 !important; /* slate-300 */
+  color-scheme: light !important;
+}
+.admin-form-light select:focus,
+.admin-form-light textarea:focus {
+  outline: none !important;
+  box-shadow: 0 0 0 2px rgba(124, 58, 237, 0.6) !important; /* ring-violet-500 */
+  border-color: transparent !important;
+}
 /* Animações para ResultCard */
 @keyframes bounce-in {
   0% {
