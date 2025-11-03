@@ -2,6 +2,7 @@ import type { AppProps } from "next/app";
 import Head from "next/head";
 import "@/styles/globals.css";
 import { AuthProvider } from "@/services/auth/AuthContext";
+import { ThemeProvider } from "@/contexts/ThemeContext";
 import { Roboto } from "next/font/google";
 import Router from "next/router";
 import { useEffect } from "react";
@@ -31,14 +32,16 @@ if (process.env.NODE_ENV !== "production") {
 
 export default function MyApp({ Component, pageProps }: AppProps) {
   return (
-    <AuthProvider>
-      <Head>
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <title>Coins for Study</title>
-      </Head>
-      <div className={roboto.className}>
-        <Component {...pageProps} />
-      </div>
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <Head>
+          <meta name="viewport" content="width=device-width, initial-scale=1" />
+          <title>Coins for Study</title>
+        </Head>
+        <div className={roboto.className}>
+          <Component {...pageProps} />
+        </div>
+      </AuthProvider>
+    </ThemeProvider>
   );
 }
