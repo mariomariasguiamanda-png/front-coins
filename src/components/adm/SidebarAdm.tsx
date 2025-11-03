@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/router";
+import type { Dispatch, SetStateAction } from "react";
 import { cn } from "@/lib/utils";
 
 const menuItems = [
@@ -61,14 +62,20 @@ const menuItems = [
   },
 ];
 
-export function SidebarAdm() {
+type SidebarAdmProps = {
+  open?: boolean;
+  active?: string;
+  onChange?: Dispatch<SetStateAction<string>>;
+};
+
+export function SidebarAdm({ open, active, onChange }: SidebarAdmProps) {
   const router = useRouter();
 
   return (
     <nav className="space-y-2 p-4">
       {menuItems.map((item) => {
         const Icon = item.icon;
-        const isActive = router.pathname === item.href;
+        const isActive = (active ?? router.pathname) === item.href;
 
         return (
           <Link
@@ -80,6 +87,7 @@ export function SidebarAdm() {
                 ? "bg-violet-800 text-white"
                 : "text-violet-800 hover:bg-violet-100"
             )}
+            onClick={() => onChange?.(item.href)}
           >
             <Icon className="h-5 w-5" />
             {item.title}
