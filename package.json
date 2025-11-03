@@ -23,11 +23,10 @@
     "lucide-react": "^0.544.0",
     "next": "^14.2.33",
     "react": "^18",
-    "react-colorful": "^5.6.1",
     "react-dom": "^18",
     "react-hook-form": "^7.63.0",
-    "react-icons": "^5.5.0",
     "recharts": "^3.2.1",
+    "react-icons": "^5.5.0",
     "tailwind-merge": "^3.3.1",
     "tailwindcss-animate": "^1.0.7",
     "yup": "^1.7.1"
@@ -42,22 +41,5 @@
     "postcss": "^8",
     "tailwindcss": "^3.4.1",
     "typescript": "^5"
-  },
-  "description": "",
-  "main": "consolidar-disciplinas.js",
-  "directories": {
-    "doc": "docs"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/mariomariasguiamanda-png/front-coins.git"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "type": "commonjs",
-  "bugs": {
-    "url": "https://github.com/mariomariasguiamanda-png/front-coins/issues"
-  },
-  "homepage": "https://github.com/mariomariasguiamanda-png/front-coins#readme"
+  }
 }
