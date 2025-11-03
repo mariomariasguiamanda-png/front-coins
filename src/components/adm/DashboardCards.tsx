@@ -1,5 +1,13 @@
 import { Card, CardContent } from "@/components/ui/Card";
-import { Users, GraduationCap, BookOpen, Coins, TrendingUp, TrendingDown } from "lucide-react";
+import { formatNumber } from "@/utils/helpers/formatters";
+import {
+  Users,
+  GraduationCap,
+  BookOpen,
+  Coins,
+  TrendingUp,
+  TrendingDown,
+} from "lucide-react";
 import Link from "next/link";
 
 interface DashboardStats {
@@ -69,7 +77,11 @@ export function DashboardCards({ stats }: { stats: DashboardStats }) {
       change: +2,
       stats: [
         { label: "Ativas", value: stats.disciplines.active, highlight: true },
-        { label: "Inativas", value: stats.disciplines.inactive, highlight: false },
+        {
+          label: "Inativas",
+          value: stats.disciplines.inactive,
+          highlight: false,
+        },
       ],
     },
     {
@@ -79,12 +91,20 @@ export function DashboardCards({ stats }: { stats: DashboardStats }) {
       bgColor: "bg-amber-100",
       gradient: "from-amber-500 to-amber-600",
       link: "/adm/moedas-saldos",
-      mainValue: stats.coins.total.toLocaleString(),
+      mainValue: formatNumber(stats.coins.total),
       mainLabel: "Total em circulação",
       change: +8,
       stats: [
-        { label: "Distribuídas", value: stats.coins.distributed.toLocaleString(), highlight: true },
-        { label: "Disponíveis", value: stats.coins.available.toLocaleString(), highlight: false },
+        {
+          label: "Distribuídas",
+          value: formatNumber(stats.coins.distributed),
+          highlight: true,
+        },
+        {
+          label: "Disponíveis",
+          value: formatNumber(stats.coins.available),
+          highlight: false,
+        },
       ],
     },
   ];
@@ -94,28 +114,30 @@ export function DashboardCards({ stats }: { stats: DashboardStats }) {
       {cards.map((card, index) => {
         const Icon = card.icon;
         const isPositiveChange = card.change > 0;
-        
+
         return (
-          <Link 
-            key={index} 
-            href={card.link}
-            className="group"
-          >
+          <Link key={index} href={card.link} className="group">
             <Card className="rounded-xl shadow-sm hover:shadow-md transition-all duration-200 border-0 overflow-hidden h-full">
               {/* Gradient Header */}
               <div className={`h-2 bg-gradient-to-r ${card.gradient}`}></div>
-              
+
               <CardContent className="p-6">
                 {/* Header */}
                 <div className="flex items-center justify-between mb-4">
                   <div>
-                    <p className="text-sm font-medium text-gray-600">{card.title}</p>
+                    <p className="text-sm font-medium text-gray-600">
+                      {card.title}
+                    </p>
                     <div className="flex items-baseline gap-2 mt-1">
-                      <h3 className="text-3xl font-bold text-gray-900">{card.mainValue}</h3>
+                      <h3 className="text-3xl font-bold text-gray-900">
+                        {card.mainValue}
+                      </h3>
                       {card.change !== 0 && (
-                        <span className={`flex items-center gap-0.5 text-xs font-medium ${
-                          isPositiveChange ? 'text-green-600' : 'text-red-600'
-                        }`}>
+                        <span
+                          className={`flex items-center gap-0.5 text-xs font-medium ${
+                            isPositiveChange ? "text-green-600" : "text-red-600"
+                          }`}
+                        >
                           {isPositiveChange ? (
                             <TrendingUp className="h-3 w-3" />
                           ) : (
@@ -126,7 +148,9 @@ export function DashboardCards({ stats }: { stats: DashboardStats }) {
                       )}
                     </div>
                   </div>
-                  <div className={`h-12 w-12 rounded-xl ${card.bgColor} flex items-center justify-center group-hover:scale-110 transition-transform duration-200`}>
+                  <div
+                    className={`h-12 w-12 rounded-xl ${card.bgColor} flex items-center justify-center group-hover:scale-110 transition-transform duration-200`}
+                  >
                     <Icon className={`h-6 w-6 ${card.color}`} />
                   </div>
                 </div>
@@ -139,9 +163,11 @@ export function DashboardCards({ stats }: { stats: DashboardStats }) {
                       className="flex items-center justify-between text-sm"
                     >
                       <span className="text-gray-600">{stat.label}</span>
-                      <span className={`font-semibold ${
-                        stat.highlight ? 'text-gray-900' : 'text-gray-500'
-                      }`}>
+                      <span
+                        className={`font-semibold ${
+                          stat.highlight ? "text-gray-900" : "text-gray-500"
+                        }`}
+                      >
                         {stat.value}
                       </span>
                     </div>
@@ -152,8 +178,18 @@ export function DashboardCards({ stats }: { stats: DashboardStats }) {
                 <div className="mt-4 pt-3 border-t border-gray-100 opacity-0 group-hover:opacity-100 transition-opacity">
                   <p className="text-xs text-gray-500 flex items-center gap-1">
                     Ver detalhes
-                    <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    <svg
+                      className="h-3 w-3"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M9 5l7 7-7 7"
+                      />
                     </svg>
                   </p>
                 </div>
