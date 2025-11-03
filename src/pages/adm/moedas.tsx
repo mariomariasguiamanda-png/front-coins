@@ -2,67 +2,65 @@ import Link from "next/link";
 import { AdminLayout } from "@/components/adm/AdminLayout";
 import { Card, CardContent } from "@/components/ui/Card";
 import { 
-  Users, 
-  Shield, 
-  FileText, 
+  BarChart2, 
+  Coins, 
+  Settings, 
+  ArrowUpDown,
   ArrowRight,
-  UserCheck,
-  UserX,
-  Clock
+  TrendingUp,
+  DollarSign,
+  Activity
 } from "lucide-react";
 
-export default function UsuariosHubPage() {
+export default function MoedasHubPage() {
   // Mock stats - substituir por dados reais da API
   const stats = {
-    total: 530,
-    alunos: 500,
-    professores: 30,
-    ativos: 475,
-    pendentes: 5,
-    inativos: 50,
+    totalCirculacao: 50000,
+    distribuidas: 35000,
+    disponiveis: 15000,
+    taxaDistribuicao: 70,
+    mediaAluno: 70,
+    ajustesHoje: 12,
   };
 
   const items = [
     { 
-      href: "/adm/usuarios-lista", 
-      title: "Lista de Usuários", 
-      desc: "Gerencie alunos e professores, edite perfis e controle status",
-      icon: Users,
+      href: "/adm/moedas-relatorio-saldos", 
+      title: "Controle de Saldos", 
+      desc: "Visualize relatórios completos, histórico de movimentações e saldos por aluno",
+      icon: BarChart2,
       color: "text-blue-600",
       bgColor: "bg-blue-100",
       gradient: "from-blue-500 to-blue-600",
-      iconBg: "bg-blue-50",
       stats: [
-        { label: "Alunos", value: stats.alunos },
-        { label: "Professores", value: stats.professores },
+        { label: "Alunos", value: 500 },
+        { label: "Movimentações", value: 1250 },
       ]
     },
     { 
-      href: "/adm/usuarios-permissoes", 
-      title: "Perfis e Permissões", 
-      desc: "Configure regras de acesso e permissões por perfil de usuário",
-      icon: Shield,
+      href: "/adm/moedas-configuracoes", 
+      title: "Regras e Limites", 
+      desc: "Configure regras de distribuição automática e limites por período",
+      icon: Settings,
       color: "text-purple-600",
       bgColor: "bg-purple-100",
       gradient: "from-purple-500 to-purple-600",
-      iconBg: "bg-purple-50",
       stats: [
-        { label: "Perfis", value: 3 },
-        { label: "Permissões", value: 12 },
+        { label: "Regras Ativas", value: 5 },
+        { label: "Limite Período", value: 500 },
       ]
     },
     { 
-      href: "/adm/usuarios-logs", 
-      title: "Logs e Auditoria", 
-      desc: "Consulte histórico de ações e eventos do sistema",
-      icon: FileText,
+      href: "/adm/moedas-ajustes", 
+      title: "Ajustes Manuais", 
+      desc: "Realize créditos ou débitos com justificativa e acompanhe logs",
+      icon: ArrowUpDown,
       color: "text-green-600",
       bgColor: "bg-green-100",
       gradient: "from-green-500 to-green-600",
-      iconBg: "bg-green-50",
       stats: [
-        { label: "Hoje", value: 145 },
-        { label: "Semana", value: 892 },
+        { label: "Hoje", value: stats.ajustesHoje },
+        { label: "Semana", value: 87 },
       ]
     },
   ];
@@ -72,24 +70,29 @@ export default function UsuariosHubPage() {
       <div className="space-y-6 pb-8">
         {/* Header */}
         <header className="space-y-4">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Gestão de Usuários</h1>
-            <p className="text-gray-600 mt-1">
-              Administre usuários, permissões e monitore atividades do sistema
-            </p>
+          <div className="flex items-center gap-3">
+            <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center">
+              <Coins className="h-6 w-6 text-white" />
+            </div>
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">Gestão de Moedas</h1>
+              <p className="text-gray-600 mt-1">
+                Configure regras, monitore saldos e gerencie a economia do sistema
+              </p>
+            </div>
           </div>
 
           {/* Stats Cards */}
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <Card className="rounded-xl border-l-4 border-l-blue-500 bg-gradient-to-br from-blue-50 to-white">
+            <Card className="rounded-xl border-l-4 border-l-amber-500 bg-gradient-to-br from-amber-50 to-white">
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-gray-600">Total Usuários</p>
-                    <p className="text-2xl font-bold text-gray-900 mt-1">{stats.total}</p>
+                    <p className="text-sm font-medium text-gray-600">Total em Circulação</p>
+                    <p className="text-2xl font-bold text-gray-900 mt-1">{stats.totalCirculacao.toLocaleString()}</p>
                   </div>
-                  <div className="h-10 w-10 rounded-lg bg-blue-100 flex items-center justify-center">
-                    <Users className="h-5 w-5 text-blue-600" />
+                  <div className="h-10 w-10 rounded-lg bg-amber-100 flex items-center justify-center">
+                    <Coins className="h-5 w-5 text-amber-600" />
                   </div>
                 </div>
               </CardContent>
@@ -99,39 +102,39 @@ export default function UsuariosHubPage() {
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-gray-600">Usuários Ativos</p>
-                    <p className="text-2xl font-bold text-gray-900 mt-1">{stats.ativos}</p>
+                    <p className="text-sm font-medium text-gray-600">Moedas Distribuídas</p>
+                    <p className="text-2xl font-bold text-gray-900 mt-1">{stats.distribuidas.toLocaleString()}</p>
                   </div>
                   <div className="h-10 w-10 rounded-lg bg-green-100 flex items-center justify-center">
-                    <UserCheck className="h-5 w-5 text-green-600" />
+                    <TrendingUp className="h-5 w-5 text-green-600" />
                   </div>
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="rounded-xl border-l-4 border-l-amber-500 bg-gradient-to-br from-amber-50 to-white">
+            <Card className="rounded-xl border-l-4 border-l-blue-500 bg-gradient-to-br from-blue-50 to-white">
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-gray-600">Pendentes</p>
-                    <p className="text-2xl font-bold text-gray-900 mt-1">{stats.pendentes}</p>
+                    <p className="text-sm font-medium text-gray-600">Taxa de Distribuição</p>
+                    <p className="text-2xl font-bold text-gray-900 mt-1">{stats.taxaDistribuicao}%</p>
                   </div>
-                  <div className="h-10 w-10 rounded-lg bg-amber-100 flex items-center justify-center">
-                    <Clock className="h-5 w-5 text-amber-600" />
+                  <div className="h-10 w-10 rounded-lg bg-blue-100 flex items-center justify-center">
+                    <Activity className="h-5 w-5 text-blue-600" />
                   </div>
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="rounded-xl border-l-4 border-l-gray-500 bg-gradient-to-br from-gray-50 to-white">
+            <Card className="rounded-xl border-l-4 border-l-purple-500 bg-gradient-to-br from-purple-50 to-white">
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-gray-600">Inativos</p>
-                    <p className="text-2xl font-bold text-gray-900 mt-1">{stats.inativos}</p>
+                    <p className="text-sm font-medium text-gray-600">Média por Aluno</p>
+                    <p className="text-2xl font-bold text-gray-900 mt-1">{stats.mediaAluno}</p>
                   </div>
-                  <div className="h-10 w-10 rounded-lg bg-gray-100 flex items-center justify-center">
-                    <UserX className="h-5 w-5 text-gray-600" />
+                  <div className="h-10 w-10 rounded-lg bg-purple-100 flex items-center justify-center">
+                    <DollarSign className="h-5 w-5 text-purple-600" />
                   </div>
                 </div>
               </CardContent>
@@ -189,48 +192,48 @@ export default function UsuariosHubPage() {
         </div>
 
         {/* Quick Actions */}
-        <Card className="rounded-xl shadow-sm border-0 bg-gradient-to-br from-violet-50 to-white">
+        <Card className="rounded-xl shadow-sm border-0 bg-gradient-to-br from-amber-50 to-white">
           <CardContent className="p-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Ações Rápidas</h3>
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
               <Link 
-                href="/adm/usuarios-lista"
-                className="flex items-center gap-3 p-3 rounded-lg bg-white border border-gray-200 hover:border-violet-300 hover:shadow-sm transition-all"
-              >
-                <div className="h-8 w-8 rounded-lg bg-violet-100 flex items-center justify-center">
-                  <Users className="h-4 w-4 text-violet-600" />
-                </div>
-                <span className="text-sm font-medium text-gray-700">Adicionar Usuário</span>
-              </Link>
-              
-              <Link 
-                href="/adm/usuarios-lista"
-                className="flex items-center gap-3 p-3 rounded-lg bg-white border border-gray-200 hover:border-green-300 hover:shadow-sm transition-all"
-              >
-                <div className="h-8 w-8 rounded-lg bg-green-100 flex items-center justify-center">
-                  <UserCheck className="h-4 w-4 text-green-600" />
-                </div>
-                <span className="text-sm font-medium text-gray-700">Aprovar Pendentes</span>
-              </Link>
-
-              <Link 
-                href="/adm/usuarios-logs"
+                href="/adm/moedas-relatorio-saldos"
                 className="flex items-center gap-3 p-3 rounded-lg bg-white border border-gray-200 hover:border-blue-300 hover:shadow-sm transition-all"
               >
                 <div className="h-8 w-8 rounded-lg bg-blue-100 flex items-center justify-center">
-                  <FileText className="h-4 w-4 text-blue-600" />
+                  <BarChart2 className="h-4 w-4 text-blue-600" />
                 </div>
-                <span className="text-sm font-medium text-gray-700">Ver Logs Recentes</span>
+                <span className="text-sm font-medium text-gray-700">Ver Saldos</span>
+              </Link>
+              
+              <Link 
+                href="/adm/moedas-ajustes"
+                className="flex items-center gap-3 p-3 rounded-lg bg-white border border-gray-200 hover:border-green-300 hover:shadow-sm transition-all"
+              >
+                <div className="h-8 w-8 rounded-lg bg-green-100 flex items-center justify-center">
+                  <ArrowUpDown className="h-4 w-4 text-green-600" />
+                </div>
+                <span className="text-sm font-medium text-gray-700">Novo Ajuste</span>
               </Link>
 
               <Link 
-                href="/adm/usuarios-permissoes"
+                href="/adm/moedas-configuracoes"
                 className="flex items-center gap-3 p-3 rounded-lg bg-white border border-gray-200 hover:border-purple-300 hover:shadow-sm transition-all"
               >
                 <div className="h-8 w-8 rounded-lg bg-purple-100 flex items-center justify-center">
-                  <Shield className="h-4 w-4 text-purple-600" />
+                  <Settings className="h-4 w-4 text-purple-600" />
                 </div>
-                <span className="text-sm font-medium text-gray-700">Configurar Permissões</span>
+                <span className="text-sm font-medium text-gray-700">Configurar Regras</span>
+              </Link>
+
+              <Link 
+                href="/adm/moedas-ajustes"
+                className="flex items-center gap-3 p-3 rounded-lg bg-white border border-gray-200 hover:border-amber-300 hover:shadow-sm transition-all"
+              >
+                <div className="h-8 w-8 rounded-lg bg-amber-100 flex items-center justify-center">
+                  <Coins className="h-4 w-4 text-amber-600" />
+                </div>
+                <span className="text-sm font-medium text-gray-700">Histórico</span>
               </Link>
             </div>
           </CardContent>

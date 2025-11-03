@@ -2,67 +2,65 @@ import Link from "next/link";
 import { AdminLayout } from "@/components/adm/AdminLayout";
 import { Card, CardContent } from "@/components/ui/Card";
 import { 
-  Users, 
-  Shield, 
-  FileText, 
+  BookOpen, 
+  Settings, 
+  Archive as ArchiveIcon,
   ArrowRight,
-  UserCheck,
-  UserX,
-  Clock
+  BookMarked,
+  Users,
+  Coins,
+  CheckCircle2
 } from "lucide-react";
 
-export default function UsuariosHubPage() {
+export default function DisciplinasHubPage() {
   // Mock stats - substituir por dados reais da API
   const stats = {
-    total: 530,
+    total: 12,
+    ativas: 10,
+    arquivadas: 2,
+    professores: 25,
     alunos: 500,
-    professores: 30,
-    ativos: 475,
-    pendentes: 5,
-    inativos: 50,
+    moedas: 16500,
   };
 
   const items = [
     { 
-      href: "/adm/usuarios-lista", 
-      title: "Lista de Usuários", 
-      desc: "Gerencie alunos e professores, edite perfis e controle status",
-      icon: Users,
+      href: "/adm/disciplinas-lista", 
+      title: "Lista de Disciplinas", 
+      desc: "Gerencie todas as disciplinas, professores e configurações de pontos",
+      icon: BookOpen,
       color: "text-blue-600",
       bgColor: "bg-blue-100",
       gradient: "from-blue-500 to-blue-600",
-      iconBg: "bg-blue-50",
       stats: [
-        { label: "Alunos", value: stats.alunos },
-        { label: "Professores", value: stats.professores },
+        { label: "Ativas", value: stats.ativas },
+        { label: "Turmas", value: 18 },
       ]
     },
     { 
-      href: "/adm/usuarios-permissoes", 
-      title: "Perfis e Permissões", 
-      desc: "Configure regras de acesso e permissões por perfil de usuário",
-      icon: Shield,
+      href: "/adm/disciplinas-config", 
+      title: "Configurações Gerais", 
+      desc: "Defina regras padrão de pontos e integrações do sistema",
+      icon: Settings,
       color: "text-purple-600",
       bgColor: "bg-purple-100",
       gradient: "from-purple-500 to-purple-600",
-      iconBg: "bg-purple-50",
       stats: [
-        { label: "Perfis", value: 3 },
-        { label: "Permissões", value: 12 },
+        { label: "Pontos Máx.", value: 50 },
+        { label: "Preço Base", value: 20 },
       ]
     },
     { 
-      href: "/adm/usuarios-logs", 
-      title: "Logs e Auditoria", 
-      desc: "Consulte histórico de ações e eventos do sistema",
-      icon: FileText,
-      color: "text-green-600",
-      bgColor: "bg-green-100",
-      gradient: "from-green-500 to-green-600",
-      iconBg: "bg-green-50",
+      href: "/adm/disciplinas-arquivadas", 
+      title: "Arquivadas & Histórico", 
+      desc: "Consulte disciplinas arquivadas e histórico de alterações",
+      icon: ArchiveIcon,
+      color: "text-gray-600",
+      bgColor: "bg-gray-100",
+      gradient: "from-gray-500 to-gray-600",
       stats: [
-        { label: "Hoje", value: 145 },
-        { label: "Semana", value: 892 },
+        { label: "Arquivadas", value: stats.arquivadas },
+        { label: "Alterações", value: 45 },
       ]
     },
   ];
@@ -73,9 +71,9 @@ export default function UsuariosHubPage() {
         {/* Header */}
         <header className="space-y-4">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Gestão de Usuários</h1>
+            <h1 className="text-3xl font-bold text-gray-900">Gestão de Disciplinas</h1>
             <p className="text-gray-600 mt-1">
-              Administre usuários, permissões e monitore atividades do sistema
+              Administre disciplinas, professores, turmas e regras de pontuação
             </p>
           </div>
 
@@ -85,11 +83,11 @@ export default function UsuariosHubPage() {
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-gray-600">Total Usuários</p>
+                    <p className="text-sm font-medium text-gray-600">Total Disciplinas</p>
                     <p className="text-2xl font-bold text-gray-900 mt-1">{stats.total}</p>
                   </div>
                   <div className="h-10 w-10 rounded-lg bg-blue-100 flex items-center justify-center">
-                    <Users className="h-5 w-5 text-blue-600" />
+                    <BookOpen className="h-5 w-5 text-blue-600" />
                   </div>
                 </div>
               </CardContent>
@@ -99,11 +97,25 @@ export default function UsuariosHubPage() {
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-gray-600">Usuários Ativos</p>
-                    <p className="text-2xl font-bold text-gray-900 mt-1">{stats.ativos}</p>
+                    <p className="text-sm font-medium text-gray-600">Disciplinas Ativas</p>
+                    <p className="text-2xl font-bold text-gray-900 mt-1">{stats.ativas}</p>
                   </div>
                   <div className="h-10 w-10 rounded-lg bg-green-100 flex items-center justify-center">
-                    <UserCheck className="h-5 w-5 text-green-600" />
+                    <CheckCircle2 className="h-5 w-5 text-green-600" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="rounded-xl border-l-4 border-l-purple-500 bg-gradient-to-br from-purple-50 to-white">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">Professores Ativos</p>
+                    <p className="text-2xl font-bold text-gray-900 mt-1">{stats.professores}</p>
+                  </div>
+                  <div className="h-10 w-10 rounded-lg bg-purple-100 flex items-center justify-center">
+                    <Users className="h-5 w-5 text-purple-600" />
                   </div>
                 </div>
               </CardContent>
@@ -113,25 +125,11 @@ export default function UsuariosHubPage() {
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-gray-600">Pendentes</p>
-                    <p className="text-2xl font-bold text-gray-900 mt-1">{stats.pendentes}</p>
+                    <p className="text-sm font-medium text-gray-600">Moedas Distribuídas</p>
+                    <p className="text-2xl font-bold text-gray-900 mt-1">{stats.moedas.toLocaleString()}</p>
                   </div>
                   <div className="h-10 w-10 rounded-lg bg-amber-100 flex items-center justify-center">
-                    <Clock className="h-5 w-5 text-amber-600" />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="rounded-xl border-l-4 border-l-gray-500 bg-gradient-to-br from-gray-50 to-white">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600">Inativos</p>
-                    <p className="text-2xl font-bold text-gray-900 mt-1">{stats.inativos}</p>
-                  </div>
-                  <div className="h-10 w-10 rounded-lg bg-gray-100 flex items-center justify-center">
-                    <UserX className="h-5 w-5 text-gray-600" />
+                    <Coins className="h-5 w-5 text-amber-600" />
                   </div>
                 </div>
               </CardContent>
@@ -194,43 +192,43 @@ export default function UsuariosHubPage() {
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Ações Rápidas</h3>
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
               <Link 
-                href="/adm/usuarios-lista"
-                className="flex items-center gap-3 p-3 rounded-lg bg-white border border-gray-200 hover:border-violet-300 hover:shadow-sm transition-all"
-              >
-                <div className="h-8 w-8 rounded-lg bg-violet-100 flex items-center justify-center">
-                  <Users className="h-4 w-4 text-violet-600" />
-                </div>
-                <span className="text-sm font-medium text-gray-700">Adicionar Usuário</span>
-              </Link>
-              
-              <Link 
-                href="/adm/usuarios-lista"
-                className="flex items-center gap-3 p-3 rounded-lg bg-white border border-gray-200 hover:border-green-300 hover:shadow-sm transition-all"
-              >
-                <div className="h-8 w-8 rounded-lg bg-green-100 flex items-center justify-center">
-                  <UserCheck className="h-4 w-4 text-green-600" />
-                </div>
-                <span className="text-sm font-medium text-gray-700">Aprovar Pendentes</span>
-              </Link>
-
-              <Link 
-                href="/adm/usuarios-logs"
+                href="/adm/disciplinas-lista"
                 className="flex items-center gap-3 p-3 rounded-lg bg-white border border-gray-200 hover:border-blue-300 hover:shadow-sm transition-all"
               >
                 <div className="h-8 w-8 rounded-lg bg-blue-100 flex items-center justify-center">
-                  <FileText className="h-4 w-4 text-blue-600" />
+                  <BookOpen className="h-4 w-4 text-blue-600" />
                 </div>
-                <span className="text-sm font-medium text-gray-700">Ver Logs Recentes</span>
+                <span className="text-sm font-medium text-gray-700">Nova Disciplina</span>
               </Link>
-
+              
               <Link 
-                href="/adm/usuarios-permissoes"
+                href="/adm/disciplinas-lista"
                 className="flex items-center gap-3 p-3 rounded-lg bg-white border border-gray-200 hover:border-purple-300 hover:shadow-sm transition-all"
               >
                 <div className="h-8 w-8 rounded-lg bg-purple-100 flex items-center justify-center">
-                  <Shield className="h-4 w-4 text-purple-600" />
+                  <Users className="h-4 w-4 text-purple-600" />
                 </div>
-                <span className="text-sm font-medium text-gray-700">Configurar Permissões</span>
+                <span className="text-sm font-medium text-gray-700">Atribuir Professores</span>
+              </Link>
+
+              <Link 
+                href="/adm/disciplinas-config"
+                className="flex items-center gap-3 p-3 rounded-lg bg-white border border-gray-200 hover:border-green-300 hover:shadow-sm transition-all"
+              >
+                <div className="h-8 w-8 rounded-lg bg-green-100 flex items-center justify-center">
+                  <Settings className="h-4 w-4 text-green-600" />
+                </div>
+                <span className="text-sm font-medium text-gray-700">Configurar Pontos</span>
+              </Link>
+
+              <Link 
+                href="/adm/disciplinas-arquivadas"
+                className="flex items-center gap-3 p-3 rounded-lg bg-white border border-gray-200 hover:border-gray-300 hover:shadow-sm transition-all"
+              >
+                <div className="h-8 w-8 rounded-lg bg-gray-100 flex items-center justify-center">
+                  <ArchiveIcon className="h-4 w-4 text-gray-600" />
+                </div>
+                <span className="text-sm font-medium text-gray-700">Ver Arquivadas</span>
               </Link>
             </div>
           </CardContent>

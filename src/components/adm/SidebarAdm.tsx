@@ -37,7 +37,7 @@ const menuItems = [
   {
     title: "Relatórios",
     icon: FileText,
-    href: "/adm/relatorios",
+    href: "/adm/relatorios-hub",
   },
   {
     title: "Compras",

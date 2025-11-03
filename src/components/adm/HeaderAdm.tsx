@@ -64,7 +64,7 @@ export function HeaderAdm({ onToggleSidebar, sidebarOpen }: HeaderAdmProps) {
   };
 
   // Contar notificações não lidas
-  const notificacaoNaoLidas = listaNotificacoes.filter((n) => !n.lida).length;
+  const notificacaoNaoLidas = (listaNotificacoes ?? []).filter((n) => !n.lida).length;
 
   return (
     <header className="sticky top-0 z-30 bg-gradient-to-br from-[#7C3AED] via-[#7C3AED] to-[#7C3AED] text-white border-b border-white/20">
