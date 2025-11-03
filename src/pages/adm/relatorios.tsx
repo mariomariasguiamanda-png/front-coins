@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/router";
 import { AdminLayout } from "@/components/adm/AdminLayout";
 import { Button } from "@/components/ui/Button";
 import { Card, CardContent } from "@/components/ui/Card";
@@ -222,6 +224,7 @@ type PeriodoAnalise = "semana" | "mes" | "bimestre" | "semestre" | "ano";
 type ExportKind = "alunos" | "turmas" | "disciplinas";
 
 export default function RelatoriosPage() {
+	const router = useRouter();
 	const [searchTerm, setSearchTerm] = useState("");
 	const [selectedAlunoId, setSelectedAlunoId] = useState<string | null>(null);
 	const [filtroTurma, setFiltroTurma] = useState<string>("todas");
@@ -234,7 +237,17 @@ export default function RelatoriosPage() {
 
 	useEffect(() => {
 		setIsClient(true);
-	}, []);
+		// aplica parâmetros do hub se existirem
+		const q = router.query;
+		if (q?.view === "turmas" || q?.view === "alunos") {
+			setViewMode(q.view as "alunos" | "turmas");
+			setExportKind(q.view === "turmas" ? "turmas" : "alunos");
+		}
+		if (q?.export === "alunos" || q?.export === "turmas" || q?.export === "disciplinas") {
+			setExportKind(q.export as ExportKind);
+		}
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [router.query]);
 
 	const turmasUnicas = useMemo(
 		() => Array.from(new Set(mockAlunos.map((aluno) => aluno.turma))),
@@ -419,7 +432,10 @@ export default function RelatoriosPage() {
 							Analise o desempenho por turma ou aluno e exporte os indicadores principais.
 						</p>
 					</div>
-					<div className="flex items-center gap-2">
+						<div className="flex items-center gap-2">
+							<Link href="/adm/relatorios-hub" className="no-underline">
+								<Button variant="outline" className="rounded-lg">Voltar ao hub</Button>
+							</Link>
 						<Select value={exportKind} onValueChange={(valor) => setExportKind(valor as ExportKind)}>
 							<SelectTrigger className="w-[180px] rounded-lg">
 								<SelectValue placeholder="Exportar" />

@@ -165,7 +165,7 @@ export default function ConfigCalendarioPage() {
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      <Button variant="outline" className="rounded-xl" onClick={() => setSelectedPeriodId(p.id)}>
+                      <Button variant="outline" className="rounded-xl whitespace-nowrap" onClick={() => setSelectedPeriodId(p.id)}>
                         Gerenciar eventos
                       </Button>
                     </div>
@@ -176,7 +176,7 @@ export default function ConfigCalendarioPage() {
                       <div className="flex items-center justify-between">
                         <h4 className="font-medium">Eventos</h4>
                         <Button
-                          variant="ghost"
+                          variant="outline"
                           className="rounded-xl"
                           onClick={() => {
                             setEventDraft({ tipo: "prova", notificar: true });

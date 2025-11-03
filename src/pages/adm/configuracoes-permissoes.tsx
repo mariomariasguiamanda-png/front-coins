@@ -60,15 +60,15 @@ export default function ConfigPermissoesPage() {
               {/* Tabs por perfil */}
               <Tabs value={tab} onValueChange={setTab}>
                 <TabsList>
-                  {draft.permissions.map((pm, idx) => (
+                  {(draft.permissions || []).map((pm, idx) => (
                     <TabsTrigger key={pm.perfil + idx} value={String(idx)} className="capitalize">
                       {pm.perfil}
                     </TabsTrigger>
                   ))}
                 </TabsList>
 
-                {draft.permissions.map((pm, idx) => {
-                  const recursosEntries = Object.entries(pm.recursos);
+                {(draft.permissions || []).map((pm, idx) => {
+                  const recursosEntries = Object.entries(pm.recursos || {});
                   const filtered = query
                     ? recursosEntries.filter(([name]) => name.toLowerCase().includes(query.toLowerCase()))
                     : recursosEntries;
@@ -76,14 +76,14 @@ export default function ConfigPermissoesPage() {
                   const updateOne = (recurso: string, key: "criar"|"editar"|"visualizar"|"excluir", value: boolean) => {
                     setDraft({
                       ...draft,
-                      permissions: draft.permissions.map((px, i) =>
+                      permissions: (draft.permissions || []).map((px, i) =>
                         i === idx
                           ? {
                               ...px,
                               recursos: {
-                                ...px.recursos,
+                                ...(px.recursos || {}),
                                 [recurso]: (() => {
-                                  const current = px.recursos[recurso];
+                                  const current = (px.recursos || {})[recurso] || { visualizar: false, criar: false, editar: false, excluir: false };
                                   // Regra: criar/editar/excluir exigem visualizar
                                   if (key !== "visualizar" && value === true && !current.visualizar) {
                                     return { ...current, visualizar: true, [key]: value };

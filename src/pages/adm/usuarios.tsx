@@ -1,239 +1,241 @@
-import { useState } from "react";
-import { Button } from "@/components/ui/Button";
+import Link from "next/link";
+import { AdminLayout } from "@/components/adm/AdminLayout";
 import { Card, CardContent } from "@/components/ui/Card";
-import { Input } from "@/components/ui/Input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { ViewUserDialog } from "@/components/adm/dialogs/ViewUserDialog";
-import { EditUserDialog } from "@/components/adm/dialogs/EditUserDialog";
-import { Eye, Filter, Search, UserPlus, Upload, Download } from "lucide-react";
+import { 
+  Users, 
+  Shield, 
+  FileText, 
+  ArrowRight,
+  UserCheck,
+  UserX,
+  Clock
+} from "lucide-react";
 
-interface User {
-  id: string;
-  name: string;
-  email: string;
-  type: "student" | "teacher";
-  status: "active" | "inactive" | "pending";
-  createdAt: string;
-}
+export default function UsuariosHubPage() {
+  // Mock stats - substituir por dados reais da API
+  const stats = {
+    total: 530,
+    alunos: 500,
+    professores: 30,
+    ativos: 475,
+    pendentes: 5,
+    inativos: 50,
+  };
 
-interface TableProps {
-  users: User[];
-  onViewUser: (id: string) => void;
-  onEditUser: (id: string) => void;
-  onToggleStatus: (id: string) => void;
-}
-
-function UsersTable({ users, onViewUser, onEditUser, onToggleStatus }: TableProps) {
-  return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-sm">
-        <thead className="border-b text-left">
-          <tr>
-            <th className="pb-4 font-medium">Nome</th>
-            <th className="pb-4 font-medium">E-mail</th>
-            <th className="pb-4 font-medium">Tipo</th>
-            <th className="pb-4 font-medium">Status</th>
-            <th className="pb-4 font-medium">Data de Cadastro</th>
-            <th className="pb-4 font-medium">Ações</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y">
-          {users.map((user) => (
-            <tr key={user.id}>
-              <td className="py-4">{user.name}</td>
-              <td className="py-4">{user.email}</td>
-              <td className="py-4">
-                {user.type === "student" ? "Aluno" : "Professor"}
-              </td>
-              <td className="py-4">
-                <span
-                  className={`inline-block rounded-full px-2 py-1 text-xs font-medium ${
-                    user.status === "active"
-                      ? "bg-green-100 text-green-700"
-                      : user.status === "inactive"
-                      ? "bg-red-100 text-red-700"
-                      : "bg-yellow-100 text-yellow-700"
-                  }`}
-                >
-                  {user.status === "active"
-                    ? "Ativo"
-                    : user.status === "inactive"
-                    ? "Inativo"
-                    : "Pendente"}
-                </span>
-              </td>
-              <td className="py-4">
-                {new Date(user.createdAt).toLocaleDateString()}
-              </td>
-              <td className="py-4">
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="rounded-xl"
-                    onClick={() => onViewUser(user.id)}
-                  >
-                    <Eye className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="rounded-xl"
-                    onClick={() => onEditUser(user.id)}
-                  >
-                    Editar
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className={`rounded-xl ${
-                      user.status === "active"
-                        ? "text-red-600 hover:bg-red-50"
-                        : "text-green-600 hover:bg-green-50"
-                    }`}
-                    onClick={() => onToggleStatus(user.id)}
-                  >
-                    {user.status === "active" ? "Desativar" : "Ativar"}
-                  </Button>
-                </div>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
-}
-
-export default function UsuariosPage() {
-  const [viewUser, setViewUser] = useState<User | null>(null);
-  const [editUser, setEditUser] = useState<User | null>(null);
-  
-  // Mock data - replace with API calls
-  const users: User[] = [
-    {
-      id: "1",
-      name: "João Silva",
-      email: "joao.silva@escola.edu.br",
-      type: "student",
-      status: "active",
-      createdAt: "2023-10-01",
+  const items = [
+    { 
+      href: "/adm/usuarios-lista", 
+      title: "Lista de Usuários", 
+      desc: "Gerencie alunos e professores, edite perfis e controle status",
+      icon: Users,
+      color: "text-blue-600",
+      bgColor: "bg-blue-100",
+      gradient: "from-blue-500 to-blue-600",
+      iconBg: "bg-blue-50",
+      stats: [
+        { label: "Alunos", value: stats.alunos },
+        { label: "Professores", value: stats.professores },
+      ]
     },
-    {
-      id: "2",
-      name: "Maria Santos",
-      email: "maria.santos@escola.edu.br",
-      type: "teacher",
-      status: "pending",
-      createdAt: "2023-10-02",
+    { 
+      href: "/adm/usuarios-permissoes", 
+      title: "Perfis e Permissões", 
+      desc: "Configure regras de acesso e permissões por perfil de usuário",
+      icon: Shield,
+      color: "text-purple-600",
+      bgColor: "bg-purple-100",
+      gradient: "from-purple-500 to-purple-600",
+      iconBg: "bg-purple-50",
+      stats: [
+        { label: "Perfis", value: 3 },
+        { label: "Permissões", value: 12 },
+      ]
+    },
+    { 
+      href: "/adm/usuarios-logs", 
+      title: "Logs e Auditoria", 
+      desc: "Consulte histórico de ações e eventos do sistema",
+      icon: FileText,
+      color: "text-green-600",
+      bgColor: "bg-green-100",
+      gradient: "from-green-500 to-green-600",
+      iconBg: "bg-green-50",
+      stats: [
+        { label: "Hoje", value: 145 },
+        { label: "Semana", value: 892 },
+      ]
     },
   ];
 
-  const handleSaveUser = (userData: Omit<User, 'createdAt'>) => {
-    console.log('Save user:', userData);
-    // Add API call here
-  };
-
-  const handleToggleStatus = (id: string) => {
-    console.log('Toggle status:', id);
-    // Add API call here
-  };
-
   return (
-    <div className="space-y-6">
-      <ViewUserDialog
-        open={!!viewUser}
-        onClose={() => setViewUser(null)}
-        user={viewUser}
-      />
-      <EditUserDialog
-        open={!!editUser}
-        onClose={() => setEditUser(null)}
-        onSave={handleSaveUser}
-        user={editUser}
-      />
-      
-      <header className="flex items-center justify-between">
-        <div className="space-y-1">
-          <h1 className="text-2xl font-bold">Gestão de Usuários</h1>
-          <p className="text-muted-foreground">
-            Gerencie alunos e professores do sistema
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline" className="rounded-xl">
-            <Upload className="mr-2 h-4 w-4" />
-            Importar CSV
-          </Button>
-          <Button className="rounded-xl">
-            <UserPlus className="mr-2 h-4 w-4" />
-            Novo Usuário
-          </Button>
-        </div>
-      </header>
+    <AdminLayout>
+      <div className="space-y-6 pb-8">
+        {/* Header */}
+        <header className="space-y-4">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Gestão de Usuários</h1>
+            <p className="text-gray-600 mt-1">
+              Administre usuários, permissões e monitore atividades do sistema
+            </p>
+          </div>
 
-      <Card className="rounded-xl">
-        <CardContent className="p-6">
-          <Tabs defaultValue="all">
-            <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-              <TabsList className="rounded-2xl">
-                <TabsTrigger value="all" className="rounded-2xl">
-                  Todos
-                </TabsTrigger>
-                <TabsTrigger value="students" className="rounded-2xl">
-                  Alunos
-                </TabsTrigger>
-                <TabsTrigger value="teachers" className="rounded-2xl">
-                  Professores
-                </TabsTrigger>
-              </TabsList>
-
-              <div className="flex gap-2">
-                <div className="flex max-w-[320px] items-center gap-2">
-                  <Search className="h-4 w-4 text-muted-foreground" />
-                  <Input placeholder="Buscar usuários..." className="rounded-xl" />
+          {/* Stats Cards */}
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <Card className="rounded-xl border-l-4 border-l-blue-500 bg-gradient-to-br from-blue-50 to-white">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">Total Usuários</p>
+                    <p className="text-2xl font-bold text-gray-900 mt-1">{stats.total}</p>
+                  </div>
+                  <div className="h-10 w-10 rounded-lg bg-blue-100 flex items-center justify-center">
+                    <Users className="h-5 w-5 text-blue-600" />
+                  </div>
                 </div>
-                <Button variant="outline" className="rounded-xl">
-                  <Filter className="mr-2 h-4 w-4" />
-                  Filtros
-                </Button>
-                <Button variant="outline" className="rounded-xl">
-                  <Download className="mr-2 h-4 w-4" />
-                  Exportar
-                </Button>
-              </div>
+              </CardContent>
+            </Card>
+
+            <Card className="rounded-xl border-l-4 border-l-green-500 bg-gradient-to-br from-green-50 to-white">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">Usuários Ativos</p>
+                    <p className="text-2xl font-bold text-gray-900 mt-1">{stats.ativos}</p>
+                  </div>
+                  <div className="h-10 w-10 rounded-lg bg-green-100 flex items-center justify-center">
+                    <UserCheck className="h-5 w-5 text-green-600" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="rounded-xl border-l-4 border-l-amber-500 bg-gradient-to-br from-amber-50 to-white">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">Pendentes</p>
+                    <p className="text-2xl font-bold text-gray-900 mt-1">{stats.pendentes}</p>
+                  </div>
+                  <div className="h-10 w-10 rounded-lg bg-amber-100 flex items-center justify-center">
+                    <Clock className="h-5 w-5 text-amber-600" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="rounded-xl border-l-4 border-l-gray-500 bg-gradient-to-br from-gray-50 to-white">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">Inativos</p>
+                    <p className="text-2xl font-bold text-gray-900 mt-1">{stats.inativos}</p>
+                  </div>
+                  <div className="h-10 w-10 rounded-lg bg-gray-100 flex items-center justify-center">
+                    <UserX className="h-5 w-5 text-gray-600" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </header>
+
+        {/* Main Cards */}
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {items.map((item) => (
+            <Link key={item.href} href={item.href} className="group">
+              <Card className="rounded-xl shadow-sm hover:shadow-lg transition-all duration-200 border-0 overflow-hidden h-full">
+                {/* Gradient Header */}
+                <div className={`h-2 bg-gradient-to-r ${item.gradient}`}></div>
+                
+                <CardContent className="p-6">
+                  {/* Icon and Title */}
+                  <div className="flex items-start gap-4 mb-4">
+                    <div className={`h-12 w-12 rounded-xl ${item.bgColor} flex items-center justify-center group-hover:scale-110 transition-transform duration-200`}>
+                      <item.icon className={`h-6 w-6 ${item.color}`} />
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="text-lg font-semibold text-gray-900 mb-1">
+                        {item.title}
+                      </h3>
+                      <p className="text-sm text-gray-600 leading-relaxed">
+                        {item.desc}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Stats */}
+                  <div className="grid grid-cols-2 gap-3 pt-4 border-t border-gray-100">
+                    {item.stats.map((stat, idx) => (
+                      <div key={idx} className="text-center p-2 rounded-lg bg-gray-50">
+                        <p className="text-xs text-gray-600 mb-1">{stat.label}</p>
+                        <p className="text-lg font-bold text-gray-900">{stat.value}</p>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Action Link */}
+                  <div className="mt-4 pt-4 border-t border-gray-100">
+                    <div className="flex items-center justify-between text-sm group-hover:text-violet-700 transition-colors">
+                      <span className="font-medium text-gray-700 group-hover:text-violet-700">
+                        Acessar seção
+                      </span>
+                      <ArrowRight className="h-4 w-4 text-gray-400 group-hover:text-violet-700 group-hover:translate-x-1 transition-all" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </Link>
+          ))}
+        </div>
+
+        {/* Quick Actions */}
+        <Card className="rounded-xl shadow-sm border-0 bg-gradient-to-br from-violet-50 to-white">
+          <CardContent className="p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Ações Rápidas</h3>
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              <Link 
+                href="/adm/usuarios-lista"
+                className="flex items-center gap-3 p-3 rounded-lg bg-white border border-gray-200 hover:border-violet-300 hover:shadow-sm transition-all"
+              >
+                <div className="h-8 w-8 rounded-lg bg-violet-100 flex items-center justify-center">
+                  <Users className="h-4 w-4 text-violet-600" />
+                </div>
+                <span className="text-sm font-medium text-gray-700">Adicionar Usuário</span>
+              </Link>
+              
+              <Link 
+                href="/adm/usuarios-lista"
+                className="flex items-center gap-3 p-3 rounded-lg bg-white border border-gray-200 hover:border-green-300 hover:shadow-sm transition-all"
+              >
+                <div className="h-8 w-8 rounded-lg bg-green-100 flex items-center justify-center">
+                  <UserCheck className="h-4 w-4 text-green-600" />
+                </div>
+                <span className="text-sm font-medium text-gray-700">Aprovar Pendentes</span>
+              </Link>
+
+              <Link 
+                href="/adm/usuarios-logs"
+                className="flex items-center gap-3 p-3 rounded-lg bg-white border border-gray-200 hover:border-blue-300 hover:shadow-sm transition-all"
+              >
+                <div className="h-8 w-8 rounded-lg bg-blue-100 flex items-center justify-center">
+                  <FileText className="h-4 w-4 text-blue-600" />
+                </div>
+                <span className="text-sm font-medium text-gray-700">Ver Logs Recentes</span>
+              </Link>
+
+              <Link 
+                href="/adm/usuarios-permissoes"
+                className="flex items-center gap-3 p-3 rounded-lg bg-white border border-gray-200 hover:border-purple-300 hover:shadow-sm transition-all"
+              >
+                <div className="h-8 w-8 rounded-lg bg-purple-100 flex items-center justify-center">
+                  <Shield className="h-4 w-4 text-purple-600" />
+                </div>
+                <span className="text-sm font-medium text-gray-700">Configurar Permissões</span>
+              </Link>
             </div>
-
-            <TabsContent value="all">
-              <UsersTable
-                users={users}
-                onViewUser={(id) => setViewUser(users.find(u => u.id === id) || null)}
-                onEditUser={(id) => setEditUser(users.find(u => u.id === id) || null)}
-                onToggleStatus={handleToggleStatus}
-              />
-            </TabsContent>
-
-            <TabsContent value="students">
-              <UsersTable
-                users={users.filter((u) => u.type === "student")}
-                onViewUser={(id) => console.log("View user", id)}
-                onEditUser={(id) => console.log("Edit user", id)}
-                onToggleStatus={(id) => console.log("Toggle status", id)}
-              />
-            </TabsContent>
-
-            <TabsContent value="teachers">
-              <UsersTable
-                users={users.filter((u) => u.type === "teacher")}
-                onViewUser={(id) => console.log("View user", id)}
-                onEditUser={(id) => console.log("Edit user", id)}
-                onToggleStatus={(id) => console.log("Toggle status", id)}
-              />
-            </TabsContent>
-          </Tabs>
-        </CardContent>
-      </Card>
-    </div>
+          </CardContent>
+        </Card>
+      </div>
+    </AdminLayout>
   );
 }

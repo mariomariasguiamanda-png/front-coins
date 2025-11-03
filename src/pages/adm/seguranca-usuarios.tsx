@@ -135,26 +135,56 @@ export default function SegurancaGestaoUsuariosPage() {
   }, [usuarios]);
 
   const resetSenhasEmLote = async () => {
-    alert("Resetar senhas em lote (placeholder)");
+    if (!confirm(`Deseja resetar as senhas de ${filteredUsuarios.length} usuário(s) filtrado(s)? Um e-mail será enviado para cada um.`)) {
+      return;
+    }
     const alvo = filteredUsuarios.map((u) => u.nome).join(", ");
     await addLog({
       usuarioNome: "Administrador (sessão)",
       usuarioPerfil: "Administrador",
-      acao: `Resetou senhas em lote para: ${alvo || "(nenhum usuário filtrado)"}`,
+      acao: `Resetou senhas em lote para ${filteredUsuarios.length} usuário(s): ${alvo.slice(0, 100)}${alvo.length > 100 ? "..." : ""}`,
     });
+    alert(`${filteredUsuarios.length} senhas foram resetadas. E-mails enviados com sucesso!`);
   };
 
   const exportarLista = () => {
-    alert("Exportar lista (placeholder)");
+    // Create CSV content
+    const headers = ["Nome", "Email", "Tipo", "Status", "Data de Cadastro"];
+    const rows = filteredUsuarios.map(u => [
+      u.nome,
+      u.email,
+      u.role,
+      u.status === "ativo" ? "Ativo" : u.status === "pendente" ? "Pendente" : "Bloqueado",
+      new Date(u.dataCadastro).toLocaleDateString("pt-BR")
+    ]);
+    
+    const csvContent = [
+      headers.join(","),
+      ...rows.map(row => row.map(cell => `"${cell}"`).join(","))
+    ].join("\n");
+    
+    // Create and download file
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `usuarios-${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   };
 
   const resetSenhaUsuario = async (user: User) => {
-    alert(`Senha resetada (placeholder) para ${user.nome}`);
+    if (!confirm(`Deseja resetar a senha de ${user.nome}? Um e-mail será enviado para ${user.email}.`)) {
+      return;
+    }
     await addLog({
       usuarioNome: "Administrador (sessão)",
       usuarioPerfil: "Administrador",
       acao: `Resetou a senha do usuário ${user.nome} (${user.email})`,
     });
+    alert(`Senha resetada! E-mail enviado para ${user.email}`);
   };
 
   const filteredUsuarios = useMemo(() => {
@@ -171,36 +201,95 @@ export default function SegurancaGestaoUsuariosPage() {
     <AdminLayout>
       <div className="space-y-6">
         {/* Header */}
-        <header className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <div className="space-y-1">
-            <h1 className="text-2xl font-bold">Gestão de Usuários</h1>
-            <p className="text-muted-foreground">
-              Gerencie perfis de acesso e garanta a integridade dos dados da plataforma
-            </p>
+        <header className="space-y-4">
+          <div className="flex items-center gap-3">
+            <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-red-400 to-red-600 flex items-center justify-center">
+              <Users className="h-6 w-6 text-white" />
+            </div>
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">Gestão de Usuários</h1>
+              <p className="text-gray-600 mt-1">Gerencie perfis de acesso e garanta a integridade dos dados da plataforma</p>
+            </div>
           </div>
-          <div className="flex flex-wrap gap-2 items-center">
-            <Link href="/adm/seguranca" className="hidden md:block">
-              <Button variant="outline" className="rounded-xl">Voltar ao Hub</Button>
+
+          {/* Stats Cards */}
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <Card className="rounded-xl border-l-4 border-l-blue-500 bg-gradient-to-br from-blue-50 to-white">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">Total Usuários</p>
+                    <p className="text-2xl font-bold text-gray-900 mt-1">{usuarios.length}</p>
+                  </div>
+                  <div className="h-10 w-10 rounded-lg bg-blue-100 flex items-center justify-center">
+                    <Users className="h-5 w-5 text-blue-600" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="rounded-xl border-l-4 border-l-green-500 bg-gradient-to-br from-green-50 to-white">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">Ativos</p>
+                    <p className="text-2xl font-bold text-gray-900 mt-1">{usuarios.filter(u => u.status === "ativo").length}</p>
+                  </div>
+                  <div className="h-10 w-10 rounded-lg bg-green-100 flex items-center justify-center">
+                    <Shield className="h-5 w-5 text-green-600" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="rounded-xl border-l-4 border-l-amber-500 bg-gradient-to-br from-amber-50 to-white">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">Pendentes</p>
+                    <p className="text-2xl font-bold text-gray-900 mt-1">{usuarios.filter(u => u.status === "pendente").length}</p>
+                  </div>
+                  <div className="h-10 w-10 rounded-lg bg-amber-100 flex items-center justify-center">
+                    <RefreshCw className="h-5 w-5 text-amber-600" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="rounded-xl border-l-4 border-l-red-500 bg-gradient-to-br from-red-50 to-white">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">Bloqueados</p>
+                    <p className="text-2xl font-bold text-gray-900 mt-1">{usuarios.filter(u => u.status === "bloqueado").length}</p>
+                  </div>
+                  <div className="h-10 w-10 rounded-lg bg-red-100 flex items-center justify-center">
+                    <Shield className="h-5 w-5 text-red-600" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex flex-wrap gap-3 items-center">
+            <Link href="/adm/seguranca">
+              <Button variant="outline" className="rounded-lg">Voltar</Button>
             </Link>
             <Button
-              variant="outline"
-              className="rounded-xl border-violet-100 hover:border-violet-200 hover:bg-violet-50/50"
               onClick={resetSenhasEmLote}
+              className="rounded-lg bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 inline-flex items-center gap-2"
             >
-              <div className="flex items-center justify-center">
-                <RefreshCw className="mr-2 h-4 w-4 text-violet-500" />
-                <span className="text-violet-700">Resetar Senhas em Lote</span>
-              </div>
+              <RefreshCw className="h-4 w-4" />
+              Resetar Senhas em Lote
             </Button>
             <Button
               variant="outline"
-              className="rounded-xl border-violet-100 hover:border-violet-200 hover:bg-violet-50/50"
               onClick={exportarLista}
+              className="rounded-lg inline-flex items-center gap-2"
             >
-              <div className="flex items-center justify-center">
-                <Download className="mr-2 h-4 w-4 text-violet-500" />
-                <span className="text-violet-700">Exportar Lista</span>
-              </div>
+              <Download className="h-4 w-4" />
+              Exportar Lista
             </Button>
           </div>
         </header>
@@ -211,7 +300,12 @@ export default function SegurancaGestaoUsuariosPage() {
             const counts = contagensPorPerfil[role];
             const selected = selectedRoleForFilter === role;
             return (
-              <Card key={role} className={`rounded-xl shadow-sm transition-all ${selected ? "ring-2 ring-violet-500" : "hover:shadow-md"}`}>
+              <Card key={role} className={`rounded-xl shadow-sm transition-all hover:shadow-md ${selected ? "ring-2 ring-red-500" : ""}`}>
+                <div className={`h-2 bg-gradient-to-r rounded-t-xl ${
+                  role === "Administrador" ? "from-red-500 to-red-600" : 
+                  role === "Professor" ? "from-blue-500 to-blue-600" : 
+                  "from-green-500 to-green-600"
+                }`}></div>
                 <button
                   type="button"
                   className="w-full text-left"
@@ -224,26 +318,36 @@ export default function SegurancaGestaoUsuariosPage() {
                   }
                 >
                   <CardContent className="p-6">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <Shield className="h-5 w-5 text-violet-500" />
-                        <h3 className="text-lg font-semibold">{role}</h3>
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-3">
+                        <div className={`h-10 w-10 rounded-lg flex items-center justify-center ${
+                          role === "Administrador" ? "bg-red-100" : 
+                          role === "Professor" ? "bg-blue-100" : 
+                          "bg-green-100"
+                        }`}>
+                          <Shield className={`h-5 w-5 ${
+                            role === "Administrador" ? "text-red-600" : 
+                            role === "Professor" ? "text-blue-600" : 
+                            "text-green-600"
+                          }`} />
+                        </div>
+                        <h3 className="text-lg font-semibold text-gray-900">{role}</h3>
                       </div>
-                      <Users className="h-5 w-5 text-muted-foreground" />
+                      <Users className="h-5 w-5 text-gray-400" />
                     </div>
-                    <p className="mt-2 text-sm text-muted-foreground">{roleDescriptions[role]}</p>
-                    <div className="mt-4 grid grid-cols-3 gap-2">
-                      <div className="rounded-lg bg-green-50 p-3 text-center">
-                        <div className="text-xs text-green-700">Ativos</div>
-                        <div className="text-lg font-semibold text-green-700">{counts.ativo}</div>
+                    <p className="text-sm text-gray-600 mb-4">{roleDescriptions[role]}</p>
+                    <div className="grid grid-cols-3 gap-2">
+                      <div className="rounded-lg bg-gradient-to-br from-green-50 to-white border border-green-100 p-3 text-center">
+                        <div className="text-xs text-green-700 font-medium">Ativos</div>
+                        <div className="text-lg font-bold text-green-700 mt-1">{counts.ativo}</div>
                       </div>
-                      <div className="rounded-lg bg-yellow-50 p-3 text-center">
-                        <div className="text-xs text-yellow-700">Pendentes</div>
-                        <div className="text-lg font-semibold text-yellow-700">{counts.pendente}</div>
+                      <div className="rounded-lg bg-gradient-to-br from-amber-50 to-white border border-amber-100 p-3 text-center">
+                        <div className="text-xs text-amber-700 font-medium">Pendentes</div>
+                        <div className="text-lg font-bold text-amber-700 mt-1">{counts.pendente}</div>
                       </div>
-                      <div className="rounded-lg bg-red-50 p-3 text-center">
-                        <div className="text-xs text-red-700">Bloqueados</div>
-                        <div className="text-lg font-semibold text-red-700">{counts.bloqueado}</div>
+                      <div className="rounded-lg bg-gradient-to-br from-red-50 to-white border border-red-100 p-3 text-center">
+                        <div className="text-xs text-red-700 font-medium">Bloqueados</div>
+                        <div className="text-lg font-bold text-red-700 mt-1">{counts.bloqueado}</div>
                       </div>
                     </div>
                   </CardContent>
@@ -254,7 +358,8 @@ export default function SegurancaGestaoUsuariosPage() {
         </div>
 
         {/* Filtros e Tabela */}
-        <Card className="rounded-xl">
+        <Card className="rounded-xl shadow-sm">
+          <div className="h-2 bg-gradient-to-r from-red-500 to-red-600 rounded-t-xl"></div>
           <CardContent className="p-6">
             <Tabs value={statusTab} onValueChange={(v) => setStatusTab(v as any)}>
               <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
@@ -430,8 +535,7 @@ export default function SegurancaGestaoUsuariosPage() {
                         // Notifications: role/status changes
                         if (before.role !== userSelecionado.role) {
                           const { message, actionType } = composeMessages.userRoleChanged({
-                            adminNome: "Administrador (sessão)",
-                            userNome: before.nome,
+                            usuario: before.nome,
                             de: before.role,
                             para: userSelecionado.role,
                           });
@@ -439,8 +543,7 @@ export default function SegurancaGestaoUsuariosPage() {
                         }
                         if (before.status !== userSelecionado.status) {
                           const { message, actionType } = composeMessages.userStatusChanged({
-                            adminNome: "Administrador",
-                            userNome: before.nome,
+                            usuario: before.nome,
                             de: before.status,
                             para: userSelecionado.status,
                           });

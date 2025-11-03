@@ -24,6 +24,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Transacao, mockTransacoes } from "@/lib/mock/compras";
 
 export default function ComprasTransacoesPage() {
+  const [transacoes, setTransacoes] = useState<Transacao[]>(mockTransacoes);
   const [searchTerm, setSearchTerm] = useState("");
   const [currentTab, setCurrentTab] = useState("todas");
   const [filtroTurma, setFiltroTurma] = useState("todas");
@@ -39,13 +40,13 @@ export default function ComprasTransacoesPage() {
   const [logsCancelamentos, setLogsCancelamentos] = useState<Array<{id:string; quando:string; admin:string; motivo:string;}>>([]);
 
   // Dados únicos para filtros
-  const turmas = useMemo(() => Array.from(new Set(mockTransacoes.map(t => t.alunoTurma))), []);
-  const disciplinas = useMemo(() => Array.from(new Set(mockTransacoes.map(t => t.disciplinaNome))), []);
-  const professores = useMemo(() => Array.from(new Set(mockTransacoes.map(t => t.professorNome))), []);
-  const alunos = useMemo(() => Array.from(new Set(mockTransacoes.map(t => t.alunoNome))), []);
+  const turmas = useMemo(() => Array.from(new Set(transacoes.map(t => t.alunoTurma))), [transacoes]);
+  const disciplinas = useMemo(() => Array.from(new Set(transacoes.map(t => t.disciplinaNome))), [transacoes]);
+  const professores = useMemo(() => Array.from(new Set(transacoes.map(t => t.professorNome))), [transacoes]);
+  const alunos = useMemo(() => Array.from(new Set(transacoes.map(t => t.alunoNome))), [transacoes]);
 
   // Filtragem de transações
-  const transacoesFiltradas = mockTransacoes.filter(transacao => {
+  const transacoesFiltradas = transacoes.filter(transacao => {
     const matchesSearch = 
       transacao.alunoNome.toLowerCase().includes(searchTerm.toLowerCase()) ||
       transacao.disciplinaNome.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -84,6 +85,58 @@ export default function ComprasTransacoesPage() {
   const totalPontosComprados = transacoesFiltradas.reduce((sum, t) => sum + t.pontosComprados, 0);
   const totalMoedasGastas = transacoesFiltradas.reduce((sum, t) => sum + t.moedasGastas, 0);
 
+  const handleExportar = () => {
+    const csv = [
+      "ID,Data,Aluno,Turma,Disciplina,Professor,Pontos Comprados,Moedas Gastas,Status",
+      ...transacoesFiltradas.map(t =>
+        `${t.id},${t.data},${t.alunoNome},${t.alunoTurma},${t.disciplinaNome},${t.professorNome},${t.pontosComprados},${t.moedasGastas},${t.status}`
+      ),
+    ].join("\n");
+
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `transacoes-compras-${new Date().toISOString().split("T")[0]}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleCancelarTransacao = async (motivo: string) => {
+    if (selectedTransacao) {
+      // Atualizar o status da transação
+      setTransacoes(prev => 
+        prev.map(t => 
+          t.id === selectedTransacao.id 
+            ? { ...t, status: "cancelada" as const }
+            : t
+        )
+      );
+
+      const { message, actionType } = composeMessages.purchaseCanceled({
+        motivo,
+        transacaoId: selectedTransacao.id,
+      });
+      await createNotification({ 
+        message, 
+        actionType, 
+        recipients: ["Administrador", "Coordenador"] 
+      });
+      
+      setLogsCancelamentos((prev) => [
+        { 
+          id: selectedTransacao.id, 
+          quando: new Date().toISOString(), 
+          admin: "Administrador (sessão)", 
+          motivo 
+        },
+        ...prev,
+      ]);
+    }
+    setShowCancelarDialog(false);
+    setSelectedTransacao(null);
+  };
+
   return (
     <AdminLayout>
       <div className="space-y-6">
@@ -95,23 +148,7 @@ export default function ComprasTransacoesPage() {
             setSelectedTransacao(null);
           }}
           transacao={selectedTransacao}
-          onConfirm={async (motivo) => {
-            if (selectedTransacao) {
-              const { alunoNome, moedasGastas } = selectedTransacao;
-              const { message, actionType } = composeMessages.purchaseCanceled({
-                adminNome: "Administrador (sessão)",
-                alunoNome,
-                valor: moedasGastas,
-              });
-              await createNotification({ message, actionType, recipients: ["Administrador", "Coordenador"], context: { motivo, transacaoId: selectedTransacao.id } });
-              setLogsCancelamentos((prev) => [
-                { id: selectedTransacao.id, quando: new Date().toISOString(), admin: "Administrador (sessão)", motivo },
-                ...prev,
-              ]);
-            }
-            setShowCancelarDialog(false);
-            setSelectedTransacao(null);
-          }}
+          onConfirm={handleCancelarTransacao}
         />
 
         {/* Dialog de Detalhes */}
@@ -185,10 +222,7 @@ export default function ComprasTransacoesPage() {
             </Link>
             <Button
               className="rounded-lg bg-violet-600 hover:bg-violet-700"
-              onClick={() => {
-                // Implementar exportação
-                console.log("Exportar relatório");
-              }}
+              onClick={handleExportar}
             >
               <Download className="mr-2 h-4 w-4" />
               Exportar Relatório

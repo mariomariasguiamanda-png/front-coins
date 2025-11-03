@@ -1,9 +1,20 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { AdminLayout } from "@/components/adm/AdminLayout";
 import { Button } from "@/components/ui/Button";
 import { Card, CardContent } from "@/components/ui/Card";
 import Link from "next/link";
-import { FileText, ArrowLeft, PlusCircle, Edit2, Trash2, Filter } from "lucide-react";
+import {
+  FileText,
+  ChevronLeft,
+  PlusCircle,
+  Edit2,
+  Trash2,
+  Filter,
+  Layers,
+  MessageSquare,
+  Tag,
+  TrendingUp,
+} from "lucide-react";
 import { useToast } from "@/components/ui/Toast";
 import { getStandardResponses, createStandardResponse, updateStandardResponse, deleteStandardResponse, type StandardResponse } from "@/services/api/support";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -32,49 +43,133 @@ export default function SuporteRespostasPage() {
     if (!items) return;
     const total = Math.max(1, Math.ceil(items.length / pageSize));
     if (page > total) setPage(1);
-  }, [items, pageSize]);
+  }, [items, pageSize, page]);
+
+  const stats = useMemo(() => {
+    if (!items) return { total: 0, categorias: 0, maisUsados: 0 };
+    const catSet = new Set(items.map((i) => i.categoria));
+    const maisUsados = items.filter((i) => i.tags?.includes("popular")).length;
+    return { total: items.length, categorias: catSet.size, maisUsados };
+  }, [items]);
   return (
     <AdminLayout>
-      <div className="space-y-6">
-        <header className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <FileText className="h-5 w-5 text-violet-500" />
-            <div className="space-y-1">
-              <h1 className="text-2xl font-bold">Respostas Padrão</h1>
-              <p className="text-muted-foreground">Modelos prontos para agilizar atendimentos</p>
+      <div className="space-y-6 pb-8">
+        {/* Header */}
+        <header className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-purple-400 to-purple-600 flex items-center justify-center">
+                <FileText className="h-6 w-6 text-white" />
+              </div>
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900">Respostas Padrão</h1>
+                <p className="text-gray-600 mt-1">Templates para agilizar atendimentos</p>
+              </div>
             </div>
+            <Link href="/adm/suporte" className="no-underline">
+              <Button variant="outline" className="rounded-lg inline-flex items-center gap-2">
+                <ChevronLeft className="h-4 w-4" />
+                Voltar ao hub
+              </Button>
+            </Link>
           </div>
-          <Link href="/adm/suporte" className="hidden md:block"><Button variant="outline" className="rounded-xl"><ArrowLeft className="mr-2 h-4 w-4"/>Voltar ao Hub</Button></Link>
+
+          {/* Stats Cards */}
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <Card className="rounded-xl border-l-4 border-l-purple-500 bg-gradient-to-br from-purple-50 to-white">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">Total Templates</p>
+                    <p className="text-2xl font-bold text-gray-900 mt-1">{stats.total}</p>
+                  </div>
+                  <div className="h-10 w-10 rounded-lg bg-purple-100 flex items-center justify-center">
+                    <Layers className="h-5 w-5 text-purple-600" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="rounded-xl border-l-4 border-l-blue-500 bg-gradient-to-br from-blue-50 to-white">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">Categorias</p>
+                    <p className="text-2xl font-bold text-gray-900 mt-1">{stats.categorias}</p>
+                  </div>
+                  <div className="h-10 w-10 rounded-lg bg-blue-100 flex items-center justify-center">
+                    <Tag className="h-5 w-5 text-blue-600" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="rounded-xl border-l-4 border-l-amber-500 bg-gradient-to-br from-amber-50 to-white">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">Mais Usados</p>
+                    <p className="text-2xl font-bold text-gray-900 mt-1">{stats.maisUsados}</p>
+                  </div>
+                  <div className="h-10 w-10 rounded-lg bg-amber-100 flex items-center justify-center">
+                    <TrendingUp className="h-5 w-5 text-amber-600" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="rounded-xl border-l-4 border-l-green-500 bg-gradient-to-br from-green-50 to-white">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">Disponíveis</p>
+                    <p className="text-2xl font-bold text-gray-900 mt-1">{stats.total}</p>
+                  </div>
+                  <div className="h-10 w-10 rounded-lg bg-green-100 flex items-center justify-center">
+                    <MessageSquare className="h-5 w-5 text-green-600" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </header>
 
-        <div className="grid gap-6">
-          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-            <Button variant="outline" className="rounded-lg" onClick={() => { setTitulo(""); setTexto(""); setCategoria("Geral"); setOpenCreate(true); }}>
-              <PlusCircle className="mr-2 h-4 w-4" /> Nova Resposta
-            </Button>
-            <div className="flex items-center gap-2">
-              <Filter className="h-4 w-4 text-muted-foreground" />
-              <Select value={sortBy} onValueChange={(v) => setSortBy(v as any)}>
-                <SelectTrigger className="w-[220px] rounded-lg"><SelectValue placeholder="Ordenar por" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="titulo-asc">Título (A-Z)</SelectItem>
-                  <SelectItem value="titulo-desc">Título (Z-A)</SelectItem>
-                  <SelectItem value="cat-asc">Categoria (A-Z)</SelectItem>
-                  <SelectItem value="cat-desc">Categoria (Z-A)</SelectItem>
-                </SelectContent>
-              </Select>
-              <Select value={String(pageSize)} onValueChange={(v) => { setPageSize(Number(v)); setPage(1); }}>
-                <SelectTrigger className="w-[140px] rounded-lg"><SelectValue placeholder="Itens por página" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="5">5 por página</SelectItem>
-                  <SelectItem value="10">10 por página</SelectItem>
-                  <SelectItem value="20">20 por página</SelectItem>
-                </SelectContent>
-              </Select>
+        {/* Controls */}
+        <Card className="rounded-xl shadow-sm">
+          <div className="h-2 bg-gradient-to-r from-purple-500 to-purple-600 rounded-t-xl"></div>
+          <CardContent className="p-6">
+            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+              <Button
+                className="rounded-lg bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 inline-flex items-center gap-2"
+                onClick={() => { setTitulo(""); setTexto(""); setCategoria("Geral"); setOpenCreate(true); }}
+              >
+                <PlusCircle className="h-4 w-4" /> Nova Resposta
+              </Button>
+              <div className="flex items-center gap-2">
+                <Filter className="h-4 w-4 text-muted-foreground" />
+                <Select value={sortBy} onValueChange={(v) => setSortBy(v as any)}>
+                  <SelectTrigger className="w-[220px] rounded-lg"><SelectValue placeholder="Ordenar por" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="titulo-asc">Título (A-Z)</SelectItem>
+                    <SelectItem value="titulo-desc">Título (Z-A)</SelectItem>
+                    <SelectItem value="cat-asc">Categoria (A-Z)</SelectItem>
+                    <SelectItem value="cat-desc">Categoria (Z-A)</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Select value={String(pageSize)} onValueChange={(v) => { setPageSize(Number(v)); setPage(1); }}>
+                  <SelectTrigger className="w-[140px] rounded-lg"><SelectValue placeholder="Itens por página" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="5">5 por página</SelectItem>
+                    <SelectItem value="10">10 por página</SelectItem>
+                    <SelectItem value="20">20 por página</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
-          </div>
+          </CardContent>
+        </Card>
 
-          {!items ? (
+        <div className="grid gap-6">{!items ? (
             <Card className="rounded-xl"><CardContent className="p-6 text-sm text-muted-foreground">Carregando…</CardContent></Card>
           ) : items.length === 0 ? (
             <Card className="rounded-xl"><CardContent className="p-6 text-sm text-muted-foreground">Nenhuma resposta padrão ainda.</CardContent></Card>

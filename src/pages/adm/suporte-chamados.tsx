@@ -1,10 +1,19 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
 import { AdminLayout } from "@/components/adm/AdminLayout";
 import { Button } from "@/components/ui/Button";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
-import { MessageCircle, Search, ArrowLeft, Filter } from "lucide-react";
+import {
+  MessageCircle,
+  Search,
+  ChevronLeft,
+  Filter,
+  Clock,
+  CheckCircle,
+  AlertCircle,
+  TrendingUp,
+} from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { getTickets, addTicketResponse, updateTicket, type Ticket, type TicketStatus } from "@/services/api/support";
@@ -52,23 +61,101 @@ export default function SuporteChamadosPage() {
   // reset page if out of range after filters change
   useEffect(() => {
     if (page > totalPages) setPage(1);
-  }, [totalPages]);
+  }, [totalPages, page]);
+
+  const stats = useMemo(() => {
+    const abertos = tickets.filter((t) => t.status === "aberto").length;
+    const emAndamento = tickets.filter((t) => t.status === "em_andamento").length;
+    const resolvidos = tickets.filter((t) => t.status === "resolvido").length;
+    return { abertos, emAndamento, resolvidos, total: tickets.length };
+  }, [tickets]);
 
   return (
     <AdminLayout>
-      <div className="space-y-6">
-        <header className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <MessageCircle className="h-5 w-5 text-violet-500" />
-            <div className="space-y-1">
-              <h1 className="text-2xl font-bold">Chamados</h1>
-              <p className="text-muted-foreground">Gerenciamento de chamados</p>
+      <div className="space-y-6 pb-8">
+        {/* Header */}
+        <header className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center">
+                <MessageCircle className="h-6 w-6 text-white" />
+              </div>
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900">Gerenciar Chamados</h1>
+                <p className="text-gray-600 mt-1">Atendimento e resolução de solicitações</p>
+              </div>
             </div>
+            <Link href="/adm/suporte" className="no-underline">
+              <Button variant="outline" className="rounded-lg inline-flex items-center gap-2">
+                <ChevronLeft className="h-4 w-4" />
+                Voltar ao hub
+              </Button>
+            </Link>
           </div>
-          <Link href="/adm/suporte" className="hidden md:block"><Button variant="outline" className="rounded-xl"><ArrowLeft className="mr-2 h-4 w-4"/>Voltar ao Hub</Button></Link>
+
+          {/* Stats Cards */}
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <Card className="rounded-xl border-l-4 border-l-amber-500 bg-gradient-to-br from-amber-50 to-white">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">Abertos</p>
+                    <p className="text-2xl font-bold text-gray-900 mt-1">{stats.abertos}</p>
+                  </div>
+                  <div className="h-10 w-10 rounded-lg bg-amber-100 flex items-center justify-center">
+                    <AlertCircle className="h-5 w-5 text-amber-600" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="rounded-xl border-l-4 border-l-blue-500 bg-gradient-to-br from-blue-50 to-white">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">Em Andamento</p>
+                    <p className="text-2xl font-bold text-gray-900 mt-1">{stats.emAndamento}</p>
+                  </div>
+                  <div className="h-10 w-10 rounded-lg bg-blue-100 flex items-center justify-center">
+                    <Clock className="h-5 w-5 text-blue-600" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="rounded-xl border-l-4 border-l-green-500 bg-gradient-to-br from-green-50 to-white">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">Resolvidos</p>
+                    <p className="text-2xl font-bold text-gray-900 mt-1">{stats.resolvidos}</p>
+                  </div>
+                  <div className="h-10 w-10 rounded-lg bg-green-100 flex items-center justify-center">
+                    <CheckCircle className="h-5 w-5 text-green-600" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="rounded-xl border-l-4 border-l-purple-500 bg-gradient-to-br from-purple-50 to-white">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">Total</p>
+                    <p className="text-2xl font-bold text-gray-900 mt-1">{stats.total}</p>
+                  </div>
+                  <div className="h-10 w-10 rounded-lg bg-purple-100 flex items-center justify-center">
+                    <TrendingUp className="h-5 w-5 text-purple-600" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </header>
 
-        <Card className="rounded-xl">
+        {/* Filters */}
+        <Card className="rounded-xl shadow-sm">
+          <div className="h-2 bg-gradient-to-r from-blue-500 to-blue-600 rounded-t-xl"></div>
           <CardContent className="p-6">
             <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
               <div className="flex max-w-[320px] items-center gap-2">
@@ -152,22 +239,43 @@ export default function SuporteChamadosPage() {
         </div>
 
         <Dialog open={ticketDialogOpen} onOpenChange={(o) => { setTicketDialogOpen(o); if (!o) { setNewReply(""); setSending(false); setSavingDetails(false); } }}>
-          <DialogContent className="max-w-3xl">
+          <DialogContent className="max-w-2xl bg-white">
             <DialogHeader>
               <DialogTitle>Detalhes do Chamado</DialogTitle>
               <DialogDescription>Visualize e gerencie os detalhes do chamado selecionado</DialogDescription>
             </DialogHeader>
             {selectedTicket && (
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-6">
+                {/* Informações do Chamado */}
+                <div className="grid grid-cols-2 gap-4 p-4 bg-gray-50 rounded-lg">
                   <div>
-                    <p className="text-sm text-muted-foreground">Solicitante</p>
-                    <p className="font-medium">{selectedTicket.solicitante}</p>
+                    <p className="text-xs text-gray-500 mb-1">Solicitante</p>
+                    <p className="font-semibold text-gray-900">{selectedTicket.solicitante}</p>
                   </div>
                   <div>
-                    <p className="text-sm text-muted-foreground">Status</p>
-                    <Select value={editStatus || selectedTicket.status} onValueChange={(v) => setEditStatus(v as TicketStatus)}>
-                      <SelectTrigger className="rounded-lg"><SelectValue placeholder="Selecionar status" /></SelectTrigger>
+                    <p className="text-xs text-gray-500 mb-1">Status</p>
+                    <Select 
+                      value={editStatus || selectedTicket.status} 
+                      onValueChange={async (v) => {
+                        setEditStatus(v as TicketStatus);
+                        if (!selectedTicket) return;
+                        try {
+                          const next: Ticket = {
+                            ...selectedTicket,
+                            status: v as TicketStatus,
+                          };
+                          const updated = await updateTicket(next);
+                          setTickets(tickets.map((t) => (t.id === updated.id ? updated : t)));
+                          setSelectedTicket(updated);
+                          show({ variant: "success", title: "Status atualizado" });
+                        } catch (error) {
+                          console.error(error);
+                        }
+                      }}
+                    >
+                      <SelectTrigger className="rounded-lg bg-white border-gray-300">
+                        <SelectValue placeholder="Selecionar status" />
+                      </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="aberto">Aberto</SelectItem>
                         <SelectItem value="em_andamento">Em andamento</SelectItem>
@@ -175,18 +283,56 @@ export default function SuporteChamadosPage() {
                       </SelectContent>
                     </Select>
                   </div>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Descrição</p>
-                  <p className="text-sm">{selectedTicket.descricao}</p>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Responsável</p>
-                    <Input placeholder="Atribuir atendente" className="rounded-lg" value={editResponsavel} onChange={(e) => setEditResponsavel(e.target.value)} />
+                  <div className="col-span-2">
+                    <p className="text-xs text-gray-500 mb-1">Responsável</p>
+                    <Input 
+                      placeholder="Atribuir atendente" 
+                      className="rounded-lg bg-white border-gray-300" 
+                      value={editResponsavel} 
+                      onChange={(e) => setEditResponsavel(e.target.value)} 
+                      onBlur={async () => {
+                        if (!selectedTicket || editResponsavel === selectedTicket.responsavel) return;
+                        try {
+                          const next: Ticket = {
+                            ...selectedTicket,
+                            responsavel: editResponsavel.trim() || null,
+                          };
+                          const updated = await updateTicket(next);
+                          setTickets(tickets.map((t) => (t.id === updated.id ? updated : t)));
+                          setSelectedTicket(updated);
+                          show({ variant: "success", title: "Responsável atualizado" });
+                        } catch (error) {
+                          console.error(error);
+                        }
+                      }}
+                    />
                   </div>
-                  <div className="flex items-end justify-end gap-2">
-                    { (editStatus || selectedTicket.status) === "resolvido" && (
+                </div>
+
+                {/* Descrição */}
+                <div>
+                  <p className="text-sm font-medium text-gray-700 mb-2">Descrição do Problema</p>
+                  <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                    <p className="text-sm text-gray-900">{selectedTicket.descricao}</p>
+                  </div>
+                </div>
+                
+                {/* Seção de Resposta */}
+                <div>
+                  <p className="text-sm font-medium text-gray-700 mb-2">Responder ao Chamado</p>
+                  <textarea 
+                    className="w-full rounded-lg border border-gray-300 p-3 bg-white text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent" 
+                    rows={4} 
+                    placeholder="Digite sua resposta..." 
+                    value={newReply} 
+                    onChange={(e) => setNewReply(e.target.value)} 
+                  />
+                </div>
+
+                {/* Footer com Ações */}
+                <div className="flex items-center justify-between pt-4 border-t">
+                  <div>
+                    {(editStatus || selectedTicket.status) === "resolvido" && (
                       <Button
                         variant="outline"
                         className="rounded-lg"
@@ -205,53 +351,47 @@ export default function SuporteChamadosPage() {
                             setSavingDetails(false);
                           }
                         }}
-                      >Reabrir</Button>
+                      >
+                        Reabrir Chamado
+                      </Button>
                     )}
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      className="rounded-lg"
+                      onClick={() => setTicketDialogOpen(false)}
+                    >
+                      Fechar
+                    </Button>
                     <Button
                       className="rounded-lg"
-                      isLoading={savingDetails}
-                      onClick={async () => {
-                        if (!selectedTicket) return;
-                        try {
-                          setSavingDetails(true);
-                          const next: Ticket = {
-                            ...selectedTicket,
-                            status: (editStatus || selectedTicket.status) as TicketStatus,
-                            responsavel: editResponsavel.trim() || null,
-                          };
-                          const updated = await updateTicket(next);
-                          setTickets(tickets.map((t) => (t.id === updated.id ? updated : t)));
-                          setSelectedTicket(updated);
-                          show({ variant: "success", title: "Alterações salvas" });
-                        } finally {
-                          setSavingDetails(false);
-                        }
-                      }}
-                    >Salvar alterações</Button>
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <p className="text-sm text-muted-foreground">Responder</p>
-                  <textarea className="w-full rounded-lg border p-2" rows={3} placeholder="Digite sua resposta..." value={newReply} onChange={(e) => setNewReply(e.target.value)} />
-                  <div className="text-right">
-                    <Button
                       isLoading={sending}
                       disabled={!newReply.trim() || sending}
                       onClick={async () => {
                         if (!selectedTicket) return;
                         try {
                           setSending(true);
-                          const updated = await addTicketResponse(selectedTicket.id, { autorId: "sup_session", autorNome: "Agente Suporte", mensagem: newReply.trim() });
+                          const updated = await addTicketResponse(selectedTicket.id, { 
+                            autorId: "sup_session", 
+                            autorNome: "Agente Suporte", 
+                            mensagem: newReply.trim() 
+                          });
                           setTickets(tickets.map((t) => (t.id === updated.id ? updated : t)));
                           setSelectedTicket(updated);
                           setNewReply("");
-                          show({ variant: "success", title: "Resposta enviada" });
+                          show({ variant: "success", title: "Resposta enviada com sucesso" });
+                          // Fechar o dialog após enviar
+                          setTicketDialogOpen(false);
+                        } catch (error) {
+                          console.error("Erro ao enviar resposta:", error);
+                          show({ variant: "error", title: "Erro ao enviar resposta" });
                         } finally {
                           setSending(false);
                         }
                       }}
                     >
-                      Enviar
+                      Enviar Resposta
                     </Button>
                   </div>
                 </div>

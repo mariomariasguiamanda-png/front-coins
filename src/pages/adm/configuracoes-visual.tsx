@@ -18,7 +18,20 @@ export default function ConfigVisualPage() {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => { getSystemSettings().then((s) => { setData(s); setDraft(s); }); }, []);
-  const changesPending = useMemo(() => JSON.stringify(data) !== JSON.stringify(draft), [data, draft]);
+  const changesPending = useMemo(() => {
+    const hasChanges = JSON.stringify(data) !== JSON.stringify(draft);
+    console.log('Changes pending:', hasChanges, { data, draft });
+    return hasChanges;
+  }, [data, draft]);
+
+  // Aplicar cores em tempo real
+  useEffect(() => {
+    if (draft) {
+      document.documentElement.style.setProperty('--color-primary', draft.branding.primaryColor);
+      document.documentElement.style.setProperty('--color-secondary', draft.branding.secondaryColor);
+      document.documentElement.style.setProperty('--font-family', draft.branding.fontFamily);
+    }
+  }, [draft]);
 
   return (
     <AdminLayout>
@@ -32,19 +45,52 @@ export default function ConfigVisualPage() {
             <Link href="/adm/configuracoes" className="hidden md:block">
               <Button variant="outline" className="rounded-xl"><ArrowLeft className="mr-2 h-4 w-4"/>Voltar ao Hub</Button>
             </Link>
-            <Button className="rounded-xl" disabled={!changesPending || !draft} isLoading={saving} onClick={async () => {
-              if (!data || !draft) return;
-              const diffs = diffSystemSettings(data, draft);
-              if (!diffs.length) return;
-              try {
-                setSaving(true);
-                const saved = await updateSystemSettings(draft);
-                setData(saved); setDraft(saved);
-                await createLog({ usuarioNome: "Administrador (sessão)", usuarioPerfil: "Administrador", acao: `Atualizou identidade visual: ${diffs.join(", ")}` });
-                await createNotification({ message: `Identidade visual atualizada.`, actionType: "permissions_changed", recipients: ["Administrador", "Coordenador"] });
-                show({ variant: "success", title: "Configurações salvas" });
-              } finally { setSaving(false); }
-            }}><Save className="mr-2 h-4 w-4"/>Salvar alterações</Button>
+            {changesPending && (
+              <span className="text-xs text-amber-600 font-medium">✓ Alterações pendentes</span>
+            )}
+            <Button 
+              className="rounded-xl" 
+              disabled={!changesPending || !draft || saving} 
+              isLoading={saving}
+              onClick={async () => {
+                console.log('Botão clicado!', { data, draft });
+                
+                if (!data || !draft) {
+                  alert('Dados não carregados');
+                  return;
+                }
+                
+                try {
+                  setSaving(true);
+                  console.log('Salvando...');
+                  
+                  const saved = await updateSystemSettings(draft);
+                  console.log('Salvo com sucesso:', saved);
+                  
+                  setData(saved); 
+                  setDraft(saved);
+                  
+                  show({ variant: "success", title: "✓ Configurações salvas!" });
+                  
+                  const diffs = diffSystemSettings(data, draft);
+                  if (diffs.length > 0) {
+                    await createLog({ 
+                      usuarioNome: "Administrador", 
+                      usuarioPerfil: "Administrador", 
+                      acao: `Identidade visual: ${diffs.join(", ")}` 
+                    });
+                  }
+                } catch (error) {
+                  console.error("Erro ao salvar:", error);
+                  show({ variant: "error", title: "Erro ao salvar" });
+                } finally { 
+                  setSaving(false); 
+                  console.log('Salvamento finalizado');
+                }
+              }}
+            >
+              <Save className="mr-2 h-4 w-4"/>Salvar alterações
+            </Button>
           </div>
         </header>
 
@@ -107,6 +153,52 @@ export default function ConfigVisualPage() {
                   <SelectItem value="Alegreya">Alegreya</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+
+            {/* Pré-visualização */}
+            <div className="space-y-3 border-t pt-6">
+              <h3 className="text-lg font-semibold">Pré-visualização</h3>
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-3 rounded-lg border p-4" style={{ fontFamily: draft.branding.fontFamily }}>
+                  <p className="text-sm text-gray-600">Tipografia em uso:</p>
+                  <p className="text-2xl font-bold">Título Principal</p>
+                  <p className="text-base">Texto normal com a fonte selecionada</p>
+                  <p className="text-sm text-gray-500">Texto secundário menor</p>
+                </div>
+                <div className="space-y-3 rounded-lg border p-4">
+                  <p className="text-sm text-gray-600 mb-3">Cores aplicadas:</p>
+                  <div className="flex gap-3">
+                    <div className="flex-1 space-y-2">
+                      <div 
+                        className="h-20 rounded-lg border-2" 
+                        style={{ backgroundColor: draft.branding.primaryColor }}
+                      />
+                      <p className="text-xs text-center font-medium">Primária</p>
+                    </div>
+                    <div className="flex-1 space-y-2">
+                      <div 
+                        className="h-20 rounded-lg border-2" 
+                        style={{ backgroundColor: draft.branding.secondaryColor }}
+                      />
+                      <p className="text-xs text-center font-medium">Secundária</p>
+                    </div>
+                  </div>
+                  <div className="mt-4 flex gap-2">
+                    <Button 
+                      className="flex-1 rounded-lg" 
+                      style={{ backgroundColor: draft.branding.primaryColor }}
+                    >
+                      Botão Primário
+                    </Button>
+                    <Button 
+                      className="flex-1 rounded-lg" 
+                      style={{ backgroundColor: draft.branding.secondaryColor }}
+                    >
+                      Botão Secundário
+                    </Button>
+                  </div>
+                </div>
+              </div>
             </div>
           </CardContent></Card>
         )}

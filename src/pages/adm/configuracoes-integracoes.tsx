@@ -51,7 +51,7 @@ export default function ConfigIntegracoesPage() {
           <Card className="rounded-xl"><CardContent className="p-6 text-sm text-muted-foreground">Carregando…</CardContent></Card>
         ) : (
           <Card className="rounded-xl"><CardContent className="p-6 space-y-4">
-            {draft.integrations.map((it) => (
+            {(draft.integrations || []).map((it) => (
               <div key={it.id} className="rounded-lg border p-4">
                 <div className="flex items-start justify-between gap-3">
                   <div>
@@ -68,7 +68,7 @@ export default function ConfigIntegracoesPage() {
                     </Button>
                     <Button className={`rounded-xl ${it.status === "ativo" ? "bg-red-600 hover:bg-red-700" : "bg-violet-600 hover:bg-violet-700"}`} onClick={async () => {
                       const nextStatus = it.status === "ativo" ? "inativo" : "ativo";
-                      setDraft({ ...draft, integrations: draft.integrations.map(ix => ix.id === it.id ? { ...ix, status: nextStatus, ultimaSincronizacao: nextStatus === "ativo" ? new Date().toISOString() : ix.ultimaSincronizacao } : ix) });
+                      setDraft({ ...draft, integrations: (draft.integrations || []).map(ix => ix.id === it.id ? { ...ix, status: nextStatus, ultimaSincronizacao: nextStatus === "ativo" ? new Date().toISOString() : ix.ultimaSincronizacao } : ix) });
                       await createNotification({ message: `Integração ${nextStatus === "ativo" ? "ativada" : "desativada"}: ${it.nome}`, actionType: "integration_toggled", recipients: ["Administrador", "Coordenador"] });
                       show({ variant: "success", title: `Integração ${nextStatus === "ativo" ? "ativada" : "desativada"}` });
                     }}>
@@ -106,7 +106,7 @@ export default function ConfigIntegracoesPage() {
         <Dialog open={!!openConfigFor} onOpenChange={(o) => !o && setOpenConfigFor(null)}>
           <DialogContent className="rounded-xl">
             {(() => {
-              const sel = draft?.integrations.find((ix) => ix.id === openConfigFor);
+              const sel = draft?.integrations?.find((ix) => ix.id === openConfigFor);
               if (!sel || !draft) return null;
               return (
                 <>
@@ -129,7 +129,7 @@ export default function ConfigIntegracoesPage() {
                             onChange={(e) =>
                               setDraft({
                                 ...draft,
-                                integrations: draft.integrations.map((ix) =>
+                                integrations: (draft.integrations || []).map((ix) =>
                                   ix.id === sel.id
                                     ? { ...ix, configuracao: { ...ix.configuracao, clientId: e.target.value } }
                                     : ix
@@ -147,7 +147,7 @@ export default function ConfigIntegracoesPage() {
                             onChange={(e) =>
                               setDraft({
                                 ...draft,
-                                integrations: draft.integrations.map((ix) =>
+                                integrations: (draft.integrations || []).map((ix) =>
                                   ix.id === sel.id
                                     ? { ...ix, configuracao: { ...ix.configuracao, clientSecret: e.target.value } }
                                     : ix
@@ -169,7 +169,7 @@ export default function ConfigIntegracoesPage() {
                             onChange={(e) =>
                               setDraft({
                                 ...draft,
-                                integrations: draft.integrations.map((ix) =>
+                                integrations: (draft.integrations || []).map((ix) =>
                                   ix.id === sel.id
                                     ? { ...ix, configuracao: { ...ix.configuracao, url: e.target.value } }
                                     : ix
@@ -187,7 +187,7 @@ export default function ConfigIntegracoesPage() {
                             onChange={(e) =>
                               setDraft({
                                 ...draft,
-                                integrations: draft.integrations.map((ix) =>
+                                integrations: (draft.integrations || []).map((ix) =>
                                   ix.id === sel.id
                                     ? { ...ix, configuracao: { ...ix.configuracao, token: e.target.value } }
                                     : ix
@@ -209,7 +209,7 @@ export default function ConfigIntegracoesPage() {
                             onChange={(e) =>
                               setDraft({
                                 ...draft,
-                                integrations: draft.integrations.map((ix) =>
+                                integrations: (draft.integrations || []).map((ix) =>
                                   ix.id === sel.id
                                     ? { ...ix, configuracao: { ...ix.configuracao, baseUrl: e.target.value } }
                                     : ix
@@ -227,7 +227,7 @@ export default function ConfigIntegracoesPage() {
                             onChange={(e) =>
                               setDraft({
                                 ...draft,
-                                integrations: draft.integrations.map((ix) =>
+                                integrations: (draft.integrations || []).map((ix) =>
                                   ix.id === sel.id
                                     ? { ...ix, configuracao: { ...ix.configuracao, apiKey: e.target.value } }
                                     : ix

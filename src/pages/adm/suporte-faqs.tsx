@@ -1,9 +1,20 @@
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { AdminLayout } from "@/components/adm/AdminLayout";
 import { Button } from "@/components/ui/Button";
 import { Card, CardContent } from "@/components/ui/Card";
-import { HelpCircle, PlusCircle, ArrowLeft, Trash2, Edit2, Filter } from "lucide-react";
+import {
+  HelpCircle,
+  PlusCircle,
+  ChevronLeft,
+  Trash2,
+  Edit2,
+  Filter,
+  FolderOpen,
+  MessageSquare,
+  BookOpen,
+  TrendingUp,
+} from "lucide-react";
 import { useToast } from "@/components/ui/Toast";
 import { getFaqCategories, createFaqCategory, updateFaqCategory, deleteFaqCategory, addFaqItem, updateFaqItem, deleteFaqItem, type FaqCategory, type FaqItem } from "@/services/api/support";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -43,57 +54,139 @@ export default function SuporteFaqsPage() {
     if (!cats) return;
     const totalPages = Math.max(1, Math.ceil(cats.length / pageSize));
     if (page > totalPages) setPage(1);
-  }, [cats, pageSize]);
+  }, [cats, pageSize, page]);
+
+  const stats = useMemo(() => {
+    if (!cats) return { categorias: 0, perguntas: 0, media: 0 };
+    const totalPerguntas = cats.reduce((sum, cat) => sum + cat.perguntas.length, 0);
+    const media = cats.length > 0 ? Math.round((totalPerguntas / cats.length) * 10) / 10 : 0;
+    return { categorias: cats.length, perguntas: totalPerguntas, media };
+  }, [cats]);
 
   return (
     <AdminLayout>
-      <div className="space-y-6">
-        <header className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <HelpCircle className="h-5 w-5 text-violet-500" />
-            <div className="space-y-1">
-              <h1 className="text-2xl font-bold">FAQs</h1>
-              <p className="text-muted-foreground">Base de conhecimento</p>
+      <div className="space-y-6 pb-8">
+        {/* Header */}
+        <header className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center">
+                <HelpCircle className="h-6 w-6 text-white" />
+              </div>
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900">Base de Conhecimento</h1>
+                <p className="text-gray-600 mt-1">FAQs e perguntas frequentes organizadas</p>
+              </div>
             </div>
-          </div>
-          <Link href="/adm/suporte" className="hidden md:block"><Button variant="outline" className="rounded-xl"><ArrowLeft className="mr-2 h-4 w-4"/>Voltar ao Hub</Button></Link>
-        </header>
-        <div className="grid gap-6">
-          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-            <Button
-              className="rounded-lg"
-              variant="outline"
-              onClick={() => { setCatName(""); setOpenCreateCat(true); }}
-            >
-              <PlusCircle className="mr-2 h-4 w-4" /> Nova Categoria
-            </Button>
-            <div className="flex items-center gap-2">
-              <Filter className="h-4 w-4 text-muted-foreground" />
-              <Select value={sortBy} onValueChange={(v) => setSortBy(v as any)}>
-                <SelectTrigger className="w-[220px] rounded-lg">
-                  <SelectValue placeholder="Ordenar por" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="nome-asc">Nome (A-Z)</SelectItem>
-                  <SelectItem value="nome-desc">Nome (Z-A)</SelectItem>
-                  <SelectItem value="qtd-asc">Qtd. Perguntas (Asc)</SelectItem>
-                  <SelectItem value="qtd-desc">Qtd. Perguntas (Desc)</SelectItem>
-                </SelectContent>
-              </Select>
-              <Select value={String(pageSize)} onValueChange={(v) => { setPageSize(Number(v)); setPage(1); }}>
-                <SelectTrigger className="w-[140px] rounded-lg">
-                  <SelectValue placeholder="Itens por página" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="5">5 por página</SelectItem>
-                  <SelectItem value="10">10 por página</SelectItem>
-                  <SelectItem value="20">20 por página</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+            <Link href="/adm/suporte" className="no-underline">
+              <Button variant="outline" className="rounded-lg inline-flex items-center gap-2">
+                <ChevronLeft className="h-4 w-4" />
+                Voltar ao hub
+              </Button>
+            </Link>
           </div>
 
-          {/* Listagem */}
+          {/* Stats Cards */}
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <Card className="rounded-xl border-l-4 border-l-green-500 bg-gradient-to-br from-green-50 to-white">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">Categorias</p>
+                    <p className="text-2xl font-bold text-gray-900 mt-1">{stats.categorias}</p>
+                  </div>
+                  <div className="h-10 w-10 rounded-lg bg-green-100 flex items-center justify-center">
+                    <FolderOpen className="h-5 w-5 text-green-600" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="rounded-xl border-l-4 border-l-blue-500 bg-gradient-to-br from-blue-50 to-white">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">Total de Perguntas</p>
+                    <p className="text-2xl font-bold text-gray-900 mt-1">{stats.perguntas}</p>
+                  </div>
+                  <div className="h-10 w-10 rounded-lg bg-blue-100 flex items-center justify-center">
+                    <MessageSquare className="h-5 w-5 text-blue-600" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="rounded-xl border-l-4 border-l-purple-500 bg-gradient-to-br from-purple-50 to-white">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">Média por Categoria</p>
+                    <p className="text-2xl font-bold text-gray-900 mt-1">{stats.media}</p>
+                  </div>
+                  <div className="h-10 w-10 rounded-lg bg-purple-100 flex items-center justify-center">
+                    <TrendingUp className="h-5 w-5 text-purple-600" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="rounded-xl border-l-4 border-l-amber-500 bg-gradient-to-br from-amber-50 to-white">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">Artigos Ativos</p>
+                    <p className="text-2xl font-bold text-gray-900 mt-1">{stats.perguntas}</p>
+                  </div>
+                  <div className="h-10 w-10 rounded-lg bg-amber-100 flex items-center justify-center">
+                    <BookOpen className="h-5 w-5 text-amber-600" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </header>
+
+        {/* Controls */}
+        <Card className="rounded-xl shadow-sm">
+          <div className="h-2 bg-gradient-to-r from-green-500 to-green-600 rounded-t-xl"></div>
+          <CardContent className="p-6">
+            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+              <Button
+                className="rounded-lg bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 inline-flex items-center gap-2"
+                onClick={() => { setCatName(""); setOpenCreateCat(true); }}
+              >
+                <PlusCircle className="h-4 w-4" /> Nova Categoria
+              </Button>
+              <div className="flex items-center gap-2">
+                <Filter className="h-4 w-4 text-muted-foreground" />
+                <Select value={sortBy} onValueChange={(v) => setSortBy(v as any)}>
+                  <SelectTrigger className="w-[220px] rounded-lg">
+                    <SelectValue placeholder="Ordenar por" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="nome-asc">Nome (A-Z)</SelectItem>
+                    <SelectItem value="nome-desc">Nome (Z-A)</SelectItem>
+                    <SelectItem value="qtd-asc">Qtd. Perguntas (Asc)</SelectItem>
+                    <SelectItem value="qtd-desc">Qtd. Perguntas (Desc)</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Select value={String(pageSize)} onValueChange={(v) => { setPageSize(Number(v)); setPage(1); }}>
+                  <SelectTrigger className="w-[140px] rounded-lg">
+                    <SelectValue placeholder="Itens por página" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="5">5 por página</SelectItem>
+                    <SelectItem value="10">10 por página</SelectItem>
+                    <SelectItem value="20">20 por página</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Listagem */}
+        <div className="grid gap-6">
           {!cats ? (
             <Card className="rounded-xl"><CardContent className="p-6 text-sm text-muted-foreground">Carregando…</CardContent></Card>
           ) : cats.length === 0 ? (
@@ -144,7 +237,7 @@ export default function SuporteFaqsPage() {
                     ))}
                     <Button
                       className="w-full rounded-lg border border-dashed border-gray-200 p-4 hover:border-violet-600 hover:bg-violet-50"
-                      variant="ghost"
+                      variant="outline"
                       onClick={() => { setOpenAddFaq(category); setFaqPergunta(""); setFaqResposta(""); }}
                     >
                       <PlusCircle className="mr-2 h-4 w-4" /> Adicionar Nova Pergunta

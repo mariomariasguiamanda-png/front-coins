@@ -1,339 +1,238 @@
-import { useState } from "react";
+import Link from "next/link";
 import { AdminLayout } from "@/components/adm/AdminLayout";
-import { Button } from "@/components/ui/Button";
 import { Card, CardContent } from "@/components/ui/Card";
-import { Input } from "@/components/ui/Input";
-import { Search, Filter, Plus, Pencil, Archive, History } from "lucide-react";
-import { createNotification, composeMessages } from "@/services/api/notifications";
-import { CreateDisciplineDialog } from "@/components/adm/dialogs/CreateDisciplineDialog";
-import { EditDisciplineDialog } from "@/components/adm/dialogs/EditDisciplineDialog";
-import { ViewDisciplineHistoryDialog } from "@/components/adm/dialogs/ViewDisciplineHistoryDialog";
+import { 
+  BookOpen, 
+  Settings, 
+  Archive as ArchiveIcon,
+  ArrowRight,
+  BookMarked,
+  Users,
+  Coins,
+  CheckCircle2
+} from "lucide-react";
 
-interface DisciplinePoints {
-  maxPoints: number;
-  pointPrice: number;
-}
+export default function DisciplinasHubPage() {
+  // Mock stats - substituir por dados reais da API
+  const stats = {
+    total: 12,
+    ativas: 10,
+    arquivadas: 2,
+    professores: 25,
+    alunos: 500,
+    moedas: 16500,
+  };
 
-interface DisciplineTeacher {
-  id: string;
-  name: string;
-  role: "principal" | "collaborator";
-}
-
-interface Discipline {
-  id: string;
-  code: string;
-  name: string;
-  color: string;
-  icon: string;
-  classes: string[];
-  teachers: DisciplineTeacher[];
-  points: DisciplinePoints;
-  status: "active" | "archived";
-  createdAt: string;
-  updatedAt: string;
-  history: Array<{
-    timestamp: string;
-    changedBy: string;
-    changes: Partial<Omit<Discipline, "id" | "history">>;
-  }>;
-}
-
-// Mock data
-const mockDisciplines: Discipline[] = [
-  {
-    id: "1",
-    code: "MAT001",
-    name: "Matemática",
-    color: "#4F46E5",
-    icon: "calculator",
-    classes: ["1º A", "1º B", "2º A"],
-    teachers: [
-      { id: "1", name: "João Silva", role: "principal" },
-      { id: "2", name: "Maria Santos", role: "collaborator" }
-    ],
-    points: {
-      maxPoints: 50,
-      pointPrice: 20
+  const items = [
+    { 
+      href: "/adm/disciplinas-lista", 
+      title: "Lista de Disciplinas", 
+      desc: "Gerencie todas as disciplinas, professores e configurações de pontos",
+      icon: BookOpen,
+      color: "text-blue-600",
+      bgColor: "bg-blue-100",
+      gradient: "from-blue-500 to-blue-600",
+      stats: [
+        { label: "Ativas", value: stats.ativas },
+        { label: "Turmas", value: 18 },
+      ]
     },
-    status: "active",
-    createdAt: "2023-01-01",
-    updatedAt: "2023-10-12",
-    history: [
-      {
-        timestamp: "2023-10-12T10:00:00Z",
-        changedBy: "Admin",
-        changes: {
-          teachers: [
-            { id: "1", name: "João Silva", role: "principal" },
-            { id: "2", name: "Maria Santos", role: "collaborator" }
-          ]
-        }
-      }
-    ]
-  },
-  {
-    id: "2",
-    code: "PORT001",
-    name: "Português",
-    color: "#059669",
-    icon: "book",
-    classes: ["1º A", "1º B", "2º A"],
-    teachers: [
-      { id: "3", name: "Ana Oliveira", role: "principal" }
-    ],
-    points: {
-      maxPoints: 40,
-      pointPrice: 15
+    { 
+      href: "/adm/disciplinas-config", 
+      title: "Configurações Gerais", 
+      desc: "Defina regras padrão de pontos e integrações do sistema",
+      icon: Settings,
+      color: "text-purple-600",
+      bgColor: "bg-purple-100",
+      gradient: "from-purple-500 to-purple-600",
+      stats: [
+        { label: "Pontos Máx.", value: 50 },
+        { label: "Preço Base", value: 20 },
+      ]
     },
-    status: "active",
-    createdAt: "2023-01-01",
-    updatedAt: "2023-10-12",
-    history: []
-  }
-];
-
-interface DisciplineCardProps {
-  discipline: Discipline;
-  onEdit: (discipline: Discipline) => void;
-  onArchive: (id: string) => void;
-  onViewHistory: (discipline: Discipline) => void;
-}
-
-function DisciplineCard({ discipline, onEdit, onArchive, onViewHistory }: DisciplineCardProps) {
-  return (
-    <Card className="rounded-lg">
-      <CardContent className="p-6">
-        <div className="flex items-start justify-between">
-          <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <div 
-                className="w-3 h-3 rounded-full" 
-                style={{ backgroundColor: discipline.color }}
-              />
-              <h3 className="text-lg font-semibold">{discipline.name}</h3>
-              <span className="text-sm text-muted-foreground">({discipline.code})</span>
-            </div>
-            <p className="text-sm text-muted-foreground">
-              {discipline.classes.join(", ")}
-            </p>
-          </div>
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              className="rounded-lg bg-violet-50/50 border-violet-100 hover:bg-violet-100/50"
-              onClick={() => onEdit(discipline)}
-            >
-              <Pencil className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className="rounded-lg bg-violet-50/50 border-violet-100 hover:bg-violet-100/50"
-              onClick={() => onViewHistory(discipline)}
-            >
-              <History className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className={discipline.status === "active" 
-                ? "rounded-lg text-red-600 hover:text-red-700 hover:bg-red-50"
-                : "rounded-lg text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
-              }
-              onClick={() => onArchive(discipline.id)}
-            >
-              <Archive className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
-
-        <div className="mt-4 grid gap-4 sm:grid-cols-2">
-          <div className="space-y-2">
-            <h4 className="text-sm font-medium">Professores</h4>
-            <div className="space-y-1">
-              {discipline.teachers.map(teacher => (
-                <p key={teacher.id} className="text-sm">
-                  {teacher.name}{" "}
-                  <span className="text-xs text-muted-foreground">
-                    ({teacher.role === "principal" ? "Principal" : "Colaborador"})
-                  </span>
-                </p>
-              ))}
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <h4 className="text-sm font-medium">Configurações de Pontos</h4>
-            <div className="space-y-1">
-              <p className="text-sm">
-                Máximo de pontos: {discipline.points.maxPoints}
-              </p>
-              <p className="text-sm">
-                Preço por ponto: {discipline.points.pointPrice} moedas
-              </p>
-            </div>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-
-export default function DisciplinasPage() {
-  const [disciplines, setDisciplines] = useState<Discipline[]>(mockDisciplines);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [showArchived, setShowArchived] = useState(false);
-  const [selectedDisciplineForEdit, setSelectedDisciplineForEdit] = useState<Discipline | null>(null);
-  const [selectedDisciplineForHistory, setSelectedDisciplineForHistory] = useState<Discipline | null>(null);
-  const [showCreateDialog, setShowCreateDialog] = useState(false);
-
-  const filteredDisciplines = disciplines.filter(discipline => {
-    const matchesSearch = discipline.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         discipline.code.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = showArchived ? discipline.status === "archived" : discipline.status === "active";
-    return matchesSearch && matchesStatus;
-  });
-
-  const handleSaveDiscipline = (data: Omit<Discipline, "id" | "history" | "createdAt" | "updatedAt">) => {
-    // Implementar chamada API aqui
-    console.log("Save discipline:", data);
-  };
-
-  const handleEditDiscipline = (data: any) => {
-    // Implementar chamada API aqui
-    console.log("Edit discipline:", data);
-  };
-
-  const handleArchiveDiscipline = async (id: string) => {
-    try {
-      // Implementar chamada API aqui
-      const discipline = disciplines.find(d => d.id === id);
-      if (!discipline) return;
-
-      const newStatus = discipline.status === "active" ? "archived" : "active";
-      const action = newStatus === "archived" ? "arquivada" : "ativada";
-
-      // Mock update
-      setDisciplines(disciplines.map(d =>
-        d.id === id ? { ...d, status: newStatus } : d
-      ));
-
-      alert(`Disciplina ${action} com sucesso!`);
-
-      // Notificação
-      if (newStatus === "archived") {
-        const { message, actionType } = composeMessages.disciplineArchived({
-          adminNome: "Administrador (sessão)",
-          disciplina: discipline.name,
-        });
-        await createNotification({ message, actionType, recipients: ["Administrador", "Coordenador"] });
-      }
-    } catch (error) {
-      console.error('Error archiving discipline:', error);
-      alert('Erro ao arquivar/ativar disciplina. Tente novamente.');
-    }
-  };
+    { 
+      href: "/adm/disciplinas-arquivadas", 
+      title: "Arquivadas & Histórico", 
+      desc: "Consulte disciplinas arquivadas e histórico de alterações",
+      icon: ArchiveIcon,
+      color: "text-gray-600",
+      bgColor: "bg-gray-100",
+      gradient: "from-gray-500 to-gray-600",
+      stats: [
+        { label: "Arquivadas", value: stats.arquivadas },
+        { label: "Alterações", value: 45 },
+      ]
+    },
+  ];
 
   return (
     <AdminLayout>
-      <div className="space-y-6">
-        <CreateDisciplineDialog 
-          open={showCreateDialog}
-          onClose={() => setShowCreateDialog(false)}
-          onSave={handleSaveDiscipline}
-        />
-
-        <EditDisciplineDialog
-          open={!!selectedDisciplineForEdit}
-          onClose={() => setSelectedDisciplineForEdit(null)}
-          onSave={handleEditDiscipline}
-          discipline={selectedDisciplineForEdit as any}
-        />
-
-        <ViewDisciplineHistoryDialog
-          open={!!selectedDisciplineForHistory}
-          onClose={() => setSelectedDisciplineForHistory(null)}
-          discipline={selectedDisciplineForHistory as any}
-        />
-
+      <div className="space-y-6 pb-8">
         {/* Header */}
-        <header className="flex items-center justify-between">
-          <div className="space-y-1">
-            <h1 className="text-2xl font-bold">Gestão de Disciplinas</h1>
-            <p className="text-muted-foreground">
-              Gerencie as disciplinas, pontos e professores vinculados
+        <header className="space-y-4">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Gestão de Disciplinas</h1>
+            <p className="text-gray-600 mt-1">
+              Administre disciplinas, professores, turmas e regras de pontuação
             </p>
           </div>
-          <Button 
-            className="rounded-lg bg-violet-600 hover:bg-violet-700"
-            onClick={() => setShowCreateDialog(true)}
-          >
-            <Plus className="mr-2 h-4 w-4" />
-            Nova Disciplina
-          </Button>
+
+          {/* Stats Cards */}
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <Card className="rounded-xl border-l-4 border-l-blue-500 bg-gradient-to-br from-blue-50 to-white">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">Total Disciplinas</p>
+                    <p className="text-2xl font-bold text-gray-900 mt-1">{stats.total}</p>
+                  </div>
+                  <div className="h-10 w-10 rounded-lg bg-blue-100 flex items-center justify-center">
+                    <BookOpen className="h-5 w-5 text-blue-600" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="rounded-xl border-l-4 border-l-green-500 bg-gradient-to-br from-green-50 to-white">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">Disciplinas Ativas</p>
+                    <p className="text-2xl font-bold text-gray-900 mt-1">{stats.ativas}</p>
+                  </div>
+                  <div className="h-10 w-10 rounded-lg bg-green-100 flex items-center justify-center">
+                    <CheckCircle2 className="h-5 w-5 text-green-600" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="rounded-xl border-l-4 border-l-purple-500 bg-gradient-to-br from-purple-50 to-white">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">Professores Ativos</p>
+                    <p className="text-2xl font-bold text-gray-900 mt-1">{stats.professores}</p>
+                  </div>
+                  <div className="h-10 w-10 rounded-lg bg-purple-100 flex items-center justify-center">
+                    <Users className="h-5 w-5 text-purple-600" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="rounded-xl border-l-4 border-l-amber-500 bg-gradient-to-br from-amber-50 to-white">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">Moedas Distribuídas</p>
+                    <p className="text-2xl font-bold text-gray-900 mt-1">{stats.moedas.toLocaleString()}</p>
+                  </div>
+                  <div className="h-10 w-10 rounded-lg bg-amber-100 flex items-center justify-center">
+                    <Coins className="h-5 w-5 text-amber-600" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </header>
 
-        {/* Filters */}
-        <Card className="rounded-xl">
+        {/* Main Cards */}
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {items.map((item) => (
+            <Link key={item.href} href={item.href} className="group">
+              <Card className="rounded-xl shadow-sm hover:shadow-lg transition-all duration-200 border-0 overflow-hidden h-full">
+                {/* Gradient Header */}
+                <div className={`h-2 bg-gradient-to-r ${item.gradient}`}></div>
+                
+                <CardContent className="p-6">
+                  {/* Icon and Title */}
+                  <div className="flex items-start gap-4 mb-4">
+                    <div className={`h-12 w-12 rounded-xl ${item.bgColor} flex items-center justify-center group-hover:scale-110 transition-transform duration-200`}>
+                      <item.icon className={`h-6 w-6 ${item.color}`} />
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="text-lg font-semibold text-gray-900 mb-1">
+                        {item.title}
+                      </h3>
+                      <p className="text-sm text-gray-600 leading-relaxed">
+                        {item.desc}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Stats */}
+                  <div className="grid grid-cols-2 gap-3 pt-4 border-t border-gray-100">
+                    {item.stats.map((stat, idx) => (
+                      <div key={idx} className="text-center p-2 rounded-lg bg-gray-50">
+                        <p className="text-xs text-gray-600 mb-1">{stat.label}</p>
+                        <p className="text-lg font-bold text-gray-900">{stat.value}</p>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Action Link */}
+                  <div className="mt-4 pt-4 border-t border-gray-100">
+                    <div className="flex items-center justify-between text-sm group-hover:text-violet-700 transition-colors">
+                      <span className="font-medium text-gray-700 group-hover:text-violet-700">
+                        Acessar seção
+                      </span>
+                      <ArrowRight className="h-4 w-4 text-gray-400 group-hover:text-violet-700 group-hover:translate-x-1 transition-all" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </Link>
+          ))}
+        </div>
+
+        {/* Quick Actions */}
+        <Card className="rounded-xl shadow-sm border-0 bg-gradient-to-br from-violet-50 to-white">
           <CardContent className="p-6">
-            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-              <div className="flex max-w-[320px] items-center gap-2">
-                <Search className="h-4 w-4 text-muted-foreground" />
-                <Input 
-                  placeholder="Buscar disciplinas..." 
-                  className="rounded-lg"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-              </div>
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  className={`rounded-lg ${
-                    !showArchived
-                      ? "bg-violet-600 text-white hover:bg-violet-700"
-                      : ""
-                  }`}
-                  onClick={() => setShowArchived(false)}
-                >
-                  Ativas
-                </Button>
-                <Button
-                  variant="outline"
-                  className={`rounded-lg ${
-                    showArchived
-                      ? "bg-violet-600 text-white hover:bg-violet-700"
-                      : ""
-                  }`}
-                  onClick={() => setShowArchived(true)}
-                >
-                  Arquivadas
-                </Button>
-                <Button variant="outline" className="rounded-lg">
-                  <Filter className="mr-2 h-4 w-4" />
-                  Filtros
-                </Button>
-              </div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Ações Rápidas</h3>
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              <Link 
+                href="/adm/disciplinas-lista"
+                className="flex items-center gap-3 p-3 rounded-lg bg-white border border-gray-200 hover:border-blue-300 hover:shadow-sm transition-all"
+              >
+                <div className="h-8 w-8 rounded-lg bg-blue-100 flex items-center justify-center">
+                  <BookOpen className="h-4 w-4 text-blue-600" />
+                </div>
+                <span className="text-sm font-medium text-gray-700">Nova Disciplina</span>
+              </Link>
+              
+              <Link 
+                href="/adm/disciplinas-lista"
+                className="flex items-center gap-3 p-3 rounded-lg bg-white border border-gray-200 hover:border-purple-300 hover:shadow-sm transition-all"
+              >
+                <div className="h-8 w-8 rounded-lg bg-purple-100 flex items-center justify-center">
+                  <Users className="h-4 w-4 text-purple-600" />
+                </div>
+                <span className="text-sm font-medium text-gray-700">Atribuir Professores</span>
+              </Link>
+
+              <Link 
+                href="/adm/disciplinas-config"
+                className="flex items-center gap-3 p-3 rounded-lg bg-white border border-gray-200 hover:border-green-300 hover:shadow-sm transition-all"
+              >
+                <div className="h-8 w-8 rounded-lg bg-green-100 flex items-center justify-center">
+                  <Settings className="h-4 w-4 text-green-600" />
+                </div>
+                <span className="text-sm font-medium text-gray-700">Configurar Pontos</span>
+              </Link>
+
+              <Link 
+                href="/adm/disciplinas-arquivadas"
+                className="flex items-center gap-3 p-3 rounded-lg bg-white border border-gray-200 hover:border-gray-300 hover:shadow-sm transition-all"
+              >
+                <div className="h-8 w-8 rounded-lg bg-gray-100 flex items-center justify-center">
+                  <ArchiveIcon className="h-4 w-4 text-gray-600" />
+                </div>
+                <span className="text-sm font-medium text-gray-700">Ver Arquivadas</span>
+              </Link>
             </div>
           </CardContent>
         </Card>
-
-        {/* Disciplines Grid */}
-        <div className="grid gap-4 sm:grid-cols-2">
-          {filteredDisciplines.map(discipline => (
-            <DisciplineCard
-              key={discipline.id}
-              discipline={discipline}
-              onEdit={setSelectedDisciplineForEdit}
-              onArchive={handleArchiveDiscipline}
-              onViewHistory={(discipline) => {
-                setSelectedDisciplineForHistory(discipline);
-              }}
-            />
-          ))}
-        </div>
       </div>
     </AdminLayout>
   );
