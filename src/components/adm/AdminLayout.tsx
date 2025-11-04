@@ -39,7 +39,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
   }, [sidebarOpen]);
 
   return (
-    <div className="min-h-screen bg-violet-50">
+    <div className="min-h-screen bg-background text-foreground">
       <HeaderAdm
         onToggleSidebar={() => setSidebarOpen((v) => !v)}
         sidebarOpen={sidebarOpen}

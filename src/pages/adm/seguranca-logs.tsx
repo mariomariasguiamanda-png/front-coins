@@ -162,7 +162,7 @@ export default function SegurancaLogsPage() {
               </div>
               <div>
                 <select
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full rounded-lg border border-gray-300 bg-white text-gray-900 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   value={logsRole}
                   onChange={(e) => setLogsRole(e.target.value as any)}
                 >
