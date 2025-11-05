@@ -193,10 +193,10 @@ export default function ComprasHubPage() {
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
               <Link 
                 href="/adm/compras-transacoes"
-                className="flex items-center gap-3 p-3 rounded-lg bg-white border border-gray-200 hover:border-blue-300 hover:shadow-sm transition-all"
+                className="flex items-center gap-3 p-3 rounded-lg bg-white border border-gray-200 hover:border-green-300 hover:shadow-sm transition-all"
               >
-                <div className="h-8 w-8 rounded-lg bg-blue-100 flex items-center justify-center">
-                  <Receipt className="h-4 w-4 text-blue-600" />
+                <div className="h-8 w-8 rounded-lg bg-green-100 flex items-center justify-center">
+                  <Receipt className="h-4 w-4 text-green-600" />
                 </div>
                 <span className="text-sm font-medium text-gray-700">Gerenciar Transações</span>
               </Link>
@@ -213,20 +213,20 @@ export default function ComprasHubPage() {
 
               <Link 
                 href="/adm/compras-configuracoes"
-                className="flex items-center gap-3 p-3 rounded-lg bg-white border border-gray-200 hover:border-purple-300 hover:shadow-sm transition-all"
+                className="flex items-center gap-3 p-3 rounded-lg bg-white border border-gray-200 hover:border-green-300 hover:shadow-sm transition-all"
               >
-                <div className="h-8 w-8 rounded-lg bg-purple-100 flex items-center justify-center">
-                  <Settings className="h-4 w-4 text-purple-600" />
+                <div className="h-8 w-8 rounded-lg bg-green-100 flex items-center justify-center">
+                  <Settings className="h-4 w-4 text-green-600" />
                 </div>
                 <span className="text-sm font-medium text-gray-700">Ajustar Limites</span>
               </Link>
 
               <Link 
                 href="/adm/compras-relatorios"
-                className="flex items-center gap-3 p-3 rounded-lg bg-white border border-gray-200 hover:border-amber-300 hover:shadow-sm transition-all"
+                className="flex items-center gap-3 p-3 rounded-lg bg-white border border-gray-200 hover:border-green-300 hover:shadow-sm transition-all"
               >
-                <div className="h-8 w-8 rounded-lg bg-amber-100 flex items-center justify-center">
-                  <DollarSign className="h-4 w-4 text-amber-600" />
+                <div className="h-8 w-8 rounded-lg bg-green-100 flex items-center justify-center">
+                  <DollarSign className="h-4 w-4 text-green-600" />
                 </div>
                 <span className="text-sm font-medium text-gray-700">Exportar Dados</span>
               </Link>

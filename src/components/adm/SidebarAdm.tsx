@@ -68,7 +68,9 @@ export function SidebarAdm() {
     <nav className="space-y-2 p-4">
       {menuItems.map((item) => {
         const Icon = item.icon;
-        const isActive = router.pathname === item.href;
+        // Check if current path starts with the menu item href (for sub-pages)
+        const isActive = router.pathname === item.href || 
+                        (item.href !== '/adm/dashboard' && router.pathname.startsWith(item.href));
 
         return (
           <Link
