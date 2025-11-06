@@ -232,7 +232,7 @@ export default function SuporteHubPage() {
         <Card className="rounded-xl shadow-sm border-0 bg-gradient-to-br from-blue-50 to-white">
           <CardContent className="p-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-              <Zap className="h-5 w-5 text-blue-600" />
+              <AlertCircle className="h-5 w-5 text-blue-600" />
               Ações Rápidas
             </h3>
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -248,30 +248,30 @@ export default function SuporteHubPage() {
               
               <Link 
                 href="/adm/suporte-faqs?action=new"
-                className="flex items-center gap-3 p-3 rounded-lg bg-white border border-gray-200 hover:border-green-300 hover:shadow-sm transition-all"
+                className="flex items-center gap-3 p-3 rounded-lg bg-white border border-gray-200 hover:border-blue-300 hover:shadow-sm transition-all"
               >
-                <div className="h-8 w-8 rounded-lg bg-green-100 flex items-center justify-center">
-                  <HelpCircle className="h-4 w-4 text-green-600" />
+                <div className="h-8 w-8 rounded-lg bg-blue-100 flex items-center justify-center">
+                  <HelpCircle className="h-4 w-4 text-blue-600" />
                 </div>
                 <span className="text-sm font-medium text-gray-700">Novo FAQ</span>
               </Link>
               
               <Link 
                 href="/adm/suporte-respostas?action=new"
-                className="flex items-center gap-3 p-3 rounded-lg bg-white border border-gray-200 hover:border-purple-300 hover:shadow-sm transition-all"
+                className="flex items-center gap-3 p-3 rounded-lg bg-white border border-gray-200 hover:border-blue-300 hover:shadow-sm transition-all"
               >
-                <div className="h-8 w-8 rounded-lg bg-purple-100 flex items-center justify-center">
-                  <FileText className="h-4 w-4 text-purple-600" />
+                <div className="h-8 w-8 rounded-lg bg-blue-100 flex items-center justify-center">
+                  <FileText className="h-4 w-4 text-blue-600" />
                 </div>
                 <span className="text-sm font-medium text-gray-700">Nova Resposta</span>
               </Link>
               
               <Link 
                 href="/adm/suporte-analytics"
-                className="flex items-center gap-3 p-3 rounded-lg bg-white border border-gray-200 hover:border-amber-300 hover:shadow-sm transition-all"
+                className="flex items-center gap-3 p-3 rounded-lg bg-white border border-gray-200 hover:border-blue-300 hover:shadow-sm transition-all"
               >
-                <div className="h-8 w-8 rounded-lg bg-amber-100 flex items-center justify-center">
-                  <BarChart2 className="h-4 w-4 text-amber-600" />
+                <div className="h-8 w-8 rounded-lg bg-blue-100 flex items-center justify-center">
+                  <BarChart2 className="h-4 w-4 text-blue-600" />
                 </div>
                 <span className="text-sm font-medium text-gray-700">Ver Métricas</span>
               </Link>

@@ -70,12 +70,14 @@ type SidebarAdmProps = {
 
 export function SidebarAdm({ open, active, onChange }: SidebarAdmProps) {
   const router = useRouter();
-
   return (
     <nav className="space-y-2 p-4">
       {menuItems.map((item) => {
         const Icon = item.icon;
-        const isActive = (active ?? router.pathname) === item.href;
+        const currentPath = active ?? router.pathname;
+        const isActive =
+  currentPath === item.href ||
+  (item.href !== '/adm/dashboard' && currentPath.startsWith(item.href));
 
         return (
           <Link

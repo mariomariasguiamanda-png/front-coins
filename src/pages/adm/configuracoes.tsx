@@ -3,16 +3,13 @@ import { AdminLayout } from "@/components/adm/AdminLayout";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import {
-  Paintbrush,
   Calendar as CalendarIcon,
   Link as LinkIcon,
   Shield,
   Settings,
   ArrowRight,
-  Palette,
   Users,
   Clock,
-  CheckCircle,
 } from "lucide-react";
 
 export default function ConfiguracoesHubPage() {
@@ -32,21 +29,7 @@ export default function ConfiguracoesHubPage() {
           </div>
 
           {/* Stats Cards */}
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <Card className="rounded-xl border-l-4 border-l-purple-500 bg-gradient-to-br from-purple-50 to-white">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600">Temas Disponíveis</p>
-                    <p className="text-2xl font-bold text-gray-900 mt-1">3</p>
-                  </div>
-                  <div className="h-10 w-10 rounded-lg bg-purple-100 flex items-center justify-center">
-                    <Palette className="h-5 w-5 text-purple-600" />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <Card className="rounded-xl border-l-4 border-l-blue-500 bg-gradient-to-br from-blue-50 to-white">
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
@@ -92,43 +75,7 @@ export default function ConfiguracoesHubPage() {
         </header>
 
         {/* Section Cards */}
-        <div className="grid gap-6 lg:grid-cols-2">
-          {/* Identidade Visual */}
-          <Card className="rounded-xl shadow-sm hover:shadow-md transition-all duration-300 hover:scale-[1.02]">
-            <div className="h-2 bg-gradient-to-r from-purple-500 to-purple-600 rounded-t-xl"></div>
-            <CardContent className="p-6">
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex items-center gap-3">
-                  <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-purple-100 to-purple-200 flex items-center justify-center">
-                    <Paintbrush className="h-6 w-6 text-purple-600" />
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-900">Identidade Visual</h3>
-                    <p className="text-sm text-gray-600">Personalize a aparência</p>
-                  </div>
-                </div>
-              </div>
-              
-              <div className="space-y-3 mb-4">
-                <div className="flex items-center justify-between p-3 rounded-lg bg-gradient-to-br from-purple-50 to-white border border-purple-100">
-                  <span className="text-sm font-medium text-gray-700">Logo</span>
-                  <CheckCircle className="h-5 w-5 text-purple-600" />
-                </div>
-                <div className="flex items-center justify-between p-3 rounded-lg bg-gradient-to-br from-blue-50 to-white border border-blue-100">
-                  <span className="text-sm font-medium text-gray-700">Cores</span>
-                  <CheckCircle className="h-5 w-5 text-blue-600" />
-                </div>
-              </div>
-
-              <Link href="/adm/configuracoes-visual" className="no-underline">
-                <Button className="w-full rounded-lg bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 inline-flex items-center justify-center gap-2">
-                  Acessar
-                  <ArrowRight className="h-4 w-4" />
-                </Button>
-              </Link>
-            </CardContent>
-          </Card>
-
+        <div className="grid gap-6 lg:grid-cols-3">
           {/* Calendário */}
           <Card className="rounded-xl shadow-sm hover:shadow-md transition-all duration-300 hover:scale-[1.02]">
             <div className="h-2 bg-gradient-to-r from-blue-500 to-blue-600 rounded-t-xl"></div>
@@ -237,6 +184,54 @@ export default function ConfiguracoesHubPage() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Quick Actions */}
+        <Card className="rounded-xl shadow-sm border-0 bg-gradient-to-br from-purple-50 to-white">
+          <CardContent className="p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Ações Rápidas</h3>
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              <Link 
+                href="/adm/configuracoes-calendario?action=novo-periodo"
+                className="flex items-center gap-3 p-3 rounded-lg bg-white border border-gray-200 hover:border-blue-300 hover:shadow-sm transition-all"
+              >
+                <div className="h-8 w-8 rounded-lg bg-blue-100 flex items-center justify-center">
+                  <CalendarIcon className="h-4 w-4 text-blue-600" />
+                </div>
+                <span className="text-sm font-medium text-gray-700 whitespace-nowrap">Novo Período</span>
+              </Link>
+
+              <Link 
+                href="/adm/configuracoes-calendario?action=novo-evento"
+                className="flex items-center gap-3 p-3 rounded-lg bg-white border border-gray-200 hover:border-green-300 hover:shadow-sm transition-all"
+              >
+                <div className="h-8 w-8 rounded-lg bg-green-100 flex items-center justify-center">
+                  <Clock className="h-4 w-4 text-green-600" />
+                </div>
+                <span className="text-sm font-medium text-gray-700 whitespace-nowrap">Novo Evento</span>
+              </Link>
+
+              <Link 
+                href="/adm/configuracoes-integracoes?action=nova"
+                className="flex items-center gap-3 p-3 rounded-lg bg-white border border-gray-200 hover:border-purple-300 hover:shadow-sm transition-all"
+              >
+                <div className="h-8 w-8 rounded-lg bg-purple-100 flex items-center justify-center">
+                  <LinkIcon className="h-4 w-4 text-purple-600" />
+                </div>
+                <span className="text-sm font-medium text-gray-700 whitespace-nowrap">Nova Integração</span>
+              </Link>
+
+              <Link 
+                href="/adm/configuracoes-permissoes?action=editar"
+                className="flex items-center gap-3 p-3 rounded-lg bg-white border border-gray-200 hover:border-amber-300 hover:shadow-sm transition-all"
+              >
+                <div className="h-8 w-8 rounded-lg bg-amber-100 flex items-center justify-center">
+                  <Shield className="h-4 w-4 text-amber-600" />
+                </div>
+                <span className="text-sm font-medium text-gray-700 whitespace-nowrap">Editar Permissões</span>
+              </Link>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </AdminLayout>
   );
