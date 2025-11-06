@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/router";
+import type { Dispatch, SetStateAction } from "react";
 import { cn } from "@/lib/utils";
 
 const menuItems = [
@@ -61,17 +62,23 @@ const menuItems = [
   },
 ];
 
-export function SidebarAdm() {
-  const router = useRouter();
+type SidebarAdmProps = {
+  open?: boolean;
+  active?: string;
+  onChange?: Dispatch<SetStateAction<string>>;
+};
 
+export function SidebarAdm({ open, active, onChange }: SidebarAdmProps) {
+  const router = useRouter();
+const currentPath = active ?? router.pathname;
   return (
     <nav className="space-y-2 p-4">
       {menuItems.map((item) => {
         const Icon = item.icon;
         // Check if current path starts with the menu item href (for sub-pages)
-        const isActive = router.pathname === item.href || 
-                        (item.href !== '/adm/dashboard' && router.pathname.startsWith(item.href));
-
+     const isActive =
+  currentPath === item.href ||
+  (item.href !== '/adm/dashboard' && currentPath.startsWith(item.href));
         return (
           <Link
             key={item.href}
@@ -82,6 +89,7 @@ export function SidebarAdm() {
                 ? "bg-violet-800 text-white"
                 : "text-violet-800 hover:bg-violet-100"
             )}
+            onClick={() => onChange?.(item.href)}
           >
             <Icon className="h-5 w-5" />
             {item.title}

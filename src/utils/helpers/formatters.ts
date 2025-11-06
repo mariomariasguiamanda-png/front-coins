@@ -68,3 +68,15 @@ export const debounce = <T extends (...args: any[]) => any>(
     timeout = setTimeout(() => func(...args), wait);
   };
 };
+
+// Garante formatação numérica consistente entre SSR e CSR
+export const formatNumber = (
+  value: number,
+  options: Intl.NumberFormatOptions = {}
+): string => {
+  const formatter = new Intl.NumberFormat("pt-BR", {
+    maximumFractionDigits: 0,
+    ...options,
+  });
+  return formatter.format(value);
+};
