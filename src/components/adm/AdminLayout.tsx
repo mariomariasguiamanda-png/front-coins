@@ -40,8 +40,6 @@ export function AdminLayout({ children }: AdminLayoutProps) {
         >
           <SidebarAdm open={sidebarOpen} active={activeItem} onChange={setActiveItem} />
         </aside>
-
-        {/* Sem margin-left aqui */}
         <main className="flex-1 p-6 transition-all duration-300">
           {children}
         </main>
