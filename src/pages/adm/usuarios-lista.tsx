@@ -5,6 +5,7 @@ import { Card, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Skeleton, SkeletonCard, SkeletonStats, SkeletonTable } from "@/components/ui/Skeleton";
 import { ViewUserDialog } from "@/components/adm/dialogs/ViewUserDialog";
 import { EditUserDialog } from "@/components/adm/dialogs/EditUserDialog";
 import { CreateUserDialog } from "@/components/adm/dialogs/CreateUserDialog";
@@ -26,6 +27,7 @@ import {
   Phone,
   Calendar
 } from "lucide-react";
+import { toast } from "sonner";
 
 type User = {
   id: string;
@@ -266,6 +268,7 @@ export default function UsuariosListaPage() {
   const [createUserOpen, setCreateUserOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
   const [viewMode, setViewMode] = useState<"table" | "grid">("table");
+  const [loading, setLoading] = useState(true);
 
   // Load users from localStorage or use initial data
   const [users, setUsers] = useState<User[]>(() => {
@@ -333,6 +336,14 @@ export default function UsuariosListaPage() {
     }
   }, [users]);
 
+  // Simulate loading delay
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setLoading(false);
+    }, 800);
+    return () => clearTimeout(timer);
+  }, []);
+
   const filtered = useMemo(() => {
     const s = search.trim().toLowerCase();
     return users.filter((u) => {
@@ -352,7 +363,7 @@ export default function UsuariosListaPage() {
 
   const handleExportar = () => {
     if (filtered.length === 0) {
-      alert("Nenhum usuário para exportar");
+      toast.warning("Nenhum usuário para exportar");
       return;
     }
 
@@ -371,7 +382,7 @@ export default function UsuariosListaPage() {
     link.click();
     URL.revokeObjectURL(url);
 
-    console.log(`Exportados ${filtered.length} usuários`);
+    toast.success(`${filtered.length} usuários exportados com sucesso!`);
   };
 
   const handleCreateUser = async (data: {
@@ -384,15 +395,15 @@ export default function UsuariosListaPage() {
     try {
       // TODO: Call API to create user
       // await createUser(data);
-      console.log("Criar usuário:", data);
       
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 1000));
       
-      alert(`Usuário ${data.name} criado com sucesso!`);
+      toast.success(`Usuário ${data.name} criado com sucesso!`);
       // TODO: Refresh user list
     } catch (error) {
       console.error("Erro ao criar usuário:", error);
+      toast.error("Erro ao criar usuário");
       throw error;
     }
   };
@@ -406,7 +417,6 @@ export default function UsuariosListaPage() {
   }>) => {
     try {
       // TODO: Call API to batch create users
-      console.log(`Importando ${users.length} usuários:`, users);
       
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 2000));
@@ -415,7 +425,11 @@ export default function UsuariosListaPage() {
       const success = Math.floor(users.length * 0.9);
       const errors = users.length - success;
       
-      console.log(`Importação concluída: ${success} sucesso, ${errors} erros`);
+      if (errors > 0) {
+        toast.warning(`Importação concluída: ${success} sucesso, ${errors} erros`);
+      } else {
+        toast.success(`${success} usuários importados com sucesso!`);
+      }
       
       // TODO: Refresh user list
       
@@ -450,10 +464,10 @@ export default function UsuariosListaPage() {
       console.log(`Usuário ${user.name} ${newStatus === "active" ? "ativado" : "desativado"} com sucesso`);
       
       // Show success message
-      alert(`Usuário ${newStatus === "active" ? "ativado" : "desativado"} com sucesso!`);
+      toast.success(`Usuário ${newStatus === "active" ? "ativado" : "desativado"} com sucesso!`);
     } catch (error) {
       console.error("Erro ao alterar status do usuário:", error);
-      alert("Erro ao alterar status do usuário. Tente novamente.");
+      toast.error("Erro ao alterar status do usuário");
     }
   };
 
@@ -495,6 +509,9 @@ export default function UsuariosListaPage() {
         </header>
 
         {/* Stats */}
+        {loading ? (
+          <SkeletonStats />
+        ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <Card className="rounded-xl border-0 bg-gradient-to-br from-blue-50 to-white shadow-sm">
             <CardContent className="p-4">
@@ -552,6 +569,7 @@ export default function UsuariosListaPage() {
             </CardContent>
           </Card>
         </div>
+        )}
 
         {/* Filters */}
         <Card className="rounded-xl shadow-sm border-0">
@@ -618,7 +636,21 @@ export default function UsuariosListaPage() {
         </Card>
 
         {/* Users List */}
-        {viewMode === "table" ? (
+        {loading ? (
+          viewMode === "table" ? (
+            <Card className="rounded-xl shadow-sm border-0">
+              <CardContent className="p-6">
+                <SkeletonTable rows={8} />
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {[...Array(6)].map((_, i) => (
+                <SkeletonCard key={i} />
+              ))}
+            </div>
+          )
+        ) : viewMode === "table" ? (
           <UsersTable
             users={filtered}
             onViewUser={(u) => setViewUser(u)}

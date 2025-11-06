@@ -46,8 +46,15 @@ export function AdminLayout({ children }: AdminLayoutProps) {
       />
 
       <div className="flex">
-        <aside className={`transition-all duration-300 ${sidebarOpen ? "w-64" : "w-0"}`}>
-          {sidebarOpen && <SidebarAdm />}
+        <aside 
+          className={`
+            bg-white border-r border-gray-200 
+            transition-all duration-300 
+            ${sidebarOpen ? "w-64" : "w-0"} 
+            overflow-hidden
+          `}
+        >
+          <SidebarAdm />
         </aside>
 
         <main className="flex-1 p-6 transition-all duration-300">

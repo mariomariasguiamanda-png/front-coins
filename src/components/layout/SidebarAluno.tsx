@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import React from "react";
 
@@ -30,18 +29,6 @@ export default function SidebarAluno({
         open ? "w-[280px] px-4 py-6" : "w-[80px] px-2 py-6"
       } bg-gray-50 border-r border-gray-200 flex flex-col transition-all duration-300 ease-in-out shadow-sm`}
     >
-      {open && (
-        <div className="flex items-center justify-center px-0 mb-4 w-full mx-[-16px]">
-          <Image
-            src="/logo-menulateral.png"
-            alt="Coins for Study"
-            width={280}
-            height={120}
-            className="w-[280px] h-auto object-contain"
-            priority
-          />
-        </div>
-      )}
 
       <nav className="space-y-1">
         {items.map((item) => {
