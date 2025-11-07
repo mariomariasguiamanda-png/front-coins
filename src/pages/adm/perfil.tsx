@@ -111,9 +111,11 @@ export default function PerfilAdministrador() {
                 </button>
               </div>
               <div className="flex-1 pb-2">
+
                 <h2 className="text-2xl font-bold text-gray-900">
                   {admin.nome}
                 </h2>
+
                 <p className="text-gray-600">{cargo}</p>
                 <div className="flex items-center gap-4 mt-2 text-sm text-gray-500">
                   <span className="flex items-center gap-1">

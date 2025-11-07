@@ -1,6 +1,7 @@
 import { AdminLayout } from "@/components/adm/AdminLayout";
 import { DashboardCards } from "@/components/adm/DashboardCards";
 import { Card, CardContent } from "@/components/ui/Card";
+import { Skeleton, SkeletonStats } from "@/components/ui/Skeleton";
 import { 
   AlertTriangle, 
   BarChart2, 
@@ -30,7 +31,8 @@ import {
   Area,
 } from "recharts";
 import Link from "next/link";
-import { useMemo } from "react";
+import { useMemo, useState, useEffect } from "react";
+import { toast } from "sonner";
 
 // Mock data - replace with API calls
 const studentEvolutionData = [
@@ -93,6 +95,16 @@ const recentActivities = [
 ];
 
 export default function DashboardPage() {
+  const [loading, setLoading] = useState(true);
+
+  // Simulate loading delay
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setLoading(false);
+    }, 600);
+    return () => clearTimeout(timer);
+  }, []);
+
   // Mock stats - replace with API calls
   const dashboardStats = {
     students: {
@@ -150,9 +162,29 @@ export default function DashboardPage() {
         </header>
 
         {/* Cards Principais */}
-        <DashboardCards stats={dashboardStats} />
+        {loading ? (
+          <SkeletonStats />
+        ) : (
+          <DashboardCards stats={dashboardStats} />
+        )}
 
         {/* Métricas Rápidas */}
+        {loading ? (
+          <div className="grid gap-4 md:grid-cols-3">
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className="rounded-xl border border-gray-200 bg-white p-6">
+                <div className="flex items-center justify-between">
+                  <div className="flex-1 space-y-2">
+                    <Skeleton className="h-3 w-32" />
+                    <Skeleton className="h-7 w-20" />
+                    <Skeleton className="h-2 w-24" />
+                  </div>
+                  <Skeleton className="h-12 w-12 rounded-full" />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
         <div className="grid gap-4 md:grid-cols-3">
           <Card className="rounded-xl border-l-4 border-l-green-500 bg-gradient-to-br from-green-50 to-white">
             <CardContent className="p-6">
@@ -199,8 +231,31 @@ export default function DashboardPage() {
             </CardContent>
           </Card>
         </div>
+        )}
 
         {/* Gráficos Principais */}
+        {loading ? (
+          <div className="grid gap-6 lg:grid-cols-2">
+            {[...Array(2)].map((_, i) => (
+              <Card key={i} className="rounded-xl shadow-sm">
+                <CardContent className="p-6">
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <Skeleton className="h-10 w-10 rounded-lg" />
+                        <div className="space-y-2">
+                          <Skeleton className="h-4 w-32" />
+                          <Skeleton className="h-3 w-48" />
+                        </div>
+                      </div>
+                    </div>
+                    <Skeleton className="h-64 w-full" />
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        ) : (
         <div className="grid gap-6 lg:grid-cols-2">
           {/* Student Evolution Chart - Melhorado */}
           <Card className="rounded-xl shadow-sm">
@@ -338,11 +393,12 @@ export default function DashboardPage() {
             </CardContent>
           </Card>
         </div>
+        )}
 
         {/* Segunda linha de gráficos */}
-        <div className="grid gap-6 lg:grid-cols-3">
+        <div className="grid gap-6 lg:grid-cols-5">
           {/* Coins by Discipline - Melhorado */}
-          <Card className="rounded-xl shadow-sm lg:col-span-1">
+          <Card className="rounded-xl shadow-sm lg:col-span-2">
             <CardContent className="p-6">
               <div className="mb-6 flex items-center justify-between">
                 <div className="flex items-center gap-3">
@@ -392,7 +448,7 @@ export default function DashboardPage() {
           </Card>
 
           {/* Atividades Recentes e Alertas */}
-          <Card className="rounded-xl shadow-sm lg:col-span-2">
+          <Card className="rounded-xl shadow-sm lg:col-span-3">
             <CardContent className="p-6">
               <div className="mb-6 flex items-center justify-between">
                 <div className="flex items-center gap-3">
