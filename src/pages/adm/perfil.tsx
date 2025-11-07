@@ -1,16 +1,27 @@
 import { useState, useEffect } from "react";
 import { AdminLayout } from "@/components/adm/AdminLayout";
-import { Camera, Mail, Phone, User, Lock, Save, Eye, EyeOff, Bell, Palette } from "lucide-react";
+import {
+  Camera,
+  Mail,
+  Phone,
+  User,
+  Lock,
+  Save,
+  Eye,
+  EyeOff,
+  Bell,
+  Palette,
+} from "lucide-react";
 import { admin } from "@/lib/mock/admin";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
-import { useTheme } from "@/contexts/ThemeContext";
+import { useTheme } from "next-themes";
 
 type Tab = "dados" | "senha" | "preferencias";
 
 export default function PerfilAdministrador() {
-  const { theme, toggleTheme } = useTheme();
+  const { theme, setTheme } = useTheme();
   const [activeTab, setActiveTab] = useState<Tab>("dados");
   const [isEditing, setIsEditing] = useState(false);
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
@@ -62,9 +73,12 @@ export default function PerfilAdministrador() {
 
   const handleSavePreferencias = () => {
     // Save notification preferences to localStorage
-    localStorage.setItem("notificacoesEmail", JSON.stringify(notificacoesEmail));
+    localStorage.setItem(
+      "notificacoesEmail",
+      JSON.stringify(notificacoesEmail)
+    );
     localStorage.setItem("notificacoesPush", JSON.stringify(notificacoesPush));
-    
+
     // Theme is already saved by ThemeContext
     alert("Preferências salvas com sucesso!");
   };
@@ -75,7 +89,9 @@ export default function PerfilAdministrador() {
         {/* Header */}
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-gray-900 mb-1">Meu Perfil</h1>
-          <p className="text-gray-600">Gerencie suas informações pessoais e preferências</p>
+          <p className="text-gray-600">
+            Gerencie suas informações pessoais e preferências
+          </p>
         </div>
 
         {/* Profile Card */}
@@ -86,7 +102,8 @@ export default function PerfilAdministrador() {
               <div className="relative">
                 <div className="h-32 w-32 rounded-full bg-gradient-to-br from-purple-400 to-purple-700 border-4 border-white shadow-lg flex items-center justify-center">
                   <span className="text-5xl font-bold text-white">
-                    {admin.nome.split(" ")[0][0]}{admin.nome.split(" ")[1]?.[0] || ""}
+                    {admin.nome.split(" ")[0][0]}
+                    {admin.nome.split(" ")[1]?.[0] || ""}
                   </span>
                 </div>
                 <button className="absolute bottom-1 right-1 h-10 w-10 rounded-full bg-white shadow-lg border-2 border-gray-200 hover:bg-gray-50 transition flex items-center justify-center">
@@ -94,7 +111,11 @@ export default function PerfilAdministrador() {
                 </button>
               </div>
               <div className="flex-1 pb-2">
-               <h2 className="text-2xl font-bold text-white">{admin.nome}</h2>
+
+                <h2 className="text-2xl font-bold text-gray-900">
+                  {admin.nome}
+                </h2>
+
                 <p className="text-gray-600">{cargo}</p>
                 <div className="flex items-center gap-4 mt-2 text-sm text-gray-500">
                   <span className="flex items-center gap-1">
@@ -156,9 +177,15 @@ export default function PerfilAdministrador() {
             {activeTab === "dados" && (
               <div className="space-y-6">
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold text-gray-900">Informações Pessoais</h3>
+                  <h3 className="text-lg font-semibold text-gray-900">
+                    Informações Pessoais
+                  </h3>
                   {!isEditing && (
-                    <Button onClick={() => setIsEditing(true)} variant="outline" size="sm">
+                    <Button
+                      onClick={() => setIsEditing(true)}
+                      variant="outline"
+                      size="sm"
+                    >
                       Editar
                     </Button>
                   )}
@@ -214,7 +241,10 @@ export default function PerfilAdministrador() {
 
                 {isEditing && (
                   <div className="flex gap-3 pt-4">
-                    <Button onClick={handleSaveDados} className="inline-flex items-center gap-2">
+                    <Button
+                      onClick={handleSaveDados}
+                      className="inline-flex items-center gap-2"
+                    >
                       <Save className="h-4 w-4" />
                       Salvar Alterações
                     </Button>
@@ -237,7 +267,9 @@ export default function PerfilAdministrador() {
             {activeTab === "senha" && (
               <div className="space-y-6">
                 <div className="mb-4">
-                  <h3 className="text-lg font-semibold text-gray-900">Alterar Senha</h3>
+                  <h3 className="text-lg font-semibold text-gray-900">
+                    Alterar Senha
+                  </h3>
                   <p className="text-sm text-gray-600 mt-1">
                     Sua senha deve ter no mínimo 6 caracteres
                   </p>
@@ -257,7 +289,9 @@ export default function PerfilAdministrador() {
                       />
                       <button
                         type="button"
-                        onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                        onClick={() =>
+                          setShowCurrentPassword(!showCurrentPassword)
+                        }
                         className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
                       >
                         {showCurrentPassword ? (
@@ -307,7 +341,9 @@ export default function PerfilAdministrador() {
                       />
                       <button
                         type="button"
-                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                        onClick={() =>
+                          setShowConfirmPassword(!showConfirmPassword)
+                        }
                         className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
                       >
                         {showConfirmPassword ? (
@@ -320,7 +356,10 @@ export default function PerfilAdministrador() {
                   </div>
 
                   <div className="pt-2">
-                    <Button onClick={handleSaveSenha} className="inline-flex items-center gap-2">
+                    <Button
+                      onClick={handleSaveSenha}
+                      className="inline-flex items-center gap-2"
+                    >
                       <Lock className="h-4 w-4" />
                       Alterar Senha
                     </Button>
@@ -328,9 +367,13 @@ export default function PerfilAdministrador() {
                 </div>
 
                 <div className="mt-8 p-4 bg-amber-50 border border-amber-200 rounded-lg">
-                  <h4 className="font-semibold text-amber-900 mb-2">Dicas de Segurança</h4>
+                  <h4 className="font-semibold text-amber-900 mb-2">
+                    Dicas de Segurança
+                  </h4>
                   <ul className="text-sm text-amber-800 space-y-1">
-                    <li>• Use uma senha forte com letras, números e símbolos</li>
+                    <li>
+                      • Use uma senha forte com letras, números e símbolos
+                    </li>
                     <li>• Não compartilhe sua senha com ninguém</li>
                     <li>• Altere sua senha regularmente</li>
                     <li>• Não use a mesma senha em múltiplos sistemas</li>
@@ -343,7 +386,9 @@ export default function PerfilAdministrador() {
             {activeTab === "preferencias" && (
               <div className="space-y-6">
                 <div className="mb-4">
-                  <h3 className="text-lg font-semibold text-gray-900">Preferências do Sistema</h3>
+                  <h3 className="text-lg font-semibold text-gray-900">
+                    Preferências do Sistema
+                  </h3>
                   <p className="text-sm text-gray-600 mt-1">
                     Personalize sua experiência no sistema
                   </p>
@@ -359,20 +404,26 @@ export default function PerfilAdministrador() {
                     <div className="space-y-3">
                       <div className="flex items-center justify-between">
                         <div>
-                          <p className="font-medium text-gray-900">Notificações por E-mail</p>
+                          <p className="font-medium text-gray-900">
+                            Notificações por E-mail
+                          </p>
                           <p className="text-sm text-gray-600">
                             Receba atualizações importantes por e-mail
                           </p>
                         </div>
                         <button
-                          onClick={() => setNotificacoesEmail(!notificacoesEmail)}
+                          onClick={() =>
+                            setNotificacoesEmail(!notificacoesEmail)
+                          }
                           className={`relative inline-flex h-6 w-11 items-center rounded-full transition ${
                             notificacoesEmail ? "bg-violet-600" : "bg-gray-200"
                           }`}
                         >
                           <span
                             className={`inline-block h-4 w-4 transform rounded-full bg-white transition ${
-                              notificacoesEmail ? "translate-x-6" : "translate-x-1"
+                              notificacoesEmail
+                                ? "translate-x-6"
+                                : "translate-x-1"
                             }`}
                           />
                         </button>
@@ -380,7 +431,9 @@ export default function PerfilAdministrador() {
 
                       <div className="flex items-center justify-between">
                         <div>
-                          <p className="font-medium text-gray-900">Notificações Push</p>
+                          <p className="font-medium text-gray-900">
+                            Notificações Push
+                          </p>
                           <p className="text-sm text-gray-600">
                             Receba notificações em tempo real no navegador
                           </p>
@@ -393,7 +446,9 @@ export default function PerfilAdministrador() {
                         >
                           <span
                             className={`inline-block h-4 w-4 transform rounded-full bg-white transition ${
-                              notificacoesPush ? "translate-x-6" : "translate-x-1"
+                              notificacoesPush
+                                ? "translate-x-6"
+                                : "translate-x-1"
                             }`}
                           />
                         </button>
@@ -418,7 +473,8 @@ export default function PerfilAdministrador() {
                         onClick={() => {
                           const newValue = !temaEscuro;
                           setTemaEscuro(newValue);
-                          toggleTheme();
+                          // Alterna explicitamente entre dark e light usando setTheme
+                          setTheme(newValue ? "dark" : "light");
                         }}
                         className={`relative inline-flex h-6 w-11 items-center rounded-full transition ${
                           temaEscuro ? "bg-violet-600" : "bg-gray-200"
@@ -434,7 +490,10 @@ export default function PerfilAdministrador() {
                   </div>
 
                   <div className="pt-2">
-                    <Button onClick={handleSavePreferencias} className="inline-flex items-center gap-2">
+                    <Button
+                      onClick={handleSavePreferencias}
+                      className="inline-flex items-center gap-2"
+                    >
                       <Save className="h-4 w-4" />
                       Salvar Preferências
                     </Button>
