@@ -8,6 +8,7 @@ import { Switch } from "@/components/ui/switch";
 import { getSecuritySettings, updateSecuritySettings, diffSecuritySettings, type SecuritySettings } from "@/services/api/security";
 import { createNotification } from "@/services/api/notifications";
 import { createLog as apiCreateLog } from "@/services/api/logs";
+import { toast } from "sonner";
 
 export default function SegurancaConfiguracoesPage() {
   const [sec, setSec] = useState<SecuritySettings | null>(null);
@@ -269,9 +270,9 @@ export default function SegurancaConfiguracoesPage() {
                 className="rounded-lg"
                 disabled={!hasChanges || saving}
                 onClick={() => {
-                  console.log('Desfazer clicked');
                   if (sec) {
                     setDraft({ ...sec });
+                    toast.info('Alterações desfeitas');
                   }
                 }}
               >
@@ -282,32 +283,34 @@ export default function SegurancaConfiguracoesPage() {
                 disabled={!hasChanges || saving}
                 isLoading={saving}
                 onClick={async () => {
-                  console.log('Salvar clicked');
                   if (!sec || !draft) return;
                   const before = sec;
                   const after = draft;
                   const changes = diffSecuritySettings(before, after);
-                  console.log('Changes detected:', changes);
                   if (!changes.length) return;
+                  
                   try {
                     setSaving(true);
                     const saved = await updateSecuritySettings(after);
                     setSec(saved);
                     setDraft(saved);
+                    
                     await apiCreateLog({
                       usuarioNome: "Administrador (sessão)",
                       usuarioPerfil: "Administrador",
                       acao: `Atualizou configurações de segurança: ${changes.join(", ")}`,
                     });
+                    
                     await createNotification({
                       message: `Alerta: Configurações de segurança atualizadas. Alterações: ${changes.join(", ")}.`,
                       actionType: "permissions_changed",
                       recipients: ["Administrador", "Coordenador"],
                     });
-                    alert('Configurações salvas com sucesso!');
+                    
+                    toast.success('Configurações de segurança salvas com sucesso!');
                   } catch (error) {
                     console.error('Erro ao salvar:', error);
-                    alert('Erro ao salvar configurações');
+                    toast.error('Erro ao salvar configurações de segurança');
                   } finally {
                     setSaving(false);
                   }

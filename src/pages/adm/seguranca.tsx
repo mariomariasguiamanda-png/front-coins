@@ -237,6 +237,54 @@ export default function SegurancaHubPage() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Quick Actions */}
+        <Card className="rounded-xl shadow-sm border-0 bg-gradient-to-br from-red-50 to-white">
+          <CardContent className="p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Ações Rápidas</h3>
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              <Link 
+                href="/adm/seguranca-usuarios?action=bloquear"
+                className="flex items-center gap-3 p-3 rounded-lg bg-white border border-gray-200 hover:border-red-300 hover:shadow-sm transition-all"
+              >
+                <div className="h-8 w-8 rounded-lg bg-red-100 flex items-center justify-center">
+                  <Lock className="h-4 w-4 text-red-600" />
+                </div>
+                <span className="text-sm font-medium text-gray-700 whitespace-nowrap">Bloquear Usuário</span>
+              </Link>
+
+              <Link 
+                href="/adm/seguranca-logs?filter=today"
+                className="flex items-center gap-3 p-3 rounded-lg bg-white border border-gray-200 hover:border-blue-300 hover:shadow-sm transition-all"
+              >
+                <div className="h-8 w-8 rounded-lg bg-blue-100 flex items-center justify-center">
+                  <FileText className="h-4 w-4 text-blue-600" />
+                </div>
+                <span className="text-sm font-medium text-gray-700 whitespace-nowrap">Ver Logs de Hoje</span>
+              </Link>
+
+              <Link 
+                href="/adm/seguranca-notificacoes?status=pendentes"
+                className="flex items-center gap-3 p-3 rounded-lg bg-white border border-gray-200 hover:border-amber-300 hover:shadow-sm transition-all"
+              >
+                <div className="h-8 w-8 rounded-lg bg-amber-100 flex items-center justify-center">
+                  <AlertTriangle className="h-4 w-4 text-amber-600" />
+                </div>
+                <span className="text-sm font-medium text-gray-700 whitespace-nowrap">Alertas Pendentes</span>
+              </Link>
+
+              <Link 
+                href="/adm/seguranca-configuracoes"
+                className="flex items-center gap-3 p-3 rounded-lg bg-white border border-gray-200 hover:border-green-300 hover:shadow-sm transition-all"
+              >
+                <div className="h-8 w-8 rounded-lg bg-green-100 flex items-center justify-center">
+                  <Settings className="h-4 w-4 text-green-600" />
+                </div>
+                <span className="text-sm font-medium text-gray-700 whitespace-nowrap">Configurar 2FA</span>
+              </Link>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </AdminLayout>
   );
