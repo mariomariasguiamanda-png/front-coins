@@ -58,7 +58,7 @@ export default function LoginPage() {
       </Head>
 
       <div
-        className={`${roboto.className} min-h-screen w-full text-black grid md:grid-cols-12 bg-gradient-to-r from-white via-white to-[#f3e8ff]`}
+        className={`${roboto.className} min-h-dvh text-black grid md:grid-cols-12 bg-gradient-to-r from-white via-white to-[#f3e8ff]`}
       >
         <div className="relative hidden md:block md:col-span-8 overflow-hidden">
           <Image
@@ -68,13 +68,13 @@ export default function LoginPage() {
             priority
             unoptimized={false}
             quality={100}
-            sizes="66vw"
-            className="object-cover object-center"
+            sizes="(min-width: 768px) 66vw, 0vw"
+            className="object-cover object-[100%] scale-[1.08]"
           />
           <div className="absolute inset-y-0 right-0 w-[240px] bg-gradient-to-r from-white/0 via-white/100 to-[#f9fafb] pointer-events-none" />
         </div>
 
-        <div className="md:col-span-4 flex items-center justify-center p-6">
+        <div className="md:col-span-4 flex items-center justify-start pl-6 p-6">
           <div className="w-full max-w-[380px] bg-white/80 backdrop-blur-md rounded-3xl p-8 shadow-lg">
             <h1 className="text-2xl font-bold text-black text-center mb-6">
               Faça seu login
