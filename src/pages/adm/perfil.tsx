@@ -5,13 +5,11 @@ import { admin } from "@/lib/mock/admin";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
-import { useTheme } from "@/contexts/ThemeContext";
 
 type Tab = "dados" | "senha" | "preferencias";
 
 export default function PerfilAdministrador() {
   const { theme, toggleTheme } = useTheme();
-  const [activeTab, setActiveTab] = useState<Tab>("dados");
   const [isEditing, setIsEditing] = useState(false);
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
