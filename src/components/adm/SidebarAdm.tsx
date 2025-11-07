@@ -49,7 +49,7 @@ export function SidebarAdm({ open, active, onChange }: SidebarAdmProps) {
           const isActive = current === item.key || router.pathname.startsWith(item.href);
 
           return (
-            <div key={item.key}> {/* Adicionando um contêiner pai */}
+            <div key={item.key}> {/* Contêiner pai para cada item */}
               <Link
                 href={item.href}
                 onClick={() => onChange?.(item.key)}
@@ -70,13 +70,15 @@ export function SidebarAdm({ open, active, onChange }: SidebarAdmProps) {
                     className={`${isActive ? "text-white" : "text-[#7C3AED]"} flex-shrink-0`}
                   />
                   {open && (
-                    <span className={`text-sm font-medium ${isActive ? "text-white" : "text-gray-700"}`}>
+                    <span
+                      className={`text-sm font-medium ${isActive ? "text-white" : "text-gray-700"}`}
+                    >
                       {item.label}
                     </span>
                   )}
                 </div>
               </Link>
-            </div> {/* Fechando o contêiner pai */}
+            </div>
           );
         })}
       </nav>
