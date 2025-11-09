@@ -13,3 +13,7 @@ export { default as AuthLayout } from "./layout/AuthLayout";
 // Form Components
 export { LoginForm } from "./forms/LoginForm";
 export { RegisterForm } from "./forms/RegisterForm";
+
+// Professor Components
+export { TurmasProfessor } from "./professor/TurmasProfessor";
+export { DisciplinasProfessor } from "./professor/DisciplinasProfessor";

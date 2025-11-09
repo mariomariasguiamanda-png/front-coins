@@ -119,6 +119,29 @@ a {
   body {
     @apply bg-background text-foreground;
   }
+  
+  /* Força fundo branco em todos os inputs, textareas e selects */
+  input,
+  textarea,
+  select {
+    background-color: #ffffff !important;
+    color: #0f172a !important;
+  }
+  
+  /* Garante que o fundo branco seja mantido em diferentes estados */
+  input:focus,
+  textarea:focus,
+  select:focus {
+    background-color: #ffffff !important;
+    color: #0f172a !important;
+  }
+  
+  input:disabled,
+  textarea:disabled,
+  select:disabled {
+    background-color: #f3f4f6 !important;
+    color: #6b7280 !important;
+  }
 }
 
 /* (sem overrides agressivos para permitir header/sidebar roxos) */
@@ -532,6 +555,41 @@ a {
   box-shadow: 0 0 0 2px rgba(124, 58, 237, 0.6) !important; /* ring-violet-500 */
   border-color: transparent !important;
 }
+
+/* Força fundo branco em TODOS os elementos de formulário globalmente */
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="number"],
+input[type="date"],
+input[type="datetime-local"],
+input[type="time"],
+input[type="search"],
+input[type="tel"],
+input[type="url"],
+textarea,
+select {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  border-color: #cbd5e1 !important;
+}
+
+input[type="text"]:focus,
+input[type="email"]:focus,
+input[type="password"]:focus,
+input[type="number"]:focus,
+input[type="date"]:focus,
+input[type="datetime-local"]:focus,
+input[type="time"]:focus,
+input[type="search"]:focus,
+input[type="tel"]:focus,
+input[type="url"]:focus,
+textarea:focus,
+select:focus {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+}
+
 /* Animações para ResultCard */
 @keyframes bounce-in {
   0% {
