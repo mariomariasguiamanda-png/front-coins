@@ -21,7 +21,7 @@ import {
   EyeOff,
   Upload
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useRef } from "react";
 
 interface ProfileData {
   readonly: {
@@ -53,6 +53,7 @@ export function PerfilProfessor({ data }: { data: ProfileData }) {
   const [showPassword, setShowPassword] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editableData, setEditableData] = useState(data.editable);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleSave = () => {
     // Implementar salvamento
@@ -64,8 +65,32 @@ export function PerfilProfessor({ data }: { data: ProfileData }) {
     setIsEditing(false);
   };
 
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const base64String = event.target?.result as string;
+        setEditableData({ ...editableData, foto: base64String });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const triggerFileInput = () => {
+    fileInputRef.current?.click();
+  };
+
   return (
     <div className="space-y-6 pb-8">
+      {/* Hidden file input */}
+      <input 
+        ref={fileInputRef}
+        type="file" 
+        accept="image/*" 
+        onChange={handleFileSelect}
+        className="hidden"
+      />
       {/* Header com Avatar Grande */}
       <Card className="rounded-xl shadow-sm overflow-hidden">
         <div className="h-32 bg-gradient-to-r from-violet-500 via-purple-500 to-indigo-500"></div>
@@ -79,14 +104,20 @@ export function PerfilProfessor({ data }: { data: ProfileData }) {
                   className="h-full w-full object-cover"
                 />
               </div>
-              <button className="absolute bottom-0 right-0 h-10 w-10 rounded-full bg-violet-600 hover:bg-violet-700 text-white flex items-center justify-center shadow-lg transition-colors">
+              <button 
+                type="button"
+                onClick={triggerFileInput}
+                className={`absolute bottom-0 right-0 h-10 w-10 rounded-full bg-violet-600 hover:bg-violet-700 text-white flex items-center justify-center shadow-lg transition-all ${
+                  isEditing ? "opacity-100" : "opacity-0 pointer-events-none"
+                }`}
+              >
                 <Camera className="h-5 w-5" />
               </button>
             </div>
 
             <div className="flex-1 md:mb-2">
-              <h1 className="text-2xl md:text-3xl font-bold text-gray-900">{data.readonly.nomeCompleto}</h1>
-              <p className="text-gray-600 mt-1">Professor(a) • Matrícula {data.readonly.matricula}</p>
+              <h1 className="text-2xl md:text-3xl font-bold text-white">{data.readonly.nomeCompleto}</h1>
+              <p className="text-gray-900 mt-1">Professor(a) • Matrícula {data.readonly.matricula}</p>
               <div className="flex flex-wrap gap-2 mt-3">
                 {data.readonly.disciplinas.slice(0, 3).map((disciplina, idx) => (
                   <span
@@ -429,14 +460,16 @@ export function PerfilProfessor({ data }: { data: ProfileData }) {
                       className="h-full w-full object-cover"
                     />
                   </div>
-                  <Button 
-                    variant="outline" 
-                    className="rounded-xl"
-                    disabled={!isEditing}
-                  >
-                    <Upload className="h-4 w-4 mr-2" />
-                    Alterar foto
-                  </Button>
+                  {isEditing && (
+                    <Button 
+                      variant="outline" 
+                      className="rounded-xl"
+                      onClick={triggerFileInput}
+                    >
+                      <Upload className="h-4 w-4 mr-2" />
+                      Alterar foto
+                    </Button>
+                  )}
                 </div>
               </div>
             </div>

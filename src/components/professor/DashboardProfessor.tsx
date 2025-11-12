@@ -124,7 +124,7 @@ export function DashboardProfessor({ teacherName, activities = [] }: DashboardPr
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-semibold text-gray-900">Suas Disciplinas</h2>
           <Link 
-            href="/professor/atividades"
+            href="/professor/disciplinas"
             className="text-sm text-violet-600 hover:text-violet-700 font-medium flex items-center gap-1"
           >
             Ver todas
@@ -133,9 +133,21 @@ export function DashboardProfessor({ teacherName, activities = [] }: DashboardPr
         </div>
         
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {activities.map((activity, index) => (
-            <Link key={index} href={`/professor/atividades?disciplina=${activity.discipline}`}>
-              <Card className={`rounded-xl border-l-4 ${activity.color} hover:shadow-md transition-shadow cursor-pointer group`}>
+          {activities.map((activity, index) => {
+            // Mapeamento de disciplinas para códigos
+            const disciplineCodes: Record<string, string> = {
+              "Matemática": "MAT301",
+              "Física": "FIS201",
+              "Química": "QUI101",
+              "História": "HIS102",
+              "Biologia": "BIO201",
+              "Português": "POR101",
+            };
+            const disciplineCode = disciplineCodes[activity.discipline] || "";
+            
+            return (
+              <Link key={index} href={`/professor/disciplinas?view=${disciplineCode}`}>
+                <Card className={`rounded-xl border-l-4 ${activity.color} hover:shadow-md transition-shadow cursor-pointer group`}>
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="text-lg font-semibold text-gray-900 group-hover:text-violet-600 transition-colors">
@@ -183,7 +195,7 @@ export function DashboardProfessor({ teacherName, activities = [] }: DashboardPr
                 </CardContent>
               </Card>
             </Link>
-          ))}
+          )})}
         </div>
       </div>
 
@@ -264,7 +276,7 @@ export function DashboardProfessor({ teacherName, activities = [] }: DashboardPr
             </div>
             
             <div className="space-y-3 mb-6">
-              <Link href="/professor/notas" className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors group">
+              <Link href="/professor/desempenho#ranking-individual" className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors group">
                 <span className="text-2xl">🥇</span>
                 <div className="flex-1 min-w-0">
                   <p className="font-medium text-gray-900 group-hover:text-violet-600 transition-colors">João Silva</p>
@@ -273,7 +285,7 @@ export function DashboardProfessor({ teacherName, activities = [] }: DashboardPr
                 <ArrowRight className="h-4 w-4 text-gray-400 group-hover:text-violet-600 transition-colors" />
               </Link>
               
-              <Link href="/professor/notas" className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors group">
+              <Link href="/professor/desempenho#ranking-individual" className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors group">
                 <span className="text-2xl">🥈</span>
                 <div className="flex-1 min-w-0">
                   <p className="font-medium text-gray-900 group-hover:text-violet-600 transition-colors">Maria Santos</p>
@@ -282,7 +294,7 @@ export function DashboardProfessor({ teacherName, activities = [] }: DashboardPr
                 <ArrowRight className="h-4 w-4 text-gray-400 group-hover:text-violet-600 transition-colors" />
               </Link>
               
-              <Link href="/professor/notas" className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors group">
+              <Link href="/professor/desempenho#ranking-individual" className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors group">
                 <span className="text-2xl">🥉</span>
                 <div className="flex-1 min-w-0">
                   <p className="font-medium text-gray-900 group-hover:text-violet-600 transition-colors">Pedro Oliveira</p>

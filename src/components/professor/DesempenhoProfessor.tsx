@@ -512,15 +512,16 @@ export function DesempenhoProfessor({
       </Card>
 
       {/* Lista de Alunos */}
-      <Card className="rounded-xl shadow-sm">
-        <CardContent className="p-6">
-          <div className="mb-6 flex items-center gap-3">
-            <TrendingUp className="h-5 w-5 text-violet-600" />
-            <h2 className="text-lg font-semibold text-gray-900">Desempenho Individual</h2>
-            <span className="text-sm text-gray-500 ml-auto">
-              {filteredData.length} {filteredData.length === 1 ? 'aluno' : 'alunos'}
-            </span>
-          </div>
+      <div id="ranking-individual" className="scroll-mt-20">
+        <Card className="rounded-xl shadow-sm">
+          <CardContent className="p-6">
+            <div className="mb-6 flex items-center gap-3">
+              <TrendingUp className="h-5 w-5 text-violet-600" />
+              <h2 className="text-lg font-semibold text-gray-900">Desempenho Individual</h2>
+              <span className="text-sm text-gray-500 ml-auto">
+                {filteredData.length} {filteredData.length === 1 ? 'aluno' : 'alunos'}
+              </span>
+            </div>
 
           {filteredData.length === 0 ? (
             <div className="py-12 text-center">
@@ -605,6 +606,7 @@ export function DesempenhoProfessor({
           )}
         </CardContent>
       </Card>
+      </div>
 
       {/* Dialog de Detalhes do Aluno */}
       <Dialog open={!!selectedStudent} onOpenChange={(open) => !open && setSelectedStudent(null)}>

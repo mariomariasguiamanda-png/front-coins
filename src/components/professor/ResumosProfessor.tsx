@@ -74,6 +74,7 @@ export function ResumosProfessor({
   const [viewingSummary, setViewingSummary] = useState<Summary | null>(null);
   const [filterStatus, setFilterStatus] = useState<string>("todos");
   const [searchTerm, setSearchTerm] = useState("");
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
 
   // Filtrar resumos
   const filteredSummaries = summaries.filter(summary => {
@@ -126,7 +127,33 @@ export function ResumosProfessor({
   };
 
   const handleDownloadAttachment = (fileName: string) => {
-    alert(`Baixando arquivo: ${fileName}\n\nEm produção, isso iniciaria o download do arquivo.`);
+    // Criar conteúdo simulado do arquivo
+    const content = `Arquivo: ${fileName}\nData: ${new Date().toLocaleString()}\n\nConteúdo do arquivo anexo do resumo...`;
+    const blob = new Blob([content], { type: 'application/pdf' });
+    const url = window.URL.createObjectURL(blob);
+    
+    // Criar link temporário e disparar download
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    
+    // Limpar
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+  };
+
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (files) {
+      setSelectedFiles(Array.from(files));
+    }
+  };
+
+  const triggerFileInput = () => {
+    const fileInput = document.getElementById('file-input') as HTMLInputElement;
+    fileInput?.click();
   };
 
 
@@ -229,20 +256,35 @@ export function ResumosProfessor({
               </Button>
             </div>
 
-            <form className="space-y-4">
+            <form className="space-y-4" onSubmit={(e) => {
+              e.preventDefault();
+              const formData = new FormData(e.currentTarget);
+              onCreateSummary({
+                title: formData.get('title') as string,
+                content: formData.get('content') as string,
+                discipline: formData.get('discipline') as string,
+                attachments: selectedFiles.map(file => file.name),
+              });
+              setSelectedFiles([]);
+              setShowCreateForm(false);
+            }}>
               <div className="grid gap-4 md:grid-cols-2">
                 <div>
                   <Label className="text-sm font-medium text-gray-700">Título</Label>
                   <Input 
+                    name="title"
                     placeholder="Ex: Revisão - Funções do 2º Grau" 
-                    className="rounded-xl mt-1" 
+                    className="rounded-xl mt-1"
+                    required
                   />
                 </div>
                 <div>
                   <Label className="text-sm font-medium text-gray-700">Disciplina</Label>
                   <Input 
+                    name="discipline"
                     placeholder="Ex: Matemática" 
-                    className="rounded-xl mt-1" 
+                    className="rounded-xl mt-1"
+                    required
                   />
                 </div>
               </div>
@@ -250,8 +292,10 @@ export function ResumosProfessor({
               <div>
                 <Label className="text-sm font-medium text-gray-700">Conteúdo</Label>
                 <Textarea 
+                  name="content"
                   placeholder="Digite o conteúdo do resumo, conceitos principais, exemplos..." 
-                  className="min-h-[180px] rounded-xl mt-1" 
+                  className="min-h-[180px] rounded-xl mt-1"
+                  required
                 />
               </div>
 
@@ -275,19 +319,52 @@ export function ResumosProfessor({
                 </div>
                 <div>
                   <Label className="text-sm font-medium text-gray-700">Anexos (opcional)</Label>
-                  <Button 
-                    type="button"
-                    variant="outline" 
-                    className="w-full rounded-xl mt-1"
-                  >
-                    <Upload className="h-4 w-4 mr-2" /> 
-                    Selecionar arquivos
-                  </Button>
+                  <div className="space-y-2">
+                    <input
+                      id="file-input"
+                      type="file"
+                      multiple
+                      accept=".pdf,.doc,.docx,.txt,.jpg,.png"
+                      onChange={handleFileSelect}
+                      className="hidden"
+                    />
+                    <Button 
+                      type="button"
+                      variant="outline" 
+                      onClick={triggerFileInput}
+                      className="w-full rounded-xl mt-1"
+                    >
+                      <Upload className="h-4 w-4 mr-2" /> 
+                      Selecionar arquivos
+                    </Button>
+                    
+                    {selectedFiles.length > 0 && (
+                      <div className="space-y-1">
+                        {selectedFiles.map((file, index) => (
+                          <div key={index} className="flex items-center justify-between text-sm bg-gray-50 p-2 rounded-lg">
+                            <span className="text-gray-700">{file.name}</span>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                const newFiles = selectedFiles.filter((_, i) => i !== index);
+                                setSelectedFiles(newFiles);
+                              }}
+                              className="h-6 w-6 p-0 text-red-500 hover:bg-red-50"
+                            >
+                              ×
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
 
               <div className="flex gap-2 pt-4 border-t">
-                <Button className="rounded-xl bg-violet-600 hover:bg-violet-700">
+                <Button type="submit" className="rounded-xl bg-violet-600 hover:bg-violet-700">
                   <CheckCircle2 className="h-4 w-4 mr-2" />
                   Publicar Resumo
                 </Button>
@@ -489,23 +566,14 @@ export function ResumosProfessor({
       {editingSummary && (
         <Card className="rounded-xl shadow-md border-2 border-blue-200 fixed inset-4 z-50 overflow-auto">
           <CardContent className="p-6">
-            <div className="mb-6 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-lg bg-blue-100 flex items-center justify-center">
-                  <Edit2 className="h-5 w-5 text-blue-600" />
-                </div>
-                <div>
-                  <h2 className="text-lg font-semibold text-gray-900">Editar Resumo</h2>
-                  <p className="text-sm text-gray-500">Atualize as informações abaixo</p>
-                </div>
+            <div className="mb-6 flex items-center gap-3">
+              <div className="h-10 w-10 rounded-lg bg-blue-100 flex items-center justify-center">
+                <Edit2 className="h-5 w-5 text-blue-600" />
               </div>
-              <Button 
-                variant="outline" 
-                onClick={() => setEditingSummary(null)}
-                className="rounded-xl"
-              >
-                Cancelar
-              </Button>
+              <div>
+                <h2 className="text-lg font-semibold text-gray-900">Editar Resumo</h2>
+                <p className="text-sm text-gray-500">Atualize as informações abaixo</p>
+              </div>
             </div>
 
             <form className="space-y-4" onSubmit={(e) => {

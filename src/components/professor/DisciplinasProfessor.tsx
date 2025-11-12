@@ -38,7 +38,7 @@ import {
   Target,
   BarChart2
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 interface Discipline {
   id: string;
@@ -61,6 +61,7 @@ interface DisciplinasProfessorProps {
   onCreateDiscipline: (discipline: Omit<Discipline, "id">) => void;
   onEditDiscipline: (id: string, discipline: Partial<Discipline>) => void;
   onDeleteDiscipline: (id: string) => void;
+  initialViewCode?: string | null;
 }
 
 export function DisciplinasProfessor({
@@ -68,6 +69,7 @@ export function DisciplinasProfessor({
   onCreateDiscipline,
   onEditDiscipline,
   onDeleteDiscipline,
+  initialViewCode = null,
 }: DisciplinasProfessorProps) {
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [editingDiscipline, setEditingDiscipline] = useState<Discipline | null>(null);
@@ -76,6 +78,16 @@ export function DisciplinasProfessor({
   const [searchTerm, setSearchTerm] = useState("");
   const [filterCategory, setFilterCategory] = useState<string>("todas");
   const [filterStatus, setFilterStatus] = useState<string>("todas");
+
+  // Abrir modal automaticamente se initialViewCode for passado
+  useEffect(() => {
+    if (initialViewCode) {
+      const discipline = disciplines.find(d => d.code === initialViewCode);
+      if (discipline) {
+        setViewingDiscipline(discipline);
+      }
+    }
+  }, [initialViewCode, disciplines]);
 
   // Filtrar disciplinas
   const filteredDisciplines = disciplines.filter(disc => {

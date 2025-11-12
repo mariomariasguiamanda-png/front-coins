@@ -1,6 +1,7 @@
 import { ProfessorLayout } from "@/components/professor/ProfessorLayout";
 import { DisciplinasProfessor } from "@/components/professor/DisciplinasProfessor";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/router";
 
 // Mock data
 const mockDisciplines = [
@@ -112,7 +113,15 @@ const mockDisciplines = [
 ];
 
 export default function DisciplinasPage() {
+  const router = useRouter();
   const [disciplines, setDisciplines] = useState(mockDisciplines);
+  const [initialViewCode, setInitialViewCode] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (router.isReady && router.query.view) {
+      setInitialViewCode(router.query.view as string);
+    }
+  }, [router.isReady, router.query.view]);
 
   const handleCreateDiscipline = (disciplineData: any) => {
     const newDiscipline = {
@@ -142,6 +151,7 @@ export default function DisciplinasPage() {
         onCreateDiscipline={handleCreateDiscipline}
         onEditDiscipline={handleEditDiscipline}
         onDeleteDiscipline={handleDeleteDiscipline}
+        initialViewCode={initialViewCode}
       />
     </ProfessorLayout>
   );

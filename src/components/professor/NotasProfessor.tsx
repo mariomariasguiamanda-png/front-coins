@@ -258,94 +258,138 @@ export function NotasProfessor({
               </Button>
             </div>
 
-            <form className="space-y-4">
+            <form 
+              className="space-y-4"
+              onSubmit={(e) => {
+                e.preventDefault();
+                const formData = new FormData(e.currentTarget);
+                
+                const disciplina = formData.get('disciplina');
+                const turma = formData.get('turma');
+                const atividade = formData.get('atividade');
+                const aluno = formData.get('aluno');
+                const nota = parseFloat(formData.get('nota') as string);
+                const data = formData.get('data');
+
+                if (!disciplina || !turma || !atividade || !aluno || !nota || !data) {
+                  alert('Por favor, preencha todos os campos obrigatórios');
+                  return;
+                }
+
+                if (nota < 0 || nota > 10) {
+                  alert('A nota deve estar entre 0 e 10');
+                  return;
+                }
+
+                // Adicionar nova nota via prop
+                onAddGrade({
+                  studentName: formData.get('aluno') as string,
+                  studentId: `student_${Date.now()}`,
+                  activity: formData.get('atividade') as string,
+                  grade: nota,
+                  maxGrade: 10,
+                  date: formData.get('data') as string,
+                  discipline: formData.get('disciplina') as string,
+                  class: formData.get('turma') as string
+                });
+
+                // Fechar formulário e resetar
+                setShowAddForm(false);
+                e.currentTarget.reset();
+                alert('Nota salva com sucesso!');
+              }}
+            >
               <div className="grid gap-4 md:grid-cols-3">
                 <div>
-                  <Label className="text-sm font-medium text-gray-700">Disciplina</Label>
-                  <Select>
-                    <SelectTrigger className="rounded-xl bg-white mt-1">
-                      <SelectValue placeholder="Selecione a disciplina" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="matematica">Matemática</SelectItem>
-                      <SelectItem value="fisica">Física</SelectItem>
-                      <SelectItem value="quimica">Química</SelectItem>
-                      <SelectItem value="biologia">Biologia</SelectItem>
-                      <SelectItem value="historia">História</SelectItem>
-                      <SelectItem value="portugues">Português</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <Label className="text-sm font-medium text-gray-700">Disciplina *</Label>
+                  <select 
+                    name="disciplina" 
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-xl bg-white mt-1"
+                  >
+                    <option value="">Selecione a disciplina</option>
+                    <option value="Matemática">Matemática</option>
+                    <option value="Física">Física</option>
+                    <option value="Química">Química</option>
+                    <option value="Biologia">Biologia</option>
+                    <option value="História">História</option>
+                    <option value="Português">Português</option>
+                  </select>
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-gray-700">Turma</Label>
-                  <Select>
-                    <SelectTrigger className="rounded-xl bg-white mt-1">
-                      <SelectValue placeholder="Selecione a turma" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="1a">1º A</SelectItem>
-                      <SelectItem value="1b">1º B</SelectItem>
-                      <SelectItem value="2a">2º A</SelectItem>
-                      <SelectItem value="2b">2º B</SelectItem>
-                      <SelectItem value="3a">3º A</SelectItem>
-                      <SelectItem value="3c">3º C</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <Label className="text-sm font-medium text-gray-700">Turma *</Label>
+                  <select 
+                    name="turma" 
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-xl bg-white mt-1"
+                  >
+                    <option value="">Selecione a turma</option>
+                    <option value="1º A">1º A</option>
+                    <option value="1º B">1º B</option>
+                    <option value="2º A">2º A</option>
+                    <option value="2º B">2º B</option>
+                    <option value="3º A">3º A</option>
+                    <option value="3º C">3º C</option>
+                  </select>
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-gray-700">Atividade</Label>
-                  <Select>
-                    <SelectTrigger className="rounded-xl bg-white mt-1">
-                      <SelectValue placeholder="Selecione a atividade" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="prova1">Prova 1</SelectItem>
-                      <SelectItem value="prova2">Prova 2</SelectItem>
-                      <SelectItem value="trabalho">Trabalho em Grupo</SelectItem>
-                      <SelectItem value="lista">Lista de Exercícios</SelectItem>
-                      <SelectItem value="seminario">Seminário</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <Label className="text-sm font-medium text-gray-700">Atividade *</Label>
+                  <select 
+                    name="atividade" 
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-xl bg-white mt-1"
+                  >
+                    <option value="">Selecione a atividade</option>
+                    <option value="Prova 1">Prova 1</option>
+                    <option value="Prova 2">Prova 2</option>
+                    <option value="Trabalho em Grupo">Trabalho em Grupo</option>
+                    <option value="Lista de Exercícios">Lista de Exercícios</option>
+                    <option value="Seminário">Seminário</option>
+                  </select>
                 </div>
               </div>
 
               <div className="grid gap-4 md:grid-cols-3">
                 <div>
-                  <Label className="text-sm font-medium text-gray-700">Aluno</Label>
-                  <Select>
-                    <SelectTrigger className="rounded-xl bg-white mt-1">
-                      <SelectValue placeholder="Selecione o aluno" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="joao">João Silva</SelectItem>
-                      <SelectItem value="maria">Maria Santos</SelectItem>
-                      <SelectItem value="pedro">Pedro Oliveira</SelectItem>
-                      <SelectItem value="ana">Ana Costa</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <Label className="text-sm font-medium text-gray-700">Aluno *</Label>
+                  <select 
+                    name="aluno" 
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-xl bg-white mt-1"
+                  >
+                    <option value="">Selecione o aluno</option>
+                    <option value="João Silva">João Silva</option>
+                    <option value="Maria Santos">Maria Santos</option>
+                    <option value="Pedro Oliveira">Pedro Oliveira</option>
+                    <option value="Ana Costa">Ana Costa</option>
+                  </select>
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-gray-700">Nota</Label>
+                  <Label className="text-sm font-medium text-gray-700">Nota *</Label>
                   <Input
+                    name="nota"
                     type="number"
                     min="0"
                     max="10"
                     step="0.1"
                     placeholder="Ex: 8.5"
                     className="rounded-xl mt-1"
+                    required
                   />
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-gray-700">Data</Label>
+                  <Label className="text-sm font-medium text-gray-700">Data *</Label>
                   <Input 
+                    name="data"
                     type="date" 
                     className="rounded-xl mt-1" 
+                    required
                   />
                 </div>
               </div>
 
               <div className="flex gap-2 pt-4 border-t">
-                <Button className="rounded-xl bg-violet-600 hover:bg-violet-700">
+                <Button type="submit" className="rounded-xl bg-violet-600 hover:bg-violet-700">
                   <Star className="h-4 w-4 mr-2" />
                   Salvar Nota
                 </Button>
@@ -700,8 +744,8 @@ export function NotasProfessor({
 
       {/* Dialog de Importação de Notas */}
       <Dialog open={showImportDialog} onOpenChange={setShowImportDialog}>
-        <DialogContent className="rounded-xl max-w-2xl bg-white">
-          <DialogHeader className="border-b pb-4">
+        <DialogContent className="rounded-xl max-w-2xl bg-white max-h-[90vh] flex flex-col">
+          <DialogHeader className="border-b pb-4 flex-shrink-0">
             <div className="flex items-center gap-3">
               <div className="h-12 w-12 rounded-lg bg-violet-100 flex items-center justify-center">
                 <Upload className="h-6 w-6 text-violet-600" />
@@ -713,7 +757,7 @@ export function NotasProfessor({
             </div>
           </DialogHeader>
 
-          <div className="space-y-6 py-4">
+          <div className="space-y-6 py-4 overflow-y-auto flex-1">
             {/* Instruções */}
             <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
               <div className="flex gap-3">
@@ -788,7 +832,7 @@ export function NotasProfessor({
             </div>
           </div>
 
-          <DialogFooter className="border-t pt-4">
+          <DialogFooter className="border-t pt-4 flex-shrink-0">
             <Button
               variant="outline"
               onClick={() => setShowImportDialog(false)}

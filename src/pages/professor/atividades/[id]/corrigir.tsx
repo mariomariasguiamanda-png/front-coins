@@ -19,27 +19,21 @@ import {
   Save
 } from "lucide-react";
 import { useRouter } from "next/router";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 interface Submission {
   id: string;
-  studentId: string;
   studentName: string;
-  studentAvatar?: string;
+  studentEmail: string;
   submittedAt: string;
-  status: "pendente" | "aprovada" | "reprovada";
+  status: "pendente" | "aprovado" | "reprovado";
   grade?: number;
-  feedback?: string;
-  files: {
-    name: string;
-    url: string;
-    size: string;
-  }[];
+  file?: string;
 }
 
 export default function CorrigirAtividadePage() {
   const router = useRouter();
-  const { id } = router.query;
+  const { id, studentId } = router.query;
 
   // Mock data
   const [activity] = useState({
@@ -48,131 +42,182 @@ export default function CorrigirAtividadePage() {
     description: "Resolver os exercícios 1 a 15 sobre funções quadráticas. Inclui análise de gráficos e aplicações práticas.",
     dueDate: "2024-11-15",
     coins: 15,
-    discipline: "Matemática"
+    discipline: "Matemática",
+    submissions: 15
   });
 
-  const [submissions, setSubmissions] = useState<Submission[]>([
-    {
-      id: "1",
-      studentId: "s1",
-      studentName: "Ana Silva",
-      submittedAt: "2024-11-14 18:30",
-      status: "pendente",
-      files: [
-        { name: "exercicios-1-a-15.pdf", url: "#", size: "2.3 MB" }
-      ]
-    },
-    {
-      id: "2",
-      studentId: "s2",
-      studentName: "Bruno Costa",
-      submittedAt: "2024-11-15 09:15",
-      status: "aprovada",
-      grade: 9.5,
-      feedback: "Excelente trabalho! Todos os exercícios corretos.",
-      files: [
-        { name: "resolucao-funcoes.pdf", url: "#", size: "1.8 MB" }
-      ]
-    },
-    {
-      id: "3",
-      studentId: "s3",
-      studentName: "Carlos Santos",
-      submittedAt: "2024-11-13 20:45",
-      status: "pendente",
-      files: [
-        { name: "atividade-matematica.pdf", url: "#", size: "3.1 MB" },
-        { name: "graficos.jpg", url: "#", size: "450 KB" }
-      ]
-    },
-    {
-      id: "4",
-      studentId: "s4",
-      studentName: "Diana Oliveira",
-      submittedAt: "2024-11-14 22:00",
-      status: "aprovada",
-      grade: 8.0,
-      feedback: "Bom trabalho, mas atenção aos exercícios 10 e 12.",
-      files: [
-        { name: "lista-completa.pdf", url: "#", size: "2.7 MB" }
-      ]
-    },
-    {
-      id: "5",
-      studentId: "s5",
-      studentName: "Eduardo Lima",
-      submittedAt: "2024-11-15 23:50",
-      status: "reprovada",
-      grade: 4.5,
-      feedback: "Muitos erros conceituais. Por favor, revise a teoria antes de refazer.",
-      files: [
-        { name: "tentativa-exercicios.pdf", url: "#", size: "1.2 MB" }
-      ]
-    },
-  ]);
+  // Mesma lista de nomes usada em AtividadesProfessor
+  const studentNames = [
+    { name: "João Silva", email: "joao@email.com" },
+    { name: "Maria Santos", email: "maria@email.com" },
+    { name: "Pedro Costa", email: "pedro@email.com" },
+    { name: "Ana Oliveira", email: "ana@email.com" },
+    { name: "Carlos Mendes", email: "carlos@email.com" },
+    { name: "Beatriz Lima", email: "beatriz@email.com" },
+    { name: "Rafael Souza", email: "rafael@email.com" },
+    { name: "Juliana Rocha", email: "juliana@email.com" },
+    { name: "Lucas Ferreira", email: "lucas@email.com" },
+    { name: "Camila Alves", email: "camila@email.com" },
+    { name: "Felipe Barbosa", email: "felipe@email.com" },
+    { name: "Larissa Martins", email: "larissa@email.com" },
+    { name: "Bruno Silva", email: "bruno@email.com" },
+    { name: "Patricia Souza", email: "patricia@email.com" },
+    { name: "Ricardo Lima", email: "ricardo@email.com" },
+    { name: "Fernanda Costa", email: "fernanda@email.com" },
+    { name: "Thiago Santos", email: "thiago@email.com" },
+    { name: "Amanda Rocha", email: "amanda@email.com" },
+    { name: "Gabriel Alves", email: "gabriel@email.com" },
+    { name: "Mariana Dias", email: "mariana@email.com" },
+    { name: "Rodrigo Carvalho", email: "rodrigo@email.com" },
+    { name: "Isabela Teixeira", email: "isabela@email.com" },
+    { name: "Diego Monteiro", email: "diego@email.com" },
+    { name: "Carolina Nunes", email: "carolina@email.com" },
+    { name: "Vinícius Castro", email: "vinicius@email.com" },
+    { name: "Aline Cardoso", email: "aline@email.com" },
+    { name: "Mateus Ribeiro", email: "mateus@email.com" },
+    { name: "Sabrina Moreira", email: "sabrina@email.com" },
+    { name: "Eduardo Araújo", email: "eduardo@email.com" },
+    { name: "Letícia Freitas", email: "leticia@email.com" }
+  ];
 
-  const [expandedSubmission, setExpandedSubmission] = useState<string | null>(null);
-  const [editingGrades, setEditingGrades] = useState<{[key: string]: {grade: number, feedback: string}}>({});
-
-  // Função para fazer download do arquivo
-  const handleDownloadFile = (fileName: string, fileUrl: string) => {
-    // Simula o download (em produção, seria uma chamada real à API)
-    const link = document.createElement('a');
-    link.href = fileUrl;
-    link.download = fileName;
-    link.target = '_blank';
-    
-    // Se for produção com URL real, apenas abrir o link
-    if (fileUrl === '#') {
-      // Mock: criar um blob fake para simular download
-      alert(`Download iniciado: ${fileName}\n\nEm produção, o arquivo seria baixado automaticamente.`);
-    } else {
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    }
+  // Função para gerar número pseudoaleatório baseado em seed
+  const seededRandom = (seed: number) => {
+    const x = Math.sin(seed) * 10000;
+    return x - Math.floor(x);
   };
 
-  const handleSaveGrade = (submissionId: string) => {
-    const gradeData = editingGrades[submissionId];
-    if (!gradeData) return;
-
-    setSubmissions(submissions.map(sub => 
-      sub.id === submissionId 
-        ? { 
-            ...sub, 
-            grade: gradeData.grade,
-            feedback: gradeData.feedback,
-            status: gradeData.grade >= 6 ? "aprovada" : "reprovada"
-          } 
-        : sub
-    ));
+  // Gerar submissões usando a mesma lógica
+  const generateSubmissions = (): Submission[] => {
+    const count = activity.submissions || 0;
+    const submissions: Submission[] = [];
+    const activitySeed = parseInt(activity.id) || 1;
     
-    // Remove from editing
-    const newEditingGrades = { ...editingGrades };
-    delete newEditingGrades[submissionId];
-    setEditingGrades(newEditingGrades);
-    setExpandedSubmission(null);
+    for (let i = 0; i < count; i++) {
+      const student = studentNames[i % studentNames.length];
+      const randomStatus = seededRandom(activitySeed * 1000 + i);
+      const status: "pendente" | "aprovado" | "reprovado" = 
+        randomStatus > 0.7 ? "pendente" : randomStatus > 0.1 ? "aprovado" : "reprovado";
+      const gradeRandom = seededRandom(activitySeed * 1000 + i + 500);
+      const grade = status === "aprovado" ? (7 + gradeRandom * 3) : status === "reprovado" ? (gradeRandom * 6) : undefined;
+      
+      const dayRandom = seededRandom(activitySeed * 100 + i);
+      const hourRandom = seededRandom(activitySeed * 200 + i);
+      const minuteRandom = seededRandom(activitySeed * 300 + i);
+      
+      submissions.push({
+        id: `${i + 1}`,
+        studentName: `${student.name}${i >= studentNames.length ? ` ${Math.floor(i / studentNames.length) + 1}` : ''}`,
+        studentEmail: student.email,
+        submittedAt: `2024-11-${String(Math.floor(dayRandom * 7) + 1).padStart(2, '0')} ${String(Math.floor(hourRandom * 12) + 8).padStart(2, '0')}:${String(Math.floor(minuteRandom * 60)).padStart(2, '0')}`,
+        status,
+        grade: grade ? parseFloat(grade.toFixed(1)) : undefined,
+        file: `trabalho_${student.name.split(' ')[0].toLowerCase()}_${i + 1}.pdf`
+      });
+    }
+    
+    return submissions;
+  };
+
+  const [submissions, setSubmissions] = useState<Submission[]>(generateSubmissions());
+  const [editingGrades, setEditingGrades] = useState<{[key: string]: {grade: string, feedback: string}}>({});
+  const [expandedSubmission, setExpandedSubmission] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (router.isReady && studentId && typeof studentId === 'string') {
+      setExpandedSubmission(studentId);
+      setTimeout(() => {
+        const element = document.getElementById(`submission-${studentId}`);
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 300);
+    }
+  }, [router.isReady, studentId]);
+
+  const stats = {
+    total: submissions.length,
+    pendente: submissions.filter(s => s.status === "pendente").length,
+    aprovada: submissions.filter(s => s.status === "aprovado").length,
+    reprovada: submissions.filter(s => s.status === "reprovado").length,
   };
 
   const getStatusConfig = (status: string) => {
     switch(status) {
       case "pendente":
-        return { color: "bg-amber-100 text-amber-700 border-amber-200", icon: Clock, label: "Pendente" };
-      case "aprovada":
-        return { color: "bg-green-100 text-green-700 border-green-200", icon: CheckCircle2, label: "Aprovada" };
-      case "reprovada":
-        return { color: "bg-red-100 text-red-700 border-red-200", icon: XCircle, label: "Reprovada" };
+        return { 
+          color: "text-amber-700 bg-amber-100 border-amber-200", 
+          icon: Clock,
+          label: "Pendente"
+        };
+      case "aprovado":
+        return { 
+          color: "text-green-700 bg-green-100 border-green-200", 
+          icon: CheckCircle2,
+          label: "Aprovada"
+        };
+      case "reprovado":
+        return { 
+          color: "text-red-700 bg-red-100 border-red-200", 
+          icon: XCircle,
+          label: "Reprovada"
+        };
       default:
-        return { color: "bg-gray-100 text-gray-700 border-gray-200", icon: Clock, label: status };
+        return { 
+          color: "text-gray-700 bg-gray-100 border-gray-200", 
+          icon: FileText,
+          label: status
+        };
     }
   };
 
-  const stats = {
-    total: submissions.length,
-    pendente: submissions.filter(s => s.status === "pendente").length,
-    aprovada: submissions.filter(s => s.status === "aprovada").length,
-    reprovada: submissions.filter(s => s.status === "reprovada").length,
+  const handleStartEdit = (submissionId: string, currentGrade?: number, currentFeedback?: string) => {
+    setEditingGrades({
+      ...editingGrades,
+      [submissionId]: {
+        grade: currentGrade?.toString() || '',
+        feedback: currentFeedback || ''
+      }
+    });
+  };
+
+  const handleSaveGrade = (submissionId: string) => {
+    const editData = editingGrades[submissionId];
+    if (!editData) return;
+
+    setSubmissions(submissions.map(sub => {
+      if (sub.id === submissionId) {
+        const grade = parseFloat(editData.grade);
+        return {
+          ...sub,
+          grade: isNaN(grade) ? undefined : grade,
+          status: isNaN(grade) ? "pendente" : grade >= 7 ? "aprovado" : "reprovado"
+        };
+      }
+      return sub;
+    }));
+
+    const newEditingGrades = {...editingGrades};
+    delete newEditingGrades[submissionId];
+    setEditingGrades(newEditingGrades);
+  };
+
+  const handleCancelEdit = (submissionId: string) => {
+    const newEditingGrades = {...editingGrades};
+    delete newEditingGrades[submissionId];
+    setEditingGrades(newEditingGrades);
+  };
+
+  const handleDownloadFile = (fileName: string) => {
+    const content = `Conteúdo simulado do arquivo: ${fileName}`;
+    const blob = new Blob([content], { type: 'application/pdf' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
   };
 
   return (
@@ -275,7 +320,12 @@ export default function CorrigirAtividadePage() {
             const isEditing = !!editingGrades[submission.id];
 
             return (
-              <Card key={submission.id} className="rounded-xl shadow-sm hover:shadow-md transition-shadow">
+              <div 
+                key={submission.id} 
+                id={`submission-${submission.id}`}
+                className="scroll-mt-20"
+              >
+                <Card className="rounded-xl shadow-sm hover:shadow-md transition-shadow">
                 <CardContent className="p-6">
                   {/* Header da Entrega */}
                   <div className="flex items-start justify-between mb-4">
@@ -312,43 +362,36 @@ export default function CorrigirAtividadePage() {
                     </div>
                   </div>
 
-                  {/* Arquivos */}
-                  <div className="flex flex-wrap gap-2 mb-4">
-                    {submission.files.map((file, idx) => (
-                      <div key={idx} className="flex items-center gap-2 px-3 py-2 bg-gray-50 rounded-lg border hover:bg-gray-100 transition-colors">
+                  {/* Arquivo */}
+                  {submission.file && (
+                    <div className="flex flex-wrap gap-2 mb-4">
+                      <div className="flex items-center gap-2 px-3 py-2 bg-gray-50 rounded-lg border hover:bg-gray-100 transition-colors">
                         <FileText className="h-4 w-4 text-gray-400" />
-                        <span className="text-sm text-gray-700">{file.name}</span>
-                        <span className="text-xs text-gray-500">({file.size})</span>
+                        <span className="text-sm text-gray-700">{submission.file}</span>
                         <Button 
                           variant="outline" 
                           size="sm" 
                           className="h-6 w-6 p-0 ml-1 hover:bg-violet-100 hover:border-violet-300"
-                          onClick={() => handleDownloadFile(file.name, file.url)}
-                          title={`Baixar ${file.name}`}
+                          onClick={() => handleDownloadFile(submission.file!)}
+                          title={`Baixar ${submission.file}`}
                         >
                           <Download className="h-3.5 w-3.5" />
                         </Button>
                       </div>
-                    ))}
-                  </div>
+                    </div>
+                  )}
 
-                  {/* Nota e Feedback Existente */}
+                  {/* Nota Existente */}
                   {submission.grade !== undefined && !isEditing && (
                     <div className="bg-gray-50 rounded-lg p-4 mb-4">
                       <div className="flex items-center justify-between mb-2">
                         <span className="text-sm font-medium text-gray-700">Nota:</span>
                         <span className={`text-2xl font-bold ${
-                          submission.grade >= 6 ? "text-green-600" : "text-red-600"
+                          submission.grade >= 7 ? "text-green-600" : "text-red-600"
                         }`}>
                           {submission.grade.toFixed(1)}
                         </span>
                       </div>
-                      {submission.feedback && (
-                        <div>
-                          <span className="text-sm font-medium text-gray-700">Feedback:</span>
-                          <p className="text-sm text-gray-600 mt-1">{submission.feedback}</p>
-                        </div>
-                      )}
                     </div>
                   )}
 
@@ -368,8 +411,8 @@ export default function CorrigirAtividadePage() {
                             onChange={(e) => setEditingGrades({
                               ...editingGrades,
                               [submission.id]: {
-                                grade: parseFloat(e.target.value),
-                                feedback: editingGrades[submission.id]?.feedback || submission.feedback || ""
+                                grade: e.target.value,
+                                feedback: editingGrades[submission.id]?.feedback || ""
                               }
                             })}
                             className="rounded-xl mt-1"
@@ -379,11 +422,11 @@ export default function CorrigirAtividadePage() {
                         <div>
                           <Label className="text-sm font-medium text-gray-700">Feedback</Label>
                           <Textarea
-                            defaultValue={submission.feedback || ""}
+                            defaultValue=""
                             onChange={(e) => setEditingGrades({
                               ...editingGrades,
                               [submission.id]: {
-                                grade: editingGrades[submission.id]?.grade || submission.grade || 0,
+                                grade: editingGrades[submission.id]?.grade || submission.grade?.toString() || "0",
                                 feedback: e.target.value
                               }
                             })}
@@ -414,6 +457,7 @@ export default function CorrigirAtividadePage() {
                   )}
                 </CardContent>
               </Card>
+              </div>
             );
           })}
         </div>

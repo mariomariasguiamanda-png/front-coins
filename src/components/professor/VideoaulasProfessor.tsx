@@ -34,7 +34,7 @@ import {
   CheckCircle2,
   X
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useRef } from "react";
 
 interface VideoLesson {
   id: string;
@@ -82,6 +82,9 @@ export function VideoaulasProfessor({
   const [previewingLesson, setPreviewingLesson] = useState<VideoLesson | null>(null);
   const [filterDiscipline, setFilterDiscipline] = useState<string>("todas");
   const [searchTerm, setSearchTerm] = useState("");
+  const [selectedVideo, setSelectedVideo] = useState<File | null>(null);
+  const [selectedThumbnail, setSelectedThumbnail] = useState<File | null>(null);
+  const formRef = useRef<HTMLFormElement>(null);
 
   // Filtrar videoaulas
   const filteredLessons = lessons.filter(lesson => {
@@ -121,6 +124,55 @@ export function VideoaulasProfessor({
     const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
     const match = url.match(regExp);
     return (match && match[2].length === 11) ? match[2] : null;
+  };
+
+  const handleVideoSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      setSelectedVideo(file);
+    }
+  };
+
+  const handleThumbnailSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      setSelectedThumbnail(file);
+    }
+  };
+
+  const triggerVideoInput = () => {
+    const videoInput = document.getElementById('video-input') as HTMLInputElement;
+    videoInput?.click();
+  };
+
+  const triggerThumbnailInput = () => {
+    const thumbnailInput = document.getElementById('thumbnail-input') as HTMLInputElement;
+    thumbnailInput?.click();
+  };
+
+  const handleSaveDraft = () => {
+    if (formRef.current) {
+      const formData = new FormData(formRef.current);
+      const title = formData.get('title') as string;
+      
+      // Só salva se pelo menos o título estiver preenchido
+      if (title.trim()) {
+        onCreateLesson({
+          title,
+          description: formData.get('description') as string || '',
+          discipline: formData.get('discipline') as string || '',
+          youtubeUrl: formData.get('youtubeUrl') as string || undefined,
+          videoFile: selectedVideo?.name,
+          thumbnail: selectedThumbnail?.name,
+          status: 'draft',
+        });
+        setSelectedVideo(null);
+        setSelectedThumbnail(null);
+        setShowCreateForm(false);
+      } else {
+        alert('Por favor, preencha pelo menos o título para salvar como rascunho.');
+      }
+    }
   };
 
   return (
@@ -222,20 +274,39 @@ export function VideoaulasProfessor({
               </Button>
             </div>
 
-            <form className="space-y-4">
+            <form ref={formRef} className="space-y-4" onSubmit={(e) => {
+              e.preventDefault();
+              const formData = new FormData(e.currentTarget);
+              onCreateLesson({
+                title: formData.get('title') as string,
+                description: formData.get('description') as string,
+                discipline: formData.get('discipline') as string,
+                youtubeUrl: formData.get('youtubeUrl') as string || undefined,
+                videoFile: selectedVideo?.name,
+                thumbnail: selectedThumbnail?.name,
+                status: 'published',
+              });
+              setSelectedVideo(null);
+              setSelectedThumbnail(null);
+              setShowCreateForm(false);
+            }}>
               <div className="grid gap-4 md:grid-cols-2">
                 <div>
                   <Label className="text-sm font-medium text-gray-700">Título</Label>
                   <Input 
+                    name="title"
                     placeholder="Ex: Introdução à Trigonometria" 
-                    className="rounded-xl mt-1" 
+                    className="rounded-xl mt-1"
+                    required
                   />
                 </div>
                 <div>
                   <Label className="text-sm font-medium text-gray-700">Disciplina</Label>
                   <Input 
+                    name="discipline"
                     placeholder="Ex: Matemática" 
-                    className="rounded-xl mt-1" 
+                    className="rounded-xl mt-1"
+                    required
                   />
                 </div>
               </div>
@@ -243,8 +314,10 @@ export function VideoaulasProfessor({
               <div>
                 <Label className="text-sm font-medium text-gray-700">Descrição</Label>
                 <Textarea 
+                  name="description"
                   placeholder="Descreva o conteúdo e objetivos da videoaula..." 
-                  className="min-h-[120px] rounded-xl mt-1" 
+                  className="min-h-[120px] rounded-xl mt-1"
+                  required
                 />
               </div>
 
@@ -253,6 +326,7 @@ export function VideoaulasProfessor({
                   <Label className="text-sm font-medium text-gray-700">Link do YouTube</Label>
                   <div className="flex gap-2 mt-1">
                     <Input 
+                      name="youtubeUrl"
                       placeholder="https://youtube.com/watch?v=..." 
                       className="rounded-xl" 
                     />
@@ -269,40 +343,90 @@ export function VideoaulasProfessor({
                 </div>
                 <div>
                   <Label className="text-sm font-medium text-gray-700">Ou faça upload</Label>
-                  <Button 
-                    type="button"
-                    variant="outline" 
-                    className="w-full rounded-xl mt-1"
-                  >
-                    <Upload className="h-4 w-4 mr-2" /> 
-                    Selecionar vídeo local
-                  </Button>
+                  <div className="space-y-2">
+                    <input
+                      id="video-input"
+                      type="file"
+                      accept="video/mp4,video/avi,video/mov,video/mkv"
+                      onChange={handleVideoSelect}
+                      className="hidden"
+                    />
+                    <Button 
+                      type="button"
+                      variant="outline" 
+                      onClick={triggerVideoInput}
+                      className="w-full rounded-xl mt-1"
+                    >
+                      <Upload className="h-4 w-4 mr-2" /> 
+                      Selecionar vídeo local
+                    </Button>
+                    {selectedVideo && (
+                      <div className="flex items-center justify-between text-sm bg-gray-50 p-2 rounded-lg">
+                        <span className="text-gray-700">{selectedVideo.name}</span>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setSelectedVideo(null)}
+                          className="h-6 w-6 p-0 text-red-500 hover:bg-red-50"
+                        >
+                          ×
+                        </Button>
+                      </div>
+                    )}
+                  </div>
                   <p className="text-xs text-gray-500 mt-1">Formatos: MP4, AVI, MOV (max 500MB)</p>
                 </div>
               </div>
 
               <div>
                 <Label className="text-sm font-medium text-gray-700">Thumbnail (opcional)</Label>
-                <Button 
-                  type="button"
-                  variant="outline" 
-                  className="w-full rounded-xl mt-1"
-                >
-                  <Upload className="h-4 w-4 mr-2" /> 
-                  Selecionar imagem de capa
-                </Button>
+                <div className="space-y-2">
+                  <input
+                    id="thumbnail-input"
+                    type="file"
+                    accept="image/jpeg,image/jpg,image/png,image/webp"
+                    onChange={handleThumbnailSelect}
+                    className="hidden"
+                  />
+                  <Button 
+                    type="button"
+                    variant="outline" 
+                    onClick={triggerThumbnailInput}
+                    className="w-full rounded-xl mt-1"
+                  >
+                    <Upload className="h-4 w-4 mr-2" /> 
+                    Selecionar imagem de capa
+                  </Button>
+                  {selectedThumbnail && (
+                    <div className="flex items-center justify-between text-sm bg-gray-50 p-2 rounded-lg">
+                      <span className="text-gray-700">{selectedThumbnail.name}</span>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setSelectedThumbnail(null)}
+                        className="h-6 w-6 p-0 text-red-500 hover:bg-red-50"
+                      >
+                        ×
+                      </Button>
+                    </div>
+                  )}
+                </div>
               </div>
 
               <div className="flex gap-2 pt-4 border-t">
-                <Button className="rounded-xl bg-violet-600 hover:bg-violet-700">
+                <Button type="submit" className="rounded-xl bg-violet-600 hover:bg-violet-700">
                   <PlayCircle className="h-4 w-4 mr-2" />
                   Publicar Videoaula
                 </Button>
                 <Button 
                   type="button"
                   variant="outline" 
+                  onClick={handleSaveDraft}
                   className="rounded-xl"
                 >
+                  <Save className="h-4 w-4 mr-2" />
                   Salvar como Rascunho
                 </Button>
               </div>
@@ -500,23 +624,14 @@ export function VideoaulasProfessor({
       {editingLesson && (
         <Card className="rounded-xl shadow-md border-2 border-blue-200 fixed inset-4 z-50 overflow-auto bg-white">
           <CardContent className="p-6">
-            <div className="mb-6 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-lg bg-blue-100 flex items-center justify-center">
-                  <Edit2 className="h-5 w-5 text-blue-600" />
-                </div>
-                <div>
-                  <h2 className="text-lg font-semibold text-gray-900">Editar Videoaula</h2>
-                  <p className="text-sm text-gray-500">Atualize as informações abaixo</p>
-                </div>
+            <div className="mb-6 flex items-center gap-3">
+              <div className="h-10 w-10 rounded-lg bg-blue-100 flex items-center justify-center">
+                <Edit2 className="h-5 w-5 text-blue-600" />
               </div>
-              <Button 
-                variant="outline" 
-                onClick={() => setEditingLesson(null)}
-                className="rounded-xl"
-              >
-                Cancelar
-              </Button>
+              <div>
+                <h2 className="text-lg font-semibold text-gray-900">Editar Videoaula</h2>
+                <p className="text-sm text-gray-500">Atualize as informações abaixo</p>
+              </div>
             </div>
 
             <form className="space-y-4" onSubmit={(e) => {

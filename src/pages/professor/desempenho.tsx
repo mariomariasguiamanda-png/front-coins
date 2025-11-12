@@ -1,7 +1,46 @@
 import { ProfessorLayout } from "@/components/professor/ProfessorLayout";
 import { DesempenhoProfessor } from "@/components/professor/DesempenhoProfessor";
+import { useEffect } from "react";
+import { useRouter } from "next/router";
 
 export default function DesempenhoPage() {
+  const router = useRouter();
+
+  useEffect(() => {
+    // Aguardar o router estar pronto
+    if (!router.isReady) return;
+    
+    // Verificar se há hash na URL
+    const hash = window.location.hash.replace('#', '');
+    console.log('Hash detectado:', hash);
+    
+    if (hash) {
+      // Aguardar a renderização completa
+      const timeoutId = setTimeout(() => {
+        const element = document.getElementById(hash);
+        console.log('Elemento encontrado:', element);
+        
+        if (element) {
+          // Scrollar diretamente para o elemento
+          element.scrollIntoView({ 
+            behavior: 'smooth', 
+            block: 'start',
+            inline: 'nearest'
+          });
+          
+          // Ajustar posição após o scroll
+          setTimeout(() => {
+            window.scrollBy({ top: -80, behavior: 'smooth' });
+          }, 100);
+        } else {
+          console.error('Elemento não encontrado com ID:', hash);
+        }
+      }, 500);
+      
+      return () => clearTimeout(timeoutId);
+    }
+  }, [router.isReady, router.asPath]);
+
   // Mock data - replace with API calls later
   const performanceData = [
     {

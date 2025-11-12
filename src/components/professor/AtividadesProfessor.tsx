@@ -78,39 +78,98 @@ export function AtividadesProfessor({
   const [filterStatus, setFilterStatus] = useState<string>("todas");
   const [searchTerm, setSearchTerm] = useState("");
 
-  // Mock de submissões para demonstração
-  const mockSubmissions: Submission[] = [
-    {
-      id: "1",
-      studentName: "João Silva",
-      studentEmail: "joao@email.com",
-      submittedAt: "2024-11-07 14:30",
-      status: "pendente",
-      file: "exercicios_joao.pdf"
-    },
-    {
-      id: "2",
-      studentName: "Maria Santos",
-      studentEmail: "maria@email.com",
-      submittedAt: "2024-11-07 15:45",
-      status: "pendente",
-      file: "atividade_maria.docx"
-    },
-    {
-      id: "3",
-      studentName: "Pedro Costa",
-      studentEmail: "pedro@email.com",
-      submittedAt: "2024-11-06 18:20",
-      status: "aprovado",
-      grade: 9.5,
-      file: "resolucao_pedro.pdf"
-    },
+  // Lista de nomes para gerar submissões dinâmicas
+  const studentNames = [
+    { name: "João Silva", email: "joao@email.com" },
+    { name: "Maria Santos", email: "maria@email.com" },
+    { name: "Pedro Costa", email: "pedro@email.com" },
+    { name: "Ana Oliveira", email: "ana@email.com" },
+    { name: "Carlos Mendes", email: "carlos@email.com" },
+    { name: "Beatriz Lima", email: "beatriz@email.com" },
+    { name: "Rafael Souza", email: "rafael@email.com" },
+    { name: "Juliana Rocha", email: "juliana@email.com" },
+    { name: "Lucas Ferreira", email: "lucas@email.com" },
+    { name: "Camila Alves", email: "camila@email.com" },
+    { name: "Felipe Barbosa", email: "felipe@email.com" },
+    { name: "Larissa Martins", email: "larissa@email.com" },
+    { name: "Bruno Silva", email: "bruno@email.com" },
+    { name: "Patricia Souza", email: "patricia@email.com" },
+    { name: "Ricardo Lima", email: "ricardo@email.com" },
+    { name: "Fernanda Costa", email: "fernanda@email.com" },
+    { name: "Thiago Santos", email: "thiago@email.com" },
+    { name: "Amanda Rocha", email: "amanda@email.com" },
+    { name: "Gabriel Alves", email: "gabriel@email.com" },
+    { name: "Mariana Dias", email: "mariana@email.com" },
+    { name: "Rodrigo Carvalho", email: "rodrigo@email.com" },
+    { name: "Isabela Teixeira", email: "isabela@email.com" },
+    { name: "Diego Monteiro", email: "diego@email.com" },
+    { name: "Carolina Nunes", email: "carolina@email.com" },
+    { name: "Vinícius Castro", email: "vinicius@email.com" },
+    { name: "Aline Cardoso", email: "aline@email.com" },
+    { name: "Mateus Ribeiro", email: "mateus@email.com" },
+    { name: "Sabrina Moreira", email: "sabrina@email.com" },
+    { name: "Eduardo Araújo", email: "eduardo@email.com" },
+    { name: "Letícia Freitas", email: "leticia@email.com" }
   ];
+
+  // Função para gerar submissões baseadas no número da atividade
+  // Função para gerar número pseudoaleatório baseado em seed
+  const seededRandom = (seed: number) => {
+    const x = Math.sin(seed) * 10000;
+    return x - Math.floor(x);
+  };
+
+  const generateSubmissions = (activity: Activity): Submission[] => {
+    const count = activity.submissions || 0;
+    const submissions: Submission[] = [];
+    const activitySeed = parseInt(activity.id) || 1;
+    
+    for (let i = 0; i < count; i++) {
+      const student = studentNames[i % studentNames.length];
+      const randomStatus = seededRandom(activitySeed * 1000 + i);
+      const status: "pendente" | "aprovado" | "reprovado" = 
+        randomStatus > 0.7 ? "pendente" : randomStatus > 0.1 ? "aprovado" : "reprovado";
+      const gradeRandom = seededRandom(activitySeed * 1000 + i + 500);
+      const grade = status === "aprovado" ? (7 + gradeRandom * 3) : status === "reprovado" ? (gradeRandom * 6) : undefined;
+      
+      const dayRandom = seededRandom(activitySeed * 100 + i);
+      const hourRandom = seededRandom(activitySeed * 200 + i);
+      const minuteRandom = seededRandom(activitySeed * 300 + i);
+      
+      submissions.push({
+        id: `${i + 1}`,
+        studentName: `${student.name}${i >= studentNames.length ? ` ${Math.floor(i / studentNames.length) + 1}` : ''}`,
+        studentEmail: student.email,
+        submittedAt: `2024-11-${String(Math.floor(dayRandom * 7) + 1).padStart(2, '0')} ${String(Math.floor(hourRandom * 12) + 8).padStart(2, '0')}:${String(Math.floor(minuteRandom * 60)).padStart(2, '0')}`,
+        status,
+        grade: grade ? parseFloat(grade.toFixed(1)) : undefined,
+        file: `trabalho_${student.name.split(' ')[0].toLowerCase()}_${i + 1}.pdf`
+      });
+    }
+    
+    return submissions;
+  };
 
   // Função para download de arquivo
   const handleDownloadFile = (fileName: string) => {
-    // Em produção, seria uma chamada real à API
-    alert(`Download iniciado: ${fileName}\n\nEm produção, o arquivo seria baixado automaticamente.`);
+    // Simular download do arquivo
+    // Em produção, seria uma chamada real à API para obter o arquivo
+    
+    // Criar um blob de exemplo (texto simulando um PDF)
+    const content = `Arquivo: ${fileName}\nData: ${new Date().toLocaleString()}\n\nConteúdo do trabalho do aluno...`;
+    const blob = new Blob([content], { type: 'application/pdf' });
+    const url = window.URL.createObjectURL(blob);
+    
+    // Criar link temporário e disparar download
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    
+    // Limpar
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
   };
 
   // Função para exportar relatório
@@ -378,23 +437,14 @@ export function AtividadesProfessor({
       {editingActivity && (
         <Card className="rounded-xl shadow-md border-2 border-blue-200">
           <CardContent className="p-6">
-            <div className="mb-6 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-lg bg-blue-100 flex items-center justify-center">
-                  <Edit2 className="h-5 w-5 text-blue-600" />
-                </div>
-                <div>
-                  <h2 className="text-lg font-semibold text-gray-900">Editar Atividade</h2>
-                  <p className="text-sm text-gray-500">Atualize os dados abaixo</p>
-                </div>
+            <div className="mb-6 flex items-center gap-3">
+              <div className="h-10 w-10 rounded-lg bg-blue-100 flex items-center justify-center">
+                <Edit2 className="h-5 w-5 text-blue-600" />
               </div>
-              <Button 
-                variant="outline" 
-                onClick={() => setEditingActivity(null)}
-                className="rounded-xl"
-              >
-                Cancelar
-              </Button>
+              <div>
+                <h2 className="text-lg font-semibold text-gray-900">Editar Atividade</h2>
+                <p className="text-sm text-gray-500">Atualize os dados abaixo</p>
+              </div>
             </div>
 
             <form className="space-y-4" onSubmit={(e) => {
@@ -689,9 +739,9 @@ export function AtividadesProfessor({
 
       {/* Dialog de Visualização de Submissões */}
       <Dialog open={!!viewingSubmissions} onOpenChange={(open) => !open && setViewingSubmissions(null)}>
-        <DialogContent className="rounded-xl max-w-4xl bg-white max-h-[85vh] overflow-hidden">
-          <DialogHeader className="pb-4 border-b">
-            <DialogTitle className="text-2xl text-gray-900">
+        <DialogContent className="rounded-xl max-w-4xl bg-white max-h-[85vh] overflow-hidden flex flex-col">
+          <DialogHeader className="pb-4 border-b flex-shrink-0">
+            <DialogTitle className="text-2xl text-gray-900 pr-8">
               Submissões - {viewingSubmissions?.title}
             </DialogTitle>
             <p className="text-sm text-gray-600 mt-1">
@@ -699,9 +749,9 @@ export function AtividadesProfessor({
             </p>
           </DialogHeader>
           
-          <div className="overflow-y-auto max-h-[calc(85vh-180px)] py-4">
+          <div className="overflow-y-auto flex-1 py-4">
             <div className="space-y-3">
-              {mockSubmissions.map((submission) => (
+              {viewingSubmissions && generateSubmissions(viewingSubmissions).map((submission) => (
                 <Card key={submission.id} className="rounded-xl shadow-sm hover:shadow-md transition-shadow">
                   <CardContent className="p-4">
                     <div className="flex items-start justify-between">
@@ -774,7 +824,7 @@ export function AtividadesProfessor({
             </div>
           </div>
 
-          <DialogFooter className="border-t pt-4 mt-4">
+          <DialogFooter className="border-t pt-4 flex-shrink-0">
             <div className="flex justify-between items-center w-full">
               <div className="text-sm text-gray-600">
                 Total de submissões: <span className="font-semibold text-gray-900">{viewingSubmissions?.submissions || 0}</span>
