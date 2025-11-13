@@ -112,9 +112,6 @@ export function ConfigMoedasProfessor({
           <h1 className="text-3xl font-bold text-gray-900">Configuração de Pontos</h1>
           <p className="text-gray-600 mt-1">Defina o preço em moedas e pontos disponíveis por disciplina</p>
         </div>
-        <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shadow-lg">
-          <Settings className="h-6 w-6 text-white" />
-        </div>
       </div>
 
       {/* Cards de Estatísticas */}
