@@ -1,3 +1,7 @@
+"use client";
+
+import Link from "next/link";
+import { useRouter } from "next/router";
 import {
   BarChart2,
   BookOpen,
@@ -9,83 +13,74 @@ import {
   Users,
   HelpCircle,
 } from "lucide-react";
-import Link from "next/link";
-import { useRouter } from "next/router";
-import { cn } from "@/lib/utils";
+import type { Dispatch, SetStateAction } from "react";
 
-const menuItems = [
-  {
-    title: "Dashboard",
-    icon: BarChart2,
-    href: "/adm/dashboard",
-  },
-  {
-    title: "Usuários",
-    icon: Users,
-    href: "/adm/usuarios",
-  },
-  {
-    title: "Disciplinas",
-    icon: BookOpen,
-    href: "/adm/disciplinas",
-  },
-  {
-    title: "Moedas",
-    icon: Coins,
-    href: "/adm/moedas",
-  },
-  {
-    title: "Relatórios",
-    icon: FileText,
-    href: "/adm/relatorios",
-  },
-  {
-    title: "Compras",
-    icon: ShoppingCart,
-    href: "/adm/compras",
-  },
-  {
-    title: "Suporte",
-    icon: HelpCircle,
-    href: "/adm/suporte",
-  },
-  {
-    title: "Configurações",
-    icon: Settings,
-    href: "/adm/configuracoes",
-  },
-  {
-    title: "Segurança",
-    icon: Lock,
-    href: "/adm/seguranca",
-  },
-];
+type SidebarAdmProps = {
+  open: boolean;
+  active?: string;
+  onChange?: Dispatch<SetStateAction<string>>;
+};
 
-export function SidebarAdm() {
+const items = [
+  { key: "dashboard", label: "Dashboard", icon: BarChart2, href: "/adm/dashboard" },
+  { key: "usuarios", label: "Usuários", icon: Users, href: "/adm/usuarios" },
+  { key: "disciplinas", label: "Disciplinas", icon: BookOpen, href: "/adm/disciplinas" },
+  { key: "moedas", label: "Moedas", icon: Coins, href: "/adm/moedas" },
+  { key: "relatorios", label: "Relatórios", icon: FileText, href: "/adm/relatorios-hub" },
+  { key: "compras", label: "Compras", icon: ShoppingCart, href: "/adm/compras" },
+  { key: "suporte", label: "Suporte", icon: HelpCircle, href: "/adm/suporte" },
+  { key: "configuracoes", label: "Configurações", icon: Settings, href: "/adm/configuracoes" },
+  { key: "seguranca", label: "Segurança", icon: Lock, href: "/adm/seguranca" },
+] as const;
+
+export function SidebarAdm({ open, active, onChange }: SidebarAdmProps) {
   const router = useRouter();
+  const currentPath = active ?? router.pathname;
 
   return (
-    <nav className="space-y-2 p-4">
-      {menuItems.map((item) => {
-        const Icon = item.icon;
-        const isActive = router.pathname === item.href;
+    <aside
+      className={`${
+        open ? "w-[280px] px-4 py-6" : "w-[80px] px-2 py-6"
+      } bg-gray-50 border-r border-gray-200 flex flex-col transition-all duration-300 ease-in-out shadow-sm rounded-xl`}
+    >
+      <nav className="space-y-1">
+        {items.map((item) => {
+          const Icon = item.icon;
 
-        return (
-          <Link
-            key={item.href}
-            href={item.href}
-            className={cn(
-              "flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition-colors",
-              isActive
-                ? "bg-violet-800 text-white"
-                : "text-violet-800 hover:bg-violet-100"
-            )}
-          >
-            <Icon className="h-5 w-5" />
-            {item.title}
-          </Link>
-        );
-      })}
-    </nav>
+          const isActive =
+            currentPath === item.href ||
+            (item.href !== "/adm/dashboard" && currentPath.startsWith(item.href));
+
+          return (
+            <Link
+              key={item.key}
+              href={item.href}
+              onClick={() => onChange?.(item.key)}
+              aria-current={isActive ? "page" : undefined}
+              className={`relative group flex items-center w-full py-3 mx-1 rounded-xl transition-all duration-300
+                ${open ? "px-4 justify-start hover:bg-[#7C3AED]/30" : "px-0 justify-center hover:bg-[#7C3AED]/30 md:mx-2"}
+                ${isActive ? "bg-[#7C3AED] text-white shadow-md" : "hover:shadow-sm"}`}
+            >
+              {isActive && (
+                <div className="absolute left-0 top-0 bottom-0 w-1 bg-[#7C3AED] rounded-r-lg" />
+              )}
+
+              <div className="flex items-center gap-3">
+                <Icon
+                  size={20}
+                  className={`${isActive ? "text-white" : "text-[#7C3AED]"} flex-shrink-0`}
+                />
+                {open && (
+                  <span className={`text-sm font-medium ${isActive ? "text-white" : "text-gray-700"}`}>
+                    {item.label}
+                  </span>
+                )}
+              </div>
+            </Link>
+          );
+        })}
+      </nav>
+    </aside>
   );
 }
+
