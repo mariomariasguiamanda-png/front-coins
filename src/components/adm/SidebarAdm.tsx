@@ -59,6 +59,7 @@ export function SidebarAdm({ open, active, onChange }: SidebarAdmProps) {
               href={item.href}
               onClick={() => onChange?.(item.key)}
               aria-current={isActive ? "page" : undefined}
+
               className={`relative group flex items-center w-full py-3
                 mx-1 rounded-xl !rounded-xl                /* garante raio sem “cortar” */
                 transition-all duration-300
