@@ -1,4 +1,3 @@
-// Minimal in-memory system settings service used by admin configuration pages.
 export type AcademicEvent = {
   id: string;
   titulo: string;

@@ -97,7 +97,6 @@ export default function LoginPage() {
   alt="A plataforma recompensa o aprendizado"
   className="w-full h-full object-cover object-center"
 />
-
           <div className="absolute inset-y-0 right-0 w-[240px] bg-gradient-to-r from-white/0 via-white/100 to-[#f9fafb] pointer-events-none" />
         </div>
 
@@ -206,4 +205,3 @@ export default function LoginPage() {
     </>
   );
 }
-

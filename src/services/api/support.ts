@@ -1,4 +1,3 @@
-// Simple in-memory support tickets service to unblock Suporte pages
 export type TicketStatus = "aberto" | "em_andamento" | "resolvido";
 
 export type TicketResponse = {
