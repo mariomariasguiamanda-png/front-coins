@@ -1,136 +1,69 @@
-"use client";
-
-import {
+import React, {
   createContext,
   useContext,
-  useState,
   useEffect,
+  useState,
   ReactNode,
 } from "react";
+import { supabase } from "@/lib/supabaseClient";
+import type { User } from "@supabase/supabase-js";
 
-interface User {
-  id: string;
-  name: string;
-  email: string;
-  role: "student" | "teacher" | "admin";
-}
-
-interface AuthContextType {
+interface AuthContextValue {
   user: User | null;
-  isLoading: boolean;
-  login: (email: string, password: string, role?: string) => Promise<boolean>;
-  logout: () => void;
-  register: (userData: RegisterData) => Promise<boolean>;
+  loading: boolean;
+  signOut: () => Promise<void>;
 }
 
-interface RegisterData {
-  name: string;
-  email: string;
-  password: string;
+const AuthContext = createContext<AuthContextValue | undefined>(undefined);
+
+interface AuthProviderProps {
+  children: ReactNode;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
-
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error("useAuth deve ser usado dentro de um AuthProvider");
-  }
-  return context;
-};
-
-export const AuthProvider: React.FC<{ children: ReactNode }> = ({
-  children,
-}) => {
+export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [loading, setLoading] = useState(true);
 
+  // pega usuário atual ao carregar
   useEffect(() => {
-    // Simula a verificação de token/sessão no localStorage
-    const storedUser = localStorage.getItem("user");
-    if (storedUser && storedUser !== "undefined") {
-      try {
-        setUser(JSON.parse(storedUser));
-      } catch (error) {
-        console.error("Erro ao fazer parse do usuário armazenado:", error);
-        localStorage.removeItem("user"); // Remove dados corrompidos
-      }
-    }
-    setIsLoading(false);
+    const loadUser = async () => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      setUser(user ?? null);
+      setLoading(false);
+    };
+
+    loadUser();
+
+    // escuta mudanças de sessão (login/logout)
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
-  const login = async (
-    email: string,
-    password: string,
-    role: string = "student"
-  ): Promise<boolean> => {
-    setIsLoading(true);
-
-    try {
-      // Simula uma chamada de API
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      // Dados mockados para demonstração - aceita qualquer email/senha válidos
-      if (email.includes("@") && password.length >= 6) {
-        const userData: User = {
-          id: Math.random().toString(36).substr(2, 9),
-          name: `Usuário ${
-            role === "admin"
-              ? "Admin"
-              : role === "teacher"
-              ? "Professor"
-              : "Estudante"
-          }`,
-          email: email,
-          role: role as "student" | "teacher" | "admin",
-        };
-        setUser(userData);
-        localStorage.setItem("user", JSON.stringify(userData));
-        return true;
-      }
-
-      return false;
-    } catch (error) {
-      console.error("Erro no login:", error);
-      return false;
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const register = async (userData: RegisterData): Promise<boolean> => {
-    setIsLoading(true);
-
-    try {
-      // Simula uma chamada de API
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      const newUser: User = {
-        id: Date.now().toString(),
-        name: userData.name,
-        email: userData.email,
-        role: "student",
-      };
-
-      setUser(newUser);
-      localStorage.setItem("user", JSON.stringify(newUser));
-      return true;
-    } catch (error) {
-      console.error("Erro no cadastro:", error);
-      return false;
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const logout = () => {
+  const signOut = async () => {
+    await supabase.auth.signOut();
     setUser(null);
-    localStorage.removeItem("user");
   };
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, login, logout, register }}>
+    <AuthContext.Provider value={{ user, loading, signOut }}>
       {children}
     </AuthContext.Provider>
   );
-};
+}
+
+export function useAuth() {
+  const ctx = useContext(AuthContext);
+  if (!ctx) {
+    throw new Error("useAuth deve ser usado dentro de <AuthProvider>");
+  }
+  return ctx;
+}

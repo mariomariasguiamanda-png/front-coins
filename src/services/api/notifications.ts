@@ -1,6 +1,3 @@
-// Lightweight in-memory notifications API used by Admin pages
-// This is a stub to satisfy imports and enable local development.
-
 export type AdminNotification = {
   id: string;
   message: string;

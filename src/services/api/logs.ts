@@ -1,4 +1,3 @@
-// Simple in-memory admin logs service to unblock pages and local development.
 export type AdminLog = {
   id: string;
   usuarioNome: string;
