@@ -2,10 +2,10 @@ import Head from "next/head";
 import Image from "next/image";
 import { useRouter } from "next/router";
 import { Roboto } from "next/font/google";
-import GoogleG from "@/components/icons/GoogleG";
 import { Eye, EyeOff } from "@/components/ui/Icons";
 import { FormEvent, useState } from "react";
 import { HiOutlineMail, HiOutlineLockClosed } from "react-icons/hi";
+import { supabase } from "@/lib/supabaseClient";
 
 const roboto = Roboto({ subsets: ["latin"], weight: ["400", "500", "700"] });
 
@@ -17,39 +17,70 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Mapeia vários formatos possíveis de tipo_usuario
+  const redirectByRole = (tipo: string | null | undefined) => {
+  console.log("Redirecionando para o tipo:", tipo);
+  switch (tipo) {
+    case "admin":
+      return "/adm/dashboard";
+    case "professor":
+      return "/professor/dashboard";
+    case "aluno":
+    default:
+      return "/aluno/inicio";
+  }
+};
+
+
   const onSubmit = async (e: FormEvent) => {
-    e.preventDefault();
-    setError(null);
-    setIsLoading(true);
+  e.preventDefault();
+  setError(null);
+  setIsLoading(true);
 
-    try {
-      const response = await fetch("http://localhost:3001/api/usuarios/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, senha: password }),
-      });
+  try {
+    // 1) Login no Supabase com e-mail e senha
+    const { data: signInData, error: signInErr } =
+      await supabase.auth.signInWithPassword({ email, password });
 
-      if (!response.ok) {
-        const text = await response.text();
-        console.error(`Erro ${response.status}:`, text);
-        throw new Error(
-          `Erro ${response.status}: ${
-            text.includes("<!DOCTYPE") ? "Servidor indisponível" : text
-          }`
-        );
-      }
+    console.log("signInData:", signInData);
 
-      const data = await response.json();
-      console.log("✅ Login realizado:", data);
-
-      localStorage.setItem("token", data.token);
-      router.push("/aluno");
-    } catch (err: any) {
-      setError(err.message || "Não foi possível fazer login.");
-    } finally {
-      setIsLoading(false);
+    if (signInErr) {
+      console.error("Erro no signIn:", signInErr);
+      throw new Error(signInErr.message);
     }
-  };
+
+    const userId = signInData.user?.id;
+    console.log("userId:", userId);
+
+    if (!userId) throw new Error("Não foi possível identificar o usuário.");
+
+    // 2) Consulta o tipo de usuário na tabela `usuarios` USANDO O EMAIL
+    const { data: perfil, error: perfilErr } = await supabase
+      .from("usuarios")
+      .select("tipo_usuario")
+      .eq("email", email) // 🔥 TROCA AQUI: antes era auth_user_id
+      .maybeSingle();
+
+    console.log("🟢 Resultado da consulta em usuarios:", { perfil, perfilErr });
+
+    if (perfilErr) {
+      console.warn("⚠️ Erro ao buscar perfil em usuarios:", perfilErr);
+    }
+
+    const tipo = perfil?.tipo_usuario ?? "aluno";
+    const destino = redirectByRole(tipo);
+
+    console.log("redirectByRole | tipo_usuario recebido:", tipo);
+    console.log("Redirecionando para:", destino);
+
+    router.push(destino);
+  } catch (err: any) {
+    console.error("Erro no login:", err);
+    setError(err?.message || "Não foi possível fazer login.");
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   return (
     <>
@@ -61,16 +92,11 @@ export default function LoginPage() {
         className={`${roboto.className} min-h-screen w-full text-black grid md:grid-cols-12 bg-gradient-to-r from-white via-white to-[#f3e8ff]`}
       >
         <div className="relative hidden md:block md:col-span-8 overflow-hidden">
-          <Image
-            src="/imagem_login.jpeg"
-            alt="A plataforma recompensa o aprendizado"
-            fill
-            priority
-            unoptimized={false}
-            quality={100}
-            sizes="66vw"
-            className="object-cover object-center"
-          />
+          <img
+          src="/imagem_login.jpeg"
+          alt="A plataforma recompensa o aprendizado"
+          className="w-full h-full object-cover object-center"
+/>
           <div className="absolute inset-y-0 right-0 w-[240px] bg-gradient-to-r from-white/0 via-white/100 to-[#f9fafb] pointer-events-none" />
         </div>
 
@@ -85,7 +111,7 @@ export default function LoginPage() {
                 <label
                   htmlFor="email"
                   className="block text-sm font-semibold text-gray-800 mb-1"
-                ></label>
+                />
                 <div className="relative">
                   <HiOutlineMail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 h-5 w-5" />
                   <input
@@ -97,6 +123,7 @@ export default function LoginPage() {
                     onChange={(e) => setEmail(e.target.value)}
                     className="h-[48px] w-full rounded-full border border-gray-300 bg-white pl-11 pr-3 text-black placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-black/20"
                     placeholder="Email"
+                    required
                   />
                 </div>
               </div>
@@ -105,7 +132,7 @@ export default function LoginPage() {
                 <label
                   htmlFor="password"
                   className="block text-sm font-semibold text-gray-800 mb-1"
-                ></label>
+                />
                 <div className="relative">
                   <HiOutlineLockClosed className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 h-5 w-5" />
                   <input
@@ -117,20 +144,15 @@ export default function LoginPage() {
                     onChange={(e) => setPassword(e.target.value)}
                     className="h-[48px] w-full rounded-full border border-gray-300 bg-white pl-11 pr-11 text-black placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-black/20"
                     placeholder="Senha"
+                    required
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword((v) => !v)}
-                    aria-label={
-                      showPassword ? "Ocultar senha" : "Mostrar senha"
-                    }
+                    aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
                     className="absolute inset-y-0 right-0 px-3 flex items-center text-gray-600 hover:text-black focus:outline-none"
                   >
-                    {showPassword ? (
-                      <EyeOff className="h-5 w-5" />
-                    ) : (
-                      <Eye className="h-5 w-5" />
-                    )}
+                    {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                   </button>
                 </div>
                 <div className="text-right mt-1">
@@ -144,7 +166,7 @@ export default function LoginPage() {
               </div>
 
               {error && (
-                <div className="text-red-400 text-sm text-center">{error}</div>
+                <div className="text-red-500 text-sm text-center">{error}</div>
               )}
 
               <button
