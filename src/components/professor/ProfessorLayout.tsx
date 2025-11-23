@@ -34,6 +34,7 @@ export function ProfessorLayout({ children }: ProfessorLayoutProps) {
   const getActiveKey = () => {
     const path = router.asPath;
     if (path === "/professor" || path === "/professor/") return "dashboard";
+    if (path.includes("/turmas")) return "turmas";
     if (path.includes("/disciplinas")) return "disciplinas";
     if (path.includes("/desempenho")) return "desempenho";
     if (path.includes("/notas")) return "notas";
@@ -55,6 +56,18 @@ export function ProfessorLayout({ children }: ProfessorLayoutProps) {
       href: "/professor/dashboard",
     },
     {
+      key: "turmas",
+      label: "Turmas",
+      icon: Users,
+      href: "/professor/turmas",
+    },
+    {
+      key: "disciplinas",
+      label: "Disciplinas",
+      icon: BookOpen,
+      href: "/professor/disciplinas",
+    },
+    {
       key: "atividades",
       label: "Atividades",
       icon: Activity,
@@ -63,13 +76,13 @@ export function ProfessorLayout({ children }: ProfessorLayoutProps) {
     {
       key: "resumos",
       label: "Resumos",
-      icon: BookOpen,
+      icon: PiBooksBold,
       href: "/professor/resumos",
     },
     {
       key: "videoaulas",
       label: "Videoaulas",
-      icon: PiBooksBold,
+      icon: Medal,
       href: "/professor/videoaulas",
     },
     {

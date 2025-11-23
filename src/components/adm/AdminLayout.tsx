@@ -27,6 +27,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
         sidebarOpen={sidebarOpen}
       />
 
+
       {/* gap-0 fechado | gap-4 aberto: pequeno espaço entre sidebar e conteúdo */}
       <div className={`flex ${sidebarOpen ? "gap-4" : "gap-0"}`}>
        <aside
