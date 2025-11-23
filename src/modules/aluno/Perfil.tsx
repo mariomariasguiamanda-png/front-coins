@@ -23,10 +23,12 @@ interface ProfileData {
   foto_url: string | null;
 }
 
+// 🔴 TROQUE AQUI PELO NOME DO BUCKET QUE VOCÊ TIVER NO SUPABASE
+const PROFILE_BUCKET = "alunos-avatars";
+
 export default function Perfil() {
   const router = useRouter();
 
-  // ========= ESTADOS PRINCIPAIS =========
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
@@ -45,15 +47,12 @@ export default function Perfil() {
   const [originalProfile, setOriginalProfile] = useState<ProfileData | null>(
     null
   );
-
-  const [idUsuario, setIdUsuario] = useState<number | null>(null);
   const [isEditing, setIsEditing] = useState(false);
+  const [idUsuario, setIdUsuario] = useState<number | null>(null);
 
-  // foto temporária (preview)
   const [tempPhotoFile, setTempPhotoFile] = useState<File | null>(null);
   const [tempPhotoPreview, setTempPhotoPreview] = useState<string | null>(null);
 
-  // ========= NOTIFICAÇÕES =========
   const [showNotification, setShowNotification] = useState(false);
   const [notificationMessage, setNotificationMessage] = useState("");
   const [notificationType, setNotificationType] =
@@ -69,52 +68,119 @@ export default function Perfil() {
   async function handleLogout() {
     try {
       await supabase.auth.signOut();
+      router.replace("/login");
     } catch (e) {
       console.error(e);
-    } finally {
-      // replace: não deixa o usuário voltar para a página anterior logada
-      router.replace("/login");
+      showNotificationFn("Erro ao sair. Tente novamente.", "error");
     }
   }
 
-  // ========= CARREGAR PERFIL DO SUPABASE =========
+  // ========= CARREGAR PERFIL =========
   useEffect(() => {
     async function loadProfile() {
       try {
         setLoading(true);
 
-        // 1) Usuário autenticado (Supabase Auth)
         const {
           data: { user },
           error: authError,
         } = await supabase.auth.getUser();
 
-        if (authError) throw authError;
-        if (!user) {
-          // se não tiver usuário, manda direto pro login
+        if (authError) {
+          console.error("Erro de auth:", authError);
+          showNotificationFn(
+            "Erro de autenticação. Faça login novamente.",
+            "error"
+          );
           router.replace("/login");
           return;
         }
 
-        // 2) Buscar dados básicos na tabela "usuarios"
+        if (!user) {
+          router.replace("/login");
+          return;
+        }
+
+        // usuários
         const { data: usuario, error: usuarioError } = await supabase
           .from("usuarios")
           .select("id_usuario, nome, email, telefone, instituicao")
           .eq("auth_user_id", user.id)
           .single();
 
-        if (usuarioError) throw usuarioError;
+        if (usuarioError) {
+          console.error("Erro buscando usuarios:", usuarioError);
+          showNotificationFn(
+            "Erro ao carregar seus dados. Tente novamente mais tarde.",
+            "error"
+          );
+          return;
+        }
 
         setIdUsuario(usuario.id_usuario);
 
-        // 3) Buscar dados acadêmicos na tabela "alunos"
+        // alunos
         const { data: aluno, error: alunoError } = await supabase
           .from("alunos")
-          .select("matricula, cpf, turma, foto_url")
+          .select("matricula, cpf, foto_url, id_turma")
           .eq("id_usuario", usuario.id_usuario)
           .maybeSingle();
 
-        if (alunoError) throw alunoError;
+        if (alunoError) {
+          console.error("Erro buscando alunos:", alunoError);
+          showNotificationFn(
+            "Erro ao carregar seus dados acadêmicos.",
+            "error"
+          );
+        }
+
+        // turma
+        let turmaNome = "";
+
+        if (aluno?.id_turma) {
+          const { data: turma, error: turmaError } = await supabase
+            .from("turmas")
+            .select("nome")
+            .eq("id_turma", aluno.id_turma)
+            .maybeSingle();
+
+          if (turmaError) {
+            console.error(
+              "Erro buscando nome da turma (via alunos.id_turma):",
+              turmaError
+            );
+          } else {
+            turmaNome = turma?.nome ?? "";
+          }
+        } else {
+          const { data: rel, error: relError } = await supabase
+            .from("alunos_turmas")
+            .select("id_turma")
+            .eq("id_aluno", usuario.id_usuario)
+            .maybeSingle();
+
+          if (relError) {
+            console.error(
+              "Erro buscando relação aluno-turma em alunos_turmas:",
+              relError
+            );
+          } else if (rel?.id_turma) {
+            const { data: turma, error: turmaError } = await supabase
+              .from("turmas")
+              .select("nome")
+              .eq("id_turma", rel.id_turma)
+              .maybeSingle();
+
+            if (turmaError) {
+              console.error(
+                "Erro buscando nome da turma (via alunos_turmas):",
+                turmaError
+              );
+            } else {
+              turmaNome = turma?.nome ?? "";
+            }
+          }
+        }
 
         const loadedProfile: ProfileData = {
           nome: usuario.nome ?? "",
@@ -123,20 +189,18 @@ export default function Perfil() {
           instituicao: usuario.instituicao ?? "",
           matricula: aluno?.matricula ?? "",
           cpf: aluno?.cpf ?? "",
-          turma: aluno?.turma ?? "",
+          turma: turmaNome,
           foto_url: aluno?.foto_url ?? null,
         };
 
         setProfile(loadedProfile);
         setOriginalProfile(loadedProfile);
       } catch (error: any) {
-        console.error(error);
-        // se deu erro de auth, garante redirecionamento
+        console.error("Erro inesperado em loadProfile:", error);
         showNotificationFn(
-          "Erro ao carregar dados do perfil. Faça login novamente.",
+          "Erro inesperado ao carregar dados do perfil.",
           "error"
         );
-        router.replace("/login");
       } finally {
         setLoading(false);
       }
@@ -148,7 +212,7 @@ export default function Perfil() {
   // ========= HANDLERS =========
 
   function handleChange(
-    e: React.ChangeEvent<HTMLInputElement>,
+    e: ChangeEvent<HTMLInputElement>,
     field: keyof ProfileData
   ) {
     const value = e.target.value;
@@ -157,29 +221,37 @@ export default function Perfil() {
 
   async function handleSaveProfile() {
     if (!idUsuario) return;
+
     try {
       setSaving(true);
 
-      // Atualiza apenas campos que o aluno PODE editar: nome e telefone
+      // 🔒 Instituição NÃO é atualizada aqui – só admin muda em outra tela
       const { error: usuariosError } = await supabase
         .from("usuarios")
         .update({
           nome: profile.nome,
           telefone: profile.telefone,
-          // instituicao: não atualiza aqui, é só o admin
         })
         .eq("id_usuario", idUsuario);
 
       if (usuariosError) throw usuariosError;
 
-      // Atualiza cópia original (para Cancelar ficar coerente)
+      const { error: alunosError } = await supabase
+        .from("alunos")
+        .update({
+          matricula: profile.matricula,
+          cpf: profile.cpf,
+        })
+        .eq("id_usuario", idUsuario);
+
+      if (alunosError) throw alunosError;
+
       setOriginalProfile(profile);
       setIsEditing(false);
-
-      showNotificationFn("Dados atualizados com sucesso!", "success");
+      showNotificationFn("Perfil atualizado com sucesso!", "success");
     } catch (error: any) {
       console.error(error);
-      showNotificationFn("Erro ao salvar alterações.", "error");
+      showNotificationFn("Erro ao salvar o perfil.", "error");
     } finally {
       setSaving(false);
     }
@@ -192,18 +264,19 @@ export default function Perfil() {
     setIsEditing(false);
   }
 
-  // ========= FOTO: SELEÇÃO (preview) =========
+  // ========= FOTO =========
 
-  async function handleImageChange(e: ChangeEvent<HTMLInputElement>) {
+  function handlePhotoChange(e: ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
 
     setTempPhotoFile(file);
-    const previewUrl = URL.createObjectURL(file);
-    setTempPhotoPreview(previewUrl);
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setTempPhotoPreview(reader.result as string);
+    };
+    reader.readAsDataURL(file);
   }
-
-  // ========= FOTO: SALVAR =========
 
   async function handleSavePhoto() {
     if (!tempPhotoFile || !idUsuario) return;
@@ -211,10 +284,9 @@ export default function Perfil() {
     try {
       setUploadingImage(true);
 
-      // verifica se já existe registro na tabela "alunos"
       const { data: aluno, error: alunoError } = await supabase
         .from("alunos")
-        .select("id_aluno")
+        .select("id_usuario")
         .eq("id_usuario", idUsuario)
         .maybeSingle();
 
@@ -232,37 +304,27 @@ export default function Perfil() {
       const fileExt = file.name.split(".").pop();
       const filePath = `aluno-${idUsuario}-${Date.now()}.${fileExt}`;
 
-      // 1) Upload da imagem no bucket
+      // ⚠️ aqui usa o bucket configurado lá em cima
       const { error: uploadError } = await supabase.storage
-        .from("alunos-avatars")
+        .from(PROFILE_BUCKET)
         .upload(filePath, file, {
           upsert: true,
         });
 
       if (uploadError) throw uploadError;
 
-      // 2) Pega URL pública
       const {
         data: { publicUrl },
-      } = supabase.storage.from("alunos-avatars").getPublicUrl(filePath);
+      } = supabase.storage.from(PROFILE_BUCKET).getPublicUrl(filePath);
 
-      // 3) Atualiza APENAS foto_url no registro existente de "alunos"
-      const { error: alunosError } = await supabase
+      const { error: updateError } = await supabase
         .from("alunos")
         .update({ foto_url: publicUrl })
         .eq("id_usuario", idUsuario);
 
-      if (alunosError) throw alunosError;
+      if (updateError) throw updateError;
 
-      // 4) Atualiza estado local
       setProfile((prev) => ({ ...prev, foto_url: publicUrl }));
-      if (originalProfile) {
-        setOriginalProfile((prev) =>
-          prev ? { ...prev, foto_url: publicUrl } : prev
-        );
-      }
-
-      // limpa temporários
       setTempPhotoFile(null);
       setTempPhotoPreview(null);
 
@@ -275,7 +337,7 @@ export default function Perfil() {
     }
   }
 
-  // ========= UI =========
+  // ========= RENDER =========
 
   if (loading) {
     return (
@@ -295,8 +357,8 @@ export default function Perfil() {
               <User className="h-6 w-6 text-white" />
             </div>
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Meu Perfil</h1>
-              <p className="text-gray-600">
+              <h1 className="text-2xl font-bold text-slate-900">Meu Perfil</h1>
+              <p className="text-sm text-muted-foreground">
                 Veja e atualize seus dados pessoais.
               </p>
             </div>
@@ -304,52 +366,63 @@ export default function Perfil() {
 
           <Button
             variant="outline"
-            className="rounded-2xl flex items-center gap-2 border-red-200 text-red-600 hover:bg-red-50"
+            className="border-destructive text-destructive hover:bg-destructive/10 rounded-2xl"
             onClick={handleLogout}
           >
-            <LogOut className="w-4 h-4" />
+            <LogOut className="mr-2 h-4 w-4" />
             Sair
           </Button>
         </header>
 
-        <main className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* CARD AVATAR */}
-          <aside className="md:col-span-1">
+        {/* CONTEÚDO */}
+        <main className="grid gap-6 md:grid-cols-[minmax(0,1.2fr)_minmax(0,2fr)]">
+          {/* ESQUERDA: FOTO */}
+          <section>
             <Card className="rounded-2xl">
               <CardContent className="p-6 flex flex-col items-center gap-4">
                 <div className="relative">
-                  {tempPhotoPreview ? (
-                    <img
-                      src={tempPhotoPreview}
-                      alt="Pré-visualização da foto"
-                      className="w-32 h-32 rounded-full object-cover border-4 border-violet-200 shadow-md"
-                    />
-                  ) : profile.foto_url ? (
-                    <img
-                      src={profile.foto_url}
-                      alt="Foto do aluno"
-                      className="w-32 h-32 rounded-full object-cover border-4 border-violet-200 shadow-md"
-                    />
-                  ) : (
-                    <div className="w-32 h-32 rounded-full bg-violet-500 flex items-center justify-center border-4 border-violet-200 shadow-md">
-                      <User className="w-16 h-16 text-white" />
-                    </div>
-                  )}
+                  <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-violet-500 bg-slate-100 flex items-center justify-center">
+                    {tempPhotoPreview ? (
+                      <img
+                        src={tempPhotoPreview}
+                        alt="Pré-visualização"
+                        className="w-full h-full object-cover"
+                      />
+                    ) : profile.foto_url ? (
+                      <img
+                        src={profile.foto_url}
+                        alt="Foto de perfil"
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <User className="w-12 h-12 text-violet-500" />
+                    )}
+                  </div>
 
                   <label
-                    htmlFor="avatar-upload"
-                    className="absolute bottom-0 right-0 bg-white rounded-full p-2 shadow-md cursor-pointer hover:bg-violet-50 hover:border-violet-400 border border-transparent transition"
+                    htmlFor="fotoPerfil"
+                    className="absolute bottom-0 right-0 inline-flex items-center justify-center w-9 h-9 rounded-full bg-violet-500 text-white shadow-md cursor-pointer hover:bg-violet-600"
                   >
-                    <Camera className="w-4 h-4 text-violet-600" />
+                    <Camera className="w-4 h-4" />
+                    <input
+                      id="fotoPerfil"
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handlePhotoChange}
+                    />
                   </label>
-                  <input
-                    id="avatar-upload"
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={handleImageChange}
-                    disabled={uploadingImage}
-                  />
+                </div>
+
+                <div className="text-center space-y-1">
+                  <p className="font-semibold text-slate-900">
+                    {profile.nome || "Aluno"}
+                  </p>
+                  {profile.turma && (
+                    <p className="text-sm text-muted-foreground">
+                      Turma: {profile.turma}
+                    </p>
+                  )}
                 </div>
 
                 <p className="text-sm text-muted-foreground text-center">
@@ -365,26 +438,22 @@ export default function Perfil() {
                   disabled={!tempPhotoFile || uploadingImage}
                   onClick={handleSavePhoto}
                 >
-                  {uploadingImage
-                    ? "Salvando foto..."
-                    : tempPhotoFile
-                    ? "Salvar foto"
-                    : "Escolha uma foto para salvar"}
+                  {uploadingImage ? "Salvando foto..." : "Salvar foto de perfil"}
                 </Button>
               </CardContent>
             </Card>
-          </aside>
+          </section>
 
-          {/* CARD ÚNICO: DADOS */}
-          <section className="md:col-span-2">
+          {/* DIREITA: DADOS */}
+          <section>
             <Card className="rounded-2xl">
               <CardContent className="p-6 space-y-4">
-                <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center justify-between gap-4">
                   <div>
-                    <h2 className="text-lg font-semibold text-gray-900">
+                    <h2 className="text-lg font-semibold text-slate-900">
                       Dados
                     </h2>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-sm text-muted-foreground">
                       Alguns dados são gerenciados pela instituição e não podem
                       ser alterados pelo aluno.
                     </p>
@@ -393,40 +462,42 @@ export default function Perfil() {
                   {!isEditing ? (
                     <Button
                       variant="outline"
-                      size="sm"
-                      className="rounded-2xl flex items-center gap-2"
+                      className="rounded-2xl border-violet-500 text-violet-600 hover:bg-violet-50"
                       onClick={() => setIsEditing(true)}
                     >
-                      <Edit className="w-4 h-4" />
+                      <Edit className="mr-2 h-4 w-4" />
                       Editar
                     </Button>
                   ) : (
                     <div className="flex gap-2">
                       <Button
                         variant="outline"
-                        size="sm"
-                        className="rounded-2xl flex items-center gap-2"
+                        className="rounded-2xl"
                         onClick={handleCancelEdit}
                         disabled={saving}
                       >
-                        <X className="w-4 h-4" />
+                        <X className="mr-2 h-4 w-4" />
                         Cancelar
                       </Button>
                       <Button
-                        size="sm"
-                        className="rounded-2xl flex items-center gap-2"
+                        className="rounded-2xl bg-blue-500 hover:bg-blue-600 text-white"
                         onClick={handleSaveProfile}
                         disabled={saving}
                       >
-                        <Save className="w-4 h-4" />
-                        {saving ? "Salvando..." : "Salvar"}
+                        {saving ? (
+                          "Salvando..."
+                        ) : (
+                          <>
+                            <Save className="mr-2 h-4 w-4" />
+                            Salvar
+                          </>
+                        )}
                       </Button>
                     </div>
                   )}
                 </div>
 
-                <div className="grid md:grid-cols-2 gap-4">
-                  {/* Nome (editável) */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <Label>Nome completo</Label>
                     <Input
@@ -437,7 +508,6 @@ export default function Perfil() {
                     />
                   </div>
 
-                  {/* E-mail (sempre READONLY) */}
                   <div>
                     <Label>E-mail</Label>
                     <Input
@@ -447,19 +517,17 @@ export default function Perfil() {
                     />
                   </div>
 
-                  {/* Celular (editável) */}
                   <div>
                     <Label>Celular</Label>
                     <Input
                       className="rounded-2xl"
-                      placeholder="+55 49 90000-0000"
                       value={profile.telefone}
                       onChange={(e) => handleChange(e, "telefone")}
                       disabled={!isEditing}
                     />
                   </div>
 
-                  {/* Instituição (sempre somente leitura → admin-only) */}
+                  {/* 🔒 Instituição – somente leitura para o aluno */}
                   <div>
                     <Label>Instituição</Label>
                     <Input
@@ -467,9 +535,11 @@ export default function Perfil() {
                       value={profile.instituicao}
                       disabled
                     />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Esse dado é definido pela secretaria/administrador.
+                    </p>
                   </div>
 
-                  {/* Matrícula (somente leitura) */}
                   <div>
                     <Label>Matrícula</Label>
                     <Input
@@ -479,7 +549,6 @@ export default function Perfil() {
                     />
                   </div>
 
-                  {/* CPF (somente leitura) */}
                   <div>
                     <Label>CPF</Label>
                     <Input
@@ -489,7 +558,6 @@ export default function Perfil() {
                     />
                   </div>
 
-                  {/* Turma (somente leitura) */}
                   <div>
                     <Label>Turma</Label>
                     <Input
@@ -497,6 +565,10 @@ export default function Perfil() {
                       value={profile.turma}
                       disabled
                     />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      A turma é definida pela secretaria/administrador do
+                      sistema.
+                    </p>
                   </div>
                 </div>
               </CardContent>
@@ -505,7 +577,6 @@ export default function Perfil() {
         </main>
       </div>
 
-      {/* NOTIFICAÇÕES */}
       <NotificationCard
         show={showNotification}
         onClose={() => setShowNotification(false)}
