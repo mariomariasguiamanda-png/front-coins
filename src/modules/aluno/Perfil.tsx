@@ -1,156 +1,294 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, ChangeEvent } from "react";
+import { useRouter } from "next/navigation";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
+import { Label } from "@/components/ui/Label";
 import NotificationCard from "@/components/ui/NotificationCard";
-import {
-  User,
-  Camera,
-  Edit,
-  Save,
-  LogOut,
-  CheckCircle,
-  AlertCircle,
-  Building2,
-  UserCircle,
-} from "lucide-react";
+import { User, Camera, Edit, Save, X, LogOut } from "lucide-react";
+import { supabase } from "@/lib/supabaseClient";
 
-// ==================== TIPOS E INTERFACES ====================
+type NotificationType = "success" | "error" | "info";
 
-type FormData = {
+interface ProfileData {
   nome: string;
-  celular: string;
-};
-
-type ValidationErrors = {
-  nome?: string;
-  celular?: string;
-};
-
-// ==================== DADOS ESTÁTICOS ====================
-
-// Dados Institucionais (não editáveis)
-const dadosInstitucionais = [
-  { label: "Matrícula", value: "123456789" },
-  { label: "CPF", value: "123.456.789-00" },
-  { label: "E-mail", value: "mario.neto@gmail.com" },
-  { label: "Turma", value: "Coins for Study 11" },
-];
-
-// Dados iniciais do formulário
-const INITIAL_FORM_DATA: FormData = {
-  nome: "Mário Laux Neto",
-  celular: "+55 49 90000-0000",
-};
-
-// ==================== COMPONENTE PRINCIPAL ====================
+  email: string;
+  telefone: string;
+  instituicao: string;
+  matricula: string;
+  cpf: string;
+  turma: string;
+  foto_url: string | null;
+}
 
 export default function Perfil() {
-  // ==================== ESTADOS ====================
-  const [mounted, setMounted] = useState(false);
+  const router = useRouter();
+
+  // ========= ESTADOS PRINCIPAIS =========
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
+
+  const [profile, setProfile] = useState<ProfileData>({
+    nome: "",
+    email: "",
+    telefone: "",
+    instituicao: "",
+    matricula: "",
+    cpf: "",
+    turma: "",
+    foto_url: null,
+  });
+
+  const [originalProfile, setOriginalProfile] = useState<ProfileData | null>(
+    null
+  );
+
+  const [idUsuario, setIdUsuario] = useState<number | null>(null);
   const [isEditing, setIsEditing] = useState(false);
-  const [formData, setFormData] = useState<FormData>(INITIAL_FORM_DATA);
-  const [originalData, setOriginalData] = useState<FormData>(INITIAL_FORM_DATA);
-  const [errors, setErrors] = useState<ValidationErrors>({});
-  const [showSuccess, setShowSuccess] = useState(false);
-  const [hasChanges, setHasChanges] = useState(false);
+
+  // foto temporária (preview)
+  const [tempPhotoFile, setTempPhotoFile] = useState<File | null>(null);
+  const [tempPhotoPreview, setTempPhotoPreview] = useState<string | null>(null);
+
+  // ========= NOTIFICAÇÕES =========
   const [showNotification, setShowNotification] = useState(false);
   const [notificationMessage, setNotificationMessage] = useState("");
-  const [notificationType, setNotificationType] = useState<
-    "success" | "warning" | "info" | "error"
-  >("info");
+  const [notificationType, setNotificationType] =
+    useState<NotificationType>("info");
 
-  // ==================== EFFECTS ====================
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  useEffect(() => {
-    const changed =
-      formData.nome !== originalData.nome ||
-      formData.celular !== originalData.celular;
-    setHasChanges(changed);
-  }, [formData, originalData]);
-
-  // ==================== EARLY RETURN ====================
-  if (!mounted) return null;
-
-  // ==================== FUNÇÕES DE VALIDAÇÃO ====================
-  const validateForm = (): boolean => {
-    const newErrors: ValidationErrors = {};
-
-    // Validação do nome
-    if (!formData.nome.trim()) {
-      newErrors.nome = "Nome é obrigatório";
-    } else if (formData.nome.trim().length < 2) {
-      newErrors.nome = "Nome deve ter pelo menos 2 caracteres";
-    }
-
-    // Validação do celular
-    const celularRegex = /^\+55\s\d{2}\s\d{4,5}-\d{4}$/;
-    if (!formData.celular.trim()) {
-      newErrors.celular = "Celular é obrigatório";
-    } else if (!celularRegex.test(formData.celular)) {
-      newErrors.celular = "Formato inválido. Use: +55 XX XXXXX-XXXX";
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  // ==================== HANDLERS ====================
-  const handleEdit = () => {
-    setIsEditing(true);
-    setErrors({});
-    setShowSuccess(false);
-  };
-
-  const handleCancel = () => {
-    setFormData(originalData);
-    setIsEditing(false);
-    setErrors({});
-    setHasChanges(false);
-  };
-
-  const handleSave = () => {
-    if (validateForm()) {
-      setOriginalData(formData);
-      setIsEditing(false);
-      setHasChanges(false);
-      setShowSuccess(true);
-      setTimeout(() => setShowSuccess(false), 3000);
-    }
-  };
-
-  const handleInputChange = (key: keyof FormData, value: string) => {
-    setFormData((prev) => ({ ...prev, [key]: value }));
-    if (errors[key]) {
-      setErrors((prev) => ({ ...prev, [key]: undefined }));
-    }
-  };
-
-  const handlePhotoChange = () => {
-    setNotificationMessage(
-      "Funcionalidade de alterar foto será implementada em breve!"
-    );
-    setNotificationType("info");
+  function showNotificationFn(message: string, type: NotificationType) {
+    setNotificationMessage(message);
+    setNotificationType(type);
     setShowNotification(true);
-  };
+  }
 
-  const handleLogout = () => {
-    if (window.confirm("Tem certeza que deseja sair?")) {
-      setNotificationMessage("Logout realizado com sucesso!");
-      setNotificationType("success");
-      setShowNotification(true);
+  // ========= LOGOUT =========
+  async function handleLogout() {
+    try {
+      await supabase.auth.signOut();
+    } catch (e) {
+      console.error(e);
+    } finally {
+      // replace: não deixa o usuário voltar para a página anterior logada
+      router.replace("/login");
     }
-  };
+  }
 
-  // ==================== RENDER ====================
+  // ========= CARREGAR PERFIL DO SUPABASE =========
+  useEffect(() => {
+    async function loadProfile() {
+      try {
+        setLoading(true);
+
+        // 1) Usuário autenticado (Supabase Auth)
+        const {
+          data: { user },
+          error: authError,
+        } = await supabase.auth.getUser();
+
+        if (authError) throw authError;
+        if (!user) {
+          // se não tiver usuário, manda direto pro login
+          router.replace("/login");
+          return;
+        }
+
+        // 2) Buscar dados básicos na tabela "usuarios"
+        const { data: usuario, error: usuarioError } = await supabase
+          .from("usuarios")
+          .select("id_usuario, nome, email, telefone, instituicao")
+          .eq("auth_user_id", user.id)
+          .single();
+
+        if (usuarioError) throw usuarioError;
+
+        setIdUsuario(usuario.id_usuario);
+
+        // 3) Buscar dados acadêmicos na tabela "alunos"
+        const { data: aluno, error: alunoError } = await supabase
+          .from("alunos")
+          .select("matricula, cpf, turma, foto_url")
+          .eq("id_usuario", usuario.id_usuario)
+          .maybeSingle();
+
+        if (alunoError) throw alunoError;
+
+        const loadedProfile: ProfileData = {
+          nome: usuario.nome ?? "",
+          email: usuario.email ?? "",
+          telefone: usuario.telefone ?? "",
+          instituicao: usuario.instituicao ?? "",
+          matricula: aluno?.matricula ?? "",
+          cpf: aluno?.cpf ?? "",
+          turma: aluno?.turma ?? "",
+          foto_url: aluno?.foto_url ?? null,
+        };
+
+        setProfile(loadedProfile);
+        setOriginalProfile(loadedProfile);
+      } catch (error: any) {
+        console.error(error);
+        // se deu erro de auth, garante redirecionamento
+        showNotificationFn(
+          "Erro ao carregar dados do perfil. Faça login novamente.",
+          "error"
+        );
+        router.replace("/login");
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadProfile();
+  }, [router]);
+
+  // ========= HANDLERS =========
+
+  function handleChange(
+    e: React.ChangeEvent<HTMLInputElement>,
+    field: keyof ProfileData
+  ) {
+    const value = e.target.value;
+    setProfile((prev) => ({ ...prev, [field]: value }));
+  }
+
+  async function handleSaveProfile() {
+    if (!idUsuario) return;
+    try {
+      setSaving(true);
+
+      // Atualiza apenas campos que o aluno PODE editar: nome e telefone
+      const { error: usuariosError } = await supabase
+        .from("usuarios")
+        .update({
+          nome: profile.nome,
+          telefone: profile.telefone,
+          // instituicao: não atualiza aqui, é só o admin
+        })
+        .eq("id_usuario", idUsuario);
+
+      if (usuariosError) throw usuariosError;
+
+      // Atualiza cópia original (para Cancelar ficar coerente)
+      setOriginalProfile(profile);
+      setIsEditing(false);
+
+      showNotificationFn("Dados atualizados com sucesso!", "success");
+    } catch (error: any) {
+      console.error(error);
+      showNotificationFn("Erro ao salvar alterações.", "error");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  function handleCancelEdit() {
+    if (originalProfile) {
+      setProfile(originalProfile);
+    }
+    setIsEditing(false);
+  }
+
+  // ========= FOTO: SELEÇÃO (preview) =========
+
+  async function handleImageChange(e: ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setTempPhotoFile(file);
+    const previewUrl = URL.createObjectURL(file);
+    setTempPhotoPreview(previewUrl);
+  }
+
+  // ========= FOTO: SALVAR =========
+
+  async function handleSavePhoto() {
+    if (!tempPhotoFile || !idUsuario) return;
+
+    try {
+      setUploadingImage(true);
+
+      // verifica se já existe registro na tabela "alunos"
+      const { data: aluno, error: alunoError } = await supabase
+        .from("alunos")
+        .select("id_aluno")
+        .eq("id_usuario", idUsuario)
+        .maybeSingle();
+
+      if (alunoError) throw alunoError;
+
+      if (!aluno) {
+        showNotificationFn(
+          "Seus dados acadêmicos ainda não foram cadastrados. Peça ao administrador para registrar você antes de salvar a foto.",
+          "error"
+        );
+        return;
+      }
+
+      const file = tempPhotoFile;
+      const fileExt = file.name.split(".").pop();
+      const filePath = `aluno-${idUsuario}-${Date.now()}.${fileExt}`;
+
+      // 1) Upload da imagem no bucket
+      const { error: uploadError } = await supabase.storage
+        .from("alunos-avatars")
+        .upload(filePath, file, {
+          upsert: true,
+        });
+
+      if (uploadError) throw uploadError;
+
+      // 2) Pega URL pública
+      const {
+        data: { publicUrl },
+      } = supabase.storage.from("alunos-avatars").getPublicUrl(filePath);
+
+      // 3) Atualiza APENAS foto_url no registro existente de "alunos"
+      const { error: alunosError } = await supabase
+        .from("alunos")
+        .update({ foto_url: publicUrl })
+        .eq("id_usuario", idUsuario);
+
+      if (alunosError) throw alunosError;
+
+      // 4) Atualiza estado local
+      setProfile((prev) => ({ ...prev, foto_url: publicUrl }));
+      if (originalProfile) {
+        setOriginalProfile((prev) =>
+          prev ? { ...prev, foto_url: publicUrl } : prev
+        );
+      }
+
+      // limpa temporários
+      setTempPhotoFile(null);
+      setTempPhotoPreview(null);
+
+      showNotificationFn("Foto atualizada com sucesso!", "success");
+    } catch (error: any) {
+      console.error(error);
+      showNotificationFn("Erro ao salvar a foto.", "error");
+    } finally {
+      setUploadingImage(false);
+    }
+  }
+
+  // ========= UI =========
+
+  if (loading) {
+    return (
+      <div className="p-6">
+        <p className="text-sm text-muted-foreground">Carregando perfil...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="page-enter min-h-screen bg-violet-50 p-6">
       <div className="max-w-6xl mx-auto space-y-6">
-        {/* ==================== HEADER ==================== */}
+        {/* HEADER */}
         <header className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="p-3 bg-gradient-to-br from-violet-500 to-violet-600 rounded-xl">
@@ -159,213 +297,207 @@ export default function Perfil() {
             <div>
               <h1 className="text-3xl font-bold text-gray-900">Meu Perfil</h1>
               <p className="text-gray-600">
-                Gerencie suas informações pessoais e configurações
+                Veja e atualize seus dados pessoais.
               </p>
             </div>
           </div>
 
-          {!isEditing && (
-            <Button
-              onClick={handleEdit}
-              className="bg-gradient-to-r from-violet-600 to-violet-700 hover:from-violet-700 hover:to-violet-800 text-white shadow-md hover:shadow-lg smooth-transition"
-            >
-              <Edit className="h-4 w-4 mr-2" />
-              Editar perfil
-            </Button>
-          )}
+          <Button
+            variant="outline"
+            className="rounded-2xl flex items-center gap-2 border-red-200 text-red-600 hover:bg-red-50"
+            onClick={handleLogout}
+          >
+            <LogOut className="w-4 h-4" />
+            Sair
+          </Button>
         </header>
 
-        {/* ==================== MENSAGEM DE SUCESSO ==================== */}
-        {showSuccess && (
-          <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl p-4 flex items-center gap-3 card-bounce shadow-sm">
-            <div className="p-1 bg-green-100 rounded-full">
-              <CheckCircle className="h-5 w-5 text-green-600" />
-            </div>
-            <span className="text-green-800 font-medium">
-              Perfil atualizado com sucesso!
-            </span>
-          </div>
-        )}
-
-        {/* ==================== LAYOUT PRINCIPAL ==================== */}
-        <main className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* ==================== COLUNA 1 - PERFIL DO USUÁRIO ==================== */}
-          <aside className="lg:col-span-1">
-            <Card className="bg-white border border-gray-200 rounded-2xl shadow-lg hover:shadow-xl smooth-transition card-bounce card-bounce-delay-1">
-              <CardContent className="p-8 text-center">
-                <div className="space-y-6">
-                  {/* Avatar do Usuário */}
-                  <div className="relative inline-block">
-                    <div className="w-32 h-32 bg-gradient-to-br from-violet-500 to-violet-700 rounded-full flex items-center justify-center mx-auto shadow-lg ring-4 ring-violet-100">
-                      <User className="h-16 w-16 text-white" />
+        <main className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* CARD AVATAR */}
+          <aside className="md:col-span-1">
+            <Card className="rounded-2xl">
+              <CardContent className="p-6 flex flex-col items-center gap-4">
+                <div className="relative">
+                  {tempPhotoPreview ? (
+                    <img
+                      src={tempPhotoPreview}
+                      alt="Pré-visualização da foto"
+                      className="w-32 h-32 rounded-full object-cover border-4 border-violet-200 shadow-md"
+                    />
+                  ) : profile.foto_url ? (
+                    <img
+                      src={profile.foto_url}
+                      alt="Foto do aluno"
+                      className="w-32 h-32 rounded-full object-cover border-4 border-violet-200 shadow-md"
+                    />
+                  ) : (
+                    <div className="w-32 h-32 rounded-full bg-violet-500 flex items-center justify-center border-4 border-violet-200 shadow-md">
+                      <User className="w-16 h-16 text-white" />
                     </div>
-                    <button
-                      onClick={handlePhotoChange}
-                      className="absolute -bottom-2 -right-2 bg-white border-2 border-violet-300 rounded-full p-2 hover:bg-violet-50 hover:scale-110 smooth-transition shadow-md"
-                      title="Alterar foto"
-                    >
-                      <Camera className="h-4 w-4 text-violet-600" />
-                    </button>
-                  </div>
+                  )}
 
-                  {/* Informações do Usuário */}
-                  <div className="space-y-2">
-                    <h3 className="text-xl font-bold text-gray-900">
-                      {formData.nome}
-                    </h3>
-                    <p className="text-gray-600 flex items-center justify-center gap-2">
-                      <UserCircle className="h-4 w-4" />
-                      Estudante
-                    </p>
-                  </div>
-
-                  {/* Botões de Ação */}
-                  <div className="flex gap-3">
-                    <Button
-                      onClick={handlePhotoChange}
-                      variant="outline"
-                      size="sm"
-                      className="flex-1 flex items-center justify-center border-violet-300 text-violet-600 hover:bg-violet-50 hover:border-violet-400 smooth-transition"
-                    >
-                      <Camera className="h-4 w-4 mr-2" />
-                      <span>Alterar foto</span>
-                    </Button>
-
-                    <Button
-                      onClick={handleLogout}
-                      variant="outline"
-                      size="sm"
-                      className="flex-1 flex items-center justify-center border-gray-300 text-gray-600 hover:bg-gray-50 hover:border-gray-400 smooth-transition"
-                    >
-                      <LogOut className="h-4 w-4 mr-2" />
-                      <span>Sair</span>
-                    </Button>
-                  </div>
+                  <label
+                    htmlFor="avatar-upload"
+                    className="absolute bottom-0 right-0 bg-white rounded-full p-2 shadow-md cursor-pointer hover:bg-violet-50 hover:border-violet-400 border border-transparent transition"
+                  >
+                    <Camera className="w-4 h-4 text-violet-600" />
+                  </label>
+                  <input
+                    id="avatar-upload"
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleImageChange}
+                    disabled={uploadingImage}
+                  />
                 </div>
+
+                <p className="text-sm text-muted-foreground text-center">
+                  {uploadingImage
+                    ? "Salvando foto..."
+                    : tempPhotoFile
+                    ? "Veja a pré-visualização e clique em Salvar foto."
+                    : "Clique no ícone de câmera para selecionar uma foto."}
+                </p>
+
+                <Button
+                  className="mt-2 rounded-2xl w-full"
+                  disabled={!tempPhotoFile || uploadingImage}
+                  onClick={handleSavePhoto}
+                >
+                  {uploadingImage
+                    ? "Salvando foto..."
+                    : tempPhotoFile
+                    ? "Salvar foto"
+                    : "Escolha uma foto para salvar"}
+                </Button>
               </CardContent>
             </Card>
           </aside>
 
-          {/* ==================== COLUNA 2 - DADOS ==================== */}
-          <section className="lg:col-span-2 space-y-6">
-            {/* Dados Institucionais */}
-            <Card className="bg-white border border-gray-200 rounded-2xl shadow-lg hover:shadow-xl smooth-transition card-bounce card-bounce-delay-2">
-              <CardContent className="p-6">
-                <h3 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-3">
-                  <div className="p-2 bg-blue-100 rounded-lg">
-                    <Building2 className="h-5 w-5 text-blue-600" />
-                  </div>
-                  Dados Institucionais
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {dadosInstitucionais.map((item, index) => (
-                    <div key={index} className="space-y-2">
-                      <label className="block text-sm font-medium text-gray-700">
-                        {item.label}
-                      </label>
-                      <input
-                        type="text"
-                        value={item.value}
-                        disabled
-                        className="w-full px-4 py-3 bg-gray-100 border border-gray-300 rounded-lg text-gray-800 cursor-not-allowed focus:outline-none"
-                      />
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Dados Pessoais */}
-            <Card className="bg-white border border-gray-200 rounded-2xl shadow-lg hover:shadow-xl smooth-transition card-bounce card-bounce-delay-3">
-              <CardContent className="p-6">
-                <h3 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-3">
-                  <div className="p-2 bg-violet-100 rounded-lg">
-                    <UserCircle className="h-5 w-5 text-violet-600" />
-                  </div>
-                  Dados Pessoais
-                </h3>
-                <div className="space-y-6">
-                  {/* Nome Completo */}
-                  <div className="space-y-2">
-                    <label className="block text-sm font-medium text-gray-700">
-                      Nome completo
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.nome}
-                      onChange={(e) =>
-                        handleInputChange("nome", e.target.value)
-                      }
-                      disabled={!isEditing}
-                      className={`w-full px-4 py-3 rounded-lg border transition-all duration-200 ${
-                        !isEditing
-                          ? "bg-gray-100 border-gray-300 text-gray-800 cursor-not-allowed"
-                          : errors.nome
-                          ? "bg-white border-red-300 text-gray-900 focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                          : "bg-white border-violet-300 text-gray-900 focus:ring-2 focus:ring-violet-500 focus:border-transparent"
-                      } focus:outline-none`}
-                    />
-                    {errors.nome && (
-                      <div className="flex items-center gap-2 text-red-600 text-sm">
-                        <AlertCircle className="h-4 w-4" />
-                        {errors.nome}
-                      </div>
-                    )}
+          {/* CARD ÚNICO: DADOS */}
+          <section className="md:col-span-2">
+            <Card className="rounded-2xl">
+              <CardContent className="p-6 space-y-4">
+                <div className="flex items-center justify-between mb-2">
+                  <div>
+                    <h2 className="text-lg font-semibold text-gray-900">
+                      Dados
+                    </h2>
+                    <p className="text-xs text-muted-foreground">
+                      Alguns dados são gerenciados pela instituição e não podem
+                      ser alterados pelo aluno.
+                    </p>
                   </div>
 
-                  {/* Celular */}
-                  <div className="space-y-2">
-                    <label className="block text-sm font-medium text-gray-700">
-                      Celular
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.celular}
-                      onChange={(e) =>
-                        handleInputChange("celular", e.target.value)
-                      }
-                      disabled={!isEditing}
-                      placeholder="+55 XX XXXXX-XXXX"
-                      className={`w-full px-4 py-3 rounded-lg border transition-all duration-200 ${
-                        !isEditing
-                          ? "bg-gray-100 border-gray-300 text-gray-800 cursor-not-allowed"
-                          : errors.celular
-                          ? "bg-white border-red-300 text-gray-900 focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                          : "bg-white border-violet-300 text-gray-900 focus:ring-2 focus:ring-violet-500 focus:border-transparent"
-                      } focus:outline-none`}
-                    />
-                    {errors.celular && (
-                      <div className="flex items-center gap-2 text-red-600 text-sm">
-                        <AlertCircle className="h-4 w-4" />
-                        {errors.celular}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Botões de Ação */}
-                  {isEditing && (
-                    <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-200">
+                  {!isEditing ? (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="rounded-2xl flex items-center gap-2"
+                      onClick={() => setIsEditing(true)}
+                    >
+                      <Edit className="w-4 h-4" />
+                      Editar
+                    </Button>
+                  ) : (
+                    <div className="flex gap-2">
                       <Button
-                        onClick={handleCancel}
                         variant="outline"
-                        className="border-gray-300 text-gray-700 hover:bg-gray-50"
+                        size="sm"
+                        className="rounded-2xl flex items-center gap-2"
+                        onClick={handleCancelEdit}
+                        disabled={saving}
                       >
+                        <X className="w-4 h-4" />
                         Cancelar
                       </Button>
                       <Button
-                        onClick={handleSave}
-                        disabled={!hasChanges}
-                        className={`${
-                          hasChanges
-                            ? "bg-violet-600 hover:bg-violet-700 text-white"
-                            : "bg-gray-300 text-gray-500 cursor-not-allowed"
-                        } smooth-transition`}
+                        size="sm"
+                        className="rounded-2xl flex items-center gap-2"
+                        onClick={handleSaveProfile}
+                        disabled={saving}
                       >
-                        <Save className="h-4 w-4 mr-2" />
-                        Salvar alterações
+                        <Save className="w-4 h-4" />
+                        {saving ? "Salvando..." : "Salvar"}
                       </Button>
                     </div>
                   )}
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-4">
+                  {/* Nome (editável) */}
+                  <div>
+                    <Label>Nome completo</Label>
+                    <Input
+                      className="rounded-2xl"
+                      value={profile.nome}
+                      onChange={(e) => handleChange(e, "nome")}
+                      disabled={!isEditing}
+                    />
+                  </div>
+
+                  {/* E-mail (sempre READONLY) */}
+                  <div>
+                    <Label>E-mail</Label>
+                    <Input
+                      className="rounded-2xl bg-muted/60"
+                      value={profile.email}
+                      disabled
+                    />
+                  </div>
+
+                  {/* Celular (editável) */}
+                  <div>
+                    <Label>Celular</Label>
+                    <Input
+                      className="rounded-2xl"
+                      placeholder="+55 49 90000-0000"
+                      value={profile.telefone}
+                      onChange={(e) => handleChange(e, "telefone")}
+                      disabled={!isEditing}
+                    />
+                  </div>
+
+                  {/* Instituição (sempre somente leitura → admin-only) */}
+                  <div>
+                    <Label>Instituição</Label>
+                    <Input
+                      className="rounded-2xl bg-muted/60"
+                      value={profile.instituicao}
+                      disabled
+                    />
+                  </div>
+
+                  {/* Matrícula (somente leitura) */}
+                  <div>
+                    <Label>Matrícula</Label>
+                    <Input
+                      className="rounded-2xl bg-muted/60"
+                      value={profile.matricula}
+                      disabled
+                    />
+                  </div>
+
+                  {/* CPF (somente leitura) */}
+                  <div>
+                    <Label>CPF</Label>
+                    <Input
+                      className="rounded-2xl bg-muted/60"
+                      value={profile.cpf}
+                      disabled
+                    />
+                  </div>
+
+                  {/* Turma (somente leitura) */}
+                  <div>
+                    <Label>Turma</Label>
+                    <Input
+                      className="rounded-2xl bg-muted/60"
+                      value={profile.turma}
+                      disabled
+                    />
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -373,7 +505,7 @@ export default function Perfil() {
         </main>
       </div>
 
-      {/* Componente de Notificação */}
+      {/* NOTIFICAÇÕES */}
       <NotificationCard
         show={showNotification}
         onClose={() => setShowNotification(false)}
