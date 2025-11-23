@@ -5,7 +5,7 @@ import { useAuth } from "@/services/auth/AuthContext";
 import { withAuth } from "@/lib/withAuth";
 
 export default function PerfilPage() {
-  const { user, logout } = useAuth();
+  const { user, signOut } = useAuth(); // 👈 pega signOut em vez de logout
 
   return (
     <>
@@ -17,12 +17,17 @@ export default function PerfilPage() {
         {user ? (
           <div className="mt-4 space-y-2">
             <div>
-              <strong>Nome:</strong> {user.name}
+              <strong>Nome:</strong>{" "}
+              {/* Supabase User não tem 'name', normalmente vem em user_metadata */}
+              {user.user_metadata?.nome ?? "Sem nome cadastrado"}
             </div>
             <div>
               <strong>Email:</strong> {user.email}
             </div>
-            <button className="mt-4 border px-3 py-2 rounded" onClick={logout}>
+            <button
+              className="mt-4 border px-3 py-2 rounded"
+              onClick={signOut} // 👈 aqui também
+            >
               Sair
             </button>
           </div>
