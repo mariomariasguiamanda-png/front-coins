@@ -92,16 +92,11 @@ export default function LoginPage() {
         className={`${roboto.className} min-h-screen w-full text-black grid md:grid-cols-12 bg-gradient-to-r from-white via-white to-[#f3e8ff]`}
       >
         <div className="relative hidden md:block md:col-span-8 overflow-hidden">
-          <Image
-            src="/imagem_login.jpeg"
-            alt="A plataforma recompensa o aprendizado"
-            fill
-            priority
-            unoptimized={false}
-            quality={100}
-            sizes="66vw"
-            className="object-cover object-center"
-          />
+          <img
+  src="/imagem_login.jpeg"
+  alt="A plataforma recompensa o aprendizado"
+  className="w-full h-full object-cover object-center"
+/>
           <div className="absolute inset-y-0 right-0 w-[240px] bg-gradient-to-r from-white/0 via-white/100 to-[#f9fafb] pointer-events-none" />
         </div>
 
@@ -210,3 +205,4 @@ export default function LoginPage() {
     </>
   );
 }
+
