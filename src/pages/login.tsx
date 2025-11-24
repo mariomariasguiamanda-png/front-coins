@@ -184,21 +184,6 @@ export default function LoginPage() {
                 )}
               </button>
             </form>
-
-            <div className="flex items-center gap-3 my-6">
-              <div className="h-px bg-gray-200 flex-1" />
-              <div className="h-px bg-gray-200 flex-1" />
-            </div>
-
-            <div className="bg-white/70 rounded-2xl p-4 text-center text-sm border border-gray-200">
-              <span className="mr-1">🚀 Não tem uma conta?</span>
-              <a
-                href="/cadastro"
-                className="text-purple-600 hover:text-purple-700 font-medium"
-              >
-                Inscreva-se
-              </a>
-            </div>
           </div>
         </div>
       </div>

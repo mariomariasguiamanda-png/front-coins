@@ -71,7 +71,13 @@ export default function Perfil() {
       router.replace("/login");
     } catch (e) {
       console.error(e);
+<<<<<<< HEAD
       showNotificationFn("Erro ao sair. Tente novamente.", "error");
+=======
+    } finally {
+      // replace: não deixa o usuário voltar para a página anterior logada
+      router.push("/login");
+>>>>>>> a0fa133 (refinando login e perfil de aluno)
     }
   }
 
@@ -182,6 +188,19 @@ export default function Perfil() {
           }
         }
 
+        // 4) Buscar o nome da turma na tabela "turmas" (usando id_turma)
+        let nomeTurma = "";
+        if (aluno?.id_turma) {
+          const { data: turma, error: turmaError } = await supabase
+            .from("turmas")
+            .select("nome")
+            .eq("id_turma", aluno.id_turma)
+            .maybeSingle();
+
+          if (turmaError) throw turmaError;
+          nomeTurma = turma?.nome ?? "";
+        }
+
         const loadedProfile: ProfileData = {
           nome: usuario.nome ?? "",
           email: usuario.email ?? "",
@@ -189,18 +208,31 @@ export default function Perfil() {
           instituicao: usuario.instituicao ?? "",
           matricula: aluno?.matricula ?? "",
           cpf: aluno?.cpf ?? "",
+<<<<<<< HEAD
           turma: turmaNome,
+=======
+          turma: nomeTurma,
+>>>>>>> a0fa133 (refinando login e perfil de aluno)
           foto_url: aluno?.foto_url ?? null,
         };
 
         setProfile(loadedProfile);
         setOriginalProfile(loadedProfile);
       } catch (error: any) {
+<<<<<<< HEAD
         console.error("Erro inesperado em loadProfile:", error);
         showNotificationFn(
           "Erro inesperado ao carregar dados do perfil.",
           "error"
         );
+=======
+        console.error(error);
+        showNotificationFn(
+          "Erro ao carregar dados do perfil. Fale com o administrador.",
+          "error"
+        );
+        // Redireciona para login apenas quando realmente não houver usuário (tratado acima)
+>>>>>>> a0fa133 (refinando login e perfil de aluno)
       } finally {
         setLoading(false);
       }
