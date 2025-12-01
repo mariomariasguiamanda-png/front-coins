@@ -2,16 +2,11 @@
 
 import { Card, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
-import NotificationCard from "@/components/ui/NotificationCard";
-import {
-  HelpCircle,
-  Wrench,
-  ChevronDown,
-  ChevronUp,
-  Upload,
-  FileText,
-  Send,
-} from "lucide-react";
+import { Input } from "@/components/ui/Input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/Label";
+import { supabase } from "@/lib/supabaseClient";
+import { HelpCircle, ChevronDown, ChevronUp } from "lucide-react";
 import { useState } from "react";
 
 // ==================== DADOS FAQ ====================
@@ -29,7 +24,7 @@ const faqData = [
   {
     question: "Quem define os preços?",
     answer:
-      "Os preços são definidos pela equipe administrativa, com base no desempenho e objetivos dos alunos. Os valores são ajustados para manter o equilíbrio e motivação.",
+      "Os preços são definidos pelo professor responsável da matéria, com base no desempenho e objetivos dos alunos. Os valores são ajustados para manter o equilíbrio e motivação.",
   },
   {
     question: "Como funciona o sistema de revisão?",
@@ -46,34 +41,123 @@ const faqData = [
 export default function Ajuda() {
   // ==================== ESTADOS ====================
   const [expandedFaq, setExpandedFaq] = useState<number | null>(null);
-  const [problemaDescricao, setProblemaDescricao] = useState("");
-  const [arquivoAnexado, setArquivoAnexado] = useState<File | null>(null);
-  const [showNotification, setShowNotification] = useState(false);
+  const [nome, setNome] = useState("");
+  const [email, setEmail] = useState("");
+  const [assunto, setAssunto] = useState("");
+  const [mensagem, setMensagem] = useState("");
+  const [files, setFiles] = useState<FileList | null>(null);
+  const [isSending, setIsSending] = useState(false);
+  const [success, setSuccess] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   // ==================== HANDLERS ====================
   const toggleFaq = (index: number) => {
     setExpandedFaq(expandedFaq === index ? null : index);
   };
 
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      setArquivoAnexado(file);
+  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    if (e.target.files) {
+      setFiles(e.target.files);
     }
-  };
+  }
 
-  const handleSubmitSupport = () => {
-    if (problemaDescricao.trim()) {
-      // Aqui você implementaria o envio do ticket
-      console.log("Ticket enviado:", {
-        descricao: problemaDescricao,
-        arquivo: arquivoAnexado?.name,
+  async function handleSendSupport() {
+    setIsSending(true);
+    setSuccess(null);
+    setError(null);
+
+    try {
+      if (!mensagem || !assunto) {
+        setError("Preencha pelo menos o assunto e a mensagem.");
+        setIsSending(false);
+        return;
+      }
+
+      const { data: userData, error: userError } =
+        await supabase.auth.getUser();
+      if (userError) {
+        console.error(userError);
+      }
+
+      const userId = userData?.user?.id ?? null;
+
+      const anexosUrls: string[] = [];
+
+      if (files && files.length > 0) {
+        const bucket = "suporte-anexos";
+        const filesArray = Array.from(files);
+
+        for (const file of filesArray) {
+          const path = `${userId ?? "anon"}/${Date.now()}-${file.name.replace(/\s+/g, "_")}`;
+
+          const { data: uploadData, error: uploadError } =
+            await supabase.storage.from(bucket).upload(path, file);
+
+          if (uploadError) {
+            console.error(uploadError);
+            throw new Error("Erro ao enviar anexos. Tente novamente.");
+          }
+
+          const { data: publicUrlData } = supabase.storage
+            .from(bucket)
+            .getPublicUrl(uploadData!.path);
+
+          if (publicUrlData?.publicUrl) {
+            anexosUrls.push(publicUrlData.publicUrl);
+          }
+        }
+      }
+
+      const { error: insertError } = await supabase
+        .from("suporte_pedidos")
+        .insert({
+          id_usuario: userId,
+          nome: nome || null,
+          email: email || null,
+          assunto,
+          mensagem,
+          anexos: anexosUrls,
+        });
+
+      if (insertError) {
+        console.error(insertError);
+        throw new Error("Erro ao salvar pedido de suporte. Tente novamente.");
+      }
+
+      const resp = await fetch("/api/suporte-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          assunto,
+          mensagem,
+          nome,
+          email,
+          anexos: anexosUrls,
+        }),
       });
-      setShowNotification(true);
-      setProblemaDescricao("");
-      setArquivoAnexado(null);
+
+      if (!resp.ok) {
+        const data = await resp.json().catch(() => null);
+        console.error("Erro na rota /api/suporte-email:", data);
+        setError(
+          "Seu pedido foi registrado, mas houve um problema ao enviar o e-mail para o suporte."
+        );
+      } else {
+        setSuccess("Sua solicitação de suporte foi enviada com sucesso! 😊");
+      }
+
+      setNome("");
+      setEmail("");
+      setAssunto("");
+      setMensagem("");
+      setFiles(null);
+    } catch (err: any) {
+      console.error(err);
+      setError(err.message || "Erro ao enviar suporte.");
+    } finally {
+      setIsSending(false);
     }
-  };
+  }
 
   return (
     <div className="page-enter space-y-6">
@@ -151,95 +235,99 @@ export default function Ajuda() {
               </div>
               <div>
                 <h2 className="text-xl font-bold text-gray-900">
-                  Suporte Técnico
+                  Suporte técnico
                 </h2>
-                <p className="text-sm text-gray-600">Descreva seu problema</p>
+                <p className="text-sm text-gray-600">
+                  Descreva seu problema e, se quiser, anexe arquivos.
+                </p>
               </div>
             </div>
 
-            <div className="space-y-4">
-              {/* Área de Descrição */}
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Descrição do Problema
-                </label>
-                <textarea
-                  value={problemaDescricao}
-                  onChange={(e) => setProblemaDescricao(e.target.value)}
-                  rows={5}
-                  placeholder="Descreva seu problema em detalhes... (ex: erro ao carregar página, problemas de login, etc.)"
-                  className="w-full p-3 border border-gray-300 rounded-xl bg-gray-50 focus:bg-white focus:border-violet-400 focus:ring-2 focus:ring-violet-100 smooth-transition resize-none"
-                />
-              </div>
+            <div className="rounded-2xl border p-4">
+              <div className="font-semibold">Suporte técnico</div>
+              <p className="text-sm text-muted-foreground mb-3">
+                Descreva o problema e, se quiser, anexe prints ou documentos.
+              </p>
 
-              {/* Upload de Arquivo */}
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Anexar Arquivo (Opcional)
-                </label>
-                <div className="relative">
-                  <input
-                    type="file"
-                    onChange={handleFileUpload}
-                    accept=".png,.jpg,.jpeg,.pdf,.txt"
-                    className="hidden"
-                    id="file-upload"
+              <div className="space-y-2">
+                <div>
+                  <Label htmlFor="nome">Nome (opcional)</Label>
+                  <Input
+                    id="nome"
+                    className="rounded-2xl mt-1"
+                    value={nome}
+                    onChange={(e) => setNome(e.target.value)}
+                    placeholder="Seu nome"
                   />
-                  <label
-                    htmlFor="file-upload"
-                    className="flex items-center gap-3 p-3 border-2 border-dashed border-gray-300 rounded-xl hover:border-violet-400 hover:bg-violet-50 smooth-transition cursor-pointer"
-                  >
-                    <Upload className="h-5 w-5 text-gray-400" />
-                    <div>
-                      <p className="text-sm font-medium text-gray-700">
-                        {arquivoAnexado
-                          ? arquivoAnexado.name
-                          : "Upload de arquivo"}
-                      </p>
-                      <p className="text-xs text-gray-500">
-                        PNG, JPG, PDF até 10MB
-                      </p>
-                    </div>
-                  </label>
                 </div>
 
-                {arquivoAnexado && (
-                  <div className="mt-2 flex items-center gap-2 p-2 bg-green-50 border border-green-200 rounded-lg">
-                    <FileText className="h-4 w-4 text-green-600" />
-                    <span className="text-sm text-green-700 font-medium">
-                      {arquivoAnexado.name}
-                    </span>
-                    <button
-                      onClick={() => setArquivoAnexado(null)}
-                      className="text-green-600 hover:text-green-800 ml-auto"
-                    >
-                      ✕
-                    </button>
-                  </div>
-                )}
-              </div>
+                <div>
+                  <Label htmlFor="email">E-mail para retorno (opcional)</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    className="rounded-2xl mt-1"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="voce@exemplo.com"
+                  />
+                </div>
 
-              {/* Botão de Envio */}
-              <Button
-                onClick={handleSubmitSupport}
-                disabled={!problemaDescricao.trim()}
-                className="w-full bg-gradient-to-r from-violet-600 to-violet-700 hover:from-violet-700 hover:to-violet-800 text-white font-bold py-3 px-4 rounded-xl shadow-md hover:shadow-lg smooth-transition disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <Send className="h-4 w-4 mr-2" />
-                Solicitar Suporte
-              </Button>
+                <div>
+                  <Label htmlFor="assunto">Assunto</Label>
+                  <Input
+                    id="assunto"
+                    className="rounded-2xl mt-1"
+                    value={assunto}
+                    onChange={(e) => setAssunto(e.target.value)}
+                    placeholder="Ex.: Não consigo acessar a atividade de Matemática"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="mensagem">Mensagem</Label>
+                  <Textarea
+                    id="mensagem"
+                    className="rounded-2xl mt-1"
+                    rows={4}
+                    value={mensagem}
+                    onChange={(e) => setMensagem(e.target.value)}
+                    placeholder="Explique com detalhes o que está acontecendo..."
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="anexos">Anexos (imagens / PDFs)</Label>
+                  <Input
+                    id="anexos"
+                    type="file"
+                    multiple
+                    accept="image/*,application/pdf"
+                    className="rounded-2xl mt-1"
+                    onChange={handleFileChange}
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Você pode anexar prints da tela, PDFs, etc.
+                  </p>
+                </div>
+
+                {error && <p className="text-sm text-red-500 mt-2">{error}</p>}
+                {success && (
+                  <p className="text-sm text-emerald-600 mt-2">{success}</p>
+                )}
+
+                <Button
+                  className="mt-3 rounded-2xl w-full"
+                  onClick={handleSendSupport}
+                  disabled={isSending}
+                >
+                  {isSending ? "Enviando..." : "Enviar para o suporte"}
+                </Button>
+              </div>
             </div>
           </CardContent>
         </Card>
       </div>
-
-      {/* Componente de Notificação */}
-      <NotificationCard
-        show={showNotification}
-        onClose={() => setShowNotification(false)}
-        message="Ticket enviado com sucesso! Nossa equipe entrará em contato em breve."
-        type="success"
-      />
     </div>
   );
 }
