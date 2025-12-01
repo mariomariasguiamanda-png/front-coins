@@ -83,111 +83,110 @@ export default function LoginPage() {
 };
 
   return (
-    <>
-      <Head>
-        <title>Login | Coins for Study</title>
-      </Head>
+  <>
+    <Head>
+      <title>Login | Coins for Study</title>
+    </Head>
 
-      <div
-        className={`${roboto.className} min-h-screen w-full text-black grid md:grid-cols-12 bg-gradient-to-r from-white via-white to-[#f3e8ff]`}
-      >
-        <div className="relative hidden md:block md:col-span-8 overflow-hidden">
-          <img
-  src="/imagem_login.jpeg"
-  alt="A plataforma recompensa o aprendizado"
-  className="w-full h-full object-cover object-center"
-/>
-          <div className="absolute inset-y-0 right-0 w-[240px] bg-gradient-to-r from-white/0 via-white/100 to-[#f9fafb] pointer-events-none" />
-        </div>
+    {/* Overlay de Loading */}
+    {isLoading && (
+      <div className="fixed inset-0 bg-gray-500 bg-opacity-50 z-50 flex items-center justify-center">
+        <span className="animate-spin h-16 w-16 border-4 border-white border-t-transparent rounded-full"></span>
+      </div>
+    )}
 
-        <div className="md:col-span-4 flex items-center justify-center p-6">
-          <div className="w-full max-w-[380px] bg-white/80 backdrop-blur-md rounded-3xl p-8 shadow-lg">
-            <h1 className="text-2xl font-bold text-black text-center mb-6">
-              Faça seu login
-            </h1>
+    <div
+      className={`${roboto.className} min-h-screen w-full text-black grid md:grid-cols-12 bg-gradient-to-r from-white via-white to-[#f3e8ff]`}
+    >
+      <div className="relative hidden md:block md:col-span-8 overflow-hidden">
+        <img
+          src="/imagem_login.jpeg"
+          alt="A plataforma recompensa o aprendizado"
+          className="w-full h-full object-cover object-center"
+        />
+        <div className="absolute inset-y-0 right-0 w-[240px] bg-gradient-to-r from-white/0 via-white/100 to-[#f9fafb] pointer-events-none" />
+      </div>
 
-            <form className="space-y-5" onSubmit={onSubmit}>
-              <div>
-                <label
-                  htmlFor="email"
-                  className="block text-sm font-semibold text-gray-800 mb-1"
+      <div className="md:col-span-4 flex items-center justify-center p-6">
+        <div className="w-full max-w-[380px] bg-white/80 backdrop-blur-md rounded-3xl p-8 shadow-lg">
+          <h1 className="text-2xl font-bold text-black text-center mb-6">
+            Faça seu login
+          </h1>
+
+          <form className="space-y-5" onSubmit={onSubmit}>
+            <div>
+              <label
+                htmlFor="email"
+                className="block text-sm font-semibold text-gray-800 mb-1"
+              />
+              <div className="relative">
+                <HiOutlineMail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 h-5 w-5" />
+                <input
+                  id="email"
+                  name="email"
+                  type="email"
+                  autoComplete="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="h-[48px] w-full rounded-full border border-gray-300 bg-white pl-11 pr-3 text-black placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-black/20"
+                  placeholder="Email"
+                  required
                 />
-                <div className="relative">
-                  <HiOutlineMail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 h-5 w-5" />
-                  <input
-                    id="email"
-                    name="email"
-                    type="email"
-                    autoComplete="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="h-[48px] w-full rounded-full border border-gray-300 bg-white pl-11 pr-3 text-black placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-black/20"
-                    placeholder="Email"
-                    required
-                  />
-                </div>
               </div>
+            </div>
 
-              <div>
-                <label
-                  htmlFor="password"
-                  className="block text-sm font-semibold text-gray-800 mb-1"
+            <div>
+              <label
+                htmlFor="password"
+                className="block text-sm font-semibold text-gray-800 mb-1"
+              />
+              <div className="relative">
+                <HiOutlineLockClosed className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 h-5 w-5" />
+                <input
+                  id="password"
+                  name="password"
+                  type={showPassword ? "text" : "password"}
+                  autoComplete="current-password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="h-[48px] w-full rounded-full border border-gray-300 bg-white pl-11 pr-11 text-black placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-black/20"
+                  placeholder="Senha"
+                  required
                 />
-                <div className="relative">
-                  <HiOutlineLockClosed className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 h-5 w-5" />
-                  <input
-                    id="password"
-                    name="password"
-                    type={showPassword ? "text" : "password"}
-                    autoComplete="current-password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="h-[48px] w-full rounded-full border border-gray-300 bg-white pl-11 pr-11 text-black placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-black/20"
-                    placeholder="Senha"
-                    required
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword((v) => !v)}
-                    aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
-                    className="absolute inset-y-0 right-0 px-3 flex items-center text-gray-600 hover:text-black focus:outline-none"
-                  >
-                    {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-                  </button>
-                </div>
-                <div className="text-right mt-1">
-                  <a
-                    href="/esqueci-senha"
-                    className="text-sm text-purple-600 hover:text-purple-700 font-medium"
-                  >
-                    Esqueci minha senha
-                  </a>
-                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((v) => !v)}
+                  aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
+                  className="absolute inset-y-0 right-0 px-3 flex items-center text-gray-600 hover:text-black focus:outline-none"
+                >
+                  {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                </button>
               </div>
+            </div>
 
-              {error && (
-                <div className="text-red-500 text-sm text-center">{error}</div>
+            {error && (
+              <div className="text-red-500 text-sm text-center">{error}</div>
+            )}
+
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="h-[48px] w-full rounded-full bg-gradient-to-l from-[#5B21B6] to-[#7C3AED] hover:opacity-90 text-white font-bold transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-md"
+            >
+              {isLoading ? (
+                <>
+                  <span className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full"></span>
+                  Entrando...
+                </>
+              ) : (
+                "Entrar"
               )}
-
-              <button
-                type="submit"
-                disabled={isLoading}
-                className="h-[48px] w-full rounded-full bg-gradient-to-l from-[#5B21B6] to-[#7C3AED] hover:opacity-90 text-white font-bold transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-md"
-              >
-                {isLoading ? (
-                  <>
-                    <span className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full"></span>
-                    Entrando...
-                  </>
-                ) : (
-                  "Entrar"
-                )}
-              </button>
-            </form>
-          </div>
+            </button>
+          </form>
         </div>
       </div>
-    </>
-  );
+    </div>
+  </>
+);
 
 }

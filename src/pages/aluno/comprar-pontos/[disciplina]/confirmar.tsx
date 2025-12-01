@@ -15,11 +15,14 @@ import {
   Zap,
   ShoppingCart,
   ArrowRight,
+  AlertCircle,
 } from "lucide-react";
+import { supabase } from "@/lib/supabaseClient";
 
-// Dados das disciplinas (mesmo dos arquivos anteriores)
+// Dados das disciplinas (mesmo dos arquivos anteriores) + idDisciplina do banco
 const disciplinasData = {
   mat: {
+    idDisciplina: 1, // id_disciplina = 1 (Matemática) -> ajusta se estiver diferente
     nome: "Matemática",
     icon: Calculator,
     gradient: "from-blue-500 to-blue-600",
@@ -30,6 +33,7 @@ const disciplinasData = {
     saldoAtual: 1200,
   },
   port: {
+    idDisciplina: null, // ainda sem disciplina criada no banco
     nome: "Português",
     icon: BookOpen,
     gradient: "from-green-500 to-green-600",
@@ -40,6 +44,7 @@ const disciplinasData = {
     saldoAtual: 850,
   },
   hist: {
+    idDisciplina: 2, // História
     nome: "História",
     icon: Clock,
     gradient: "from-amber-500 to-amber-600",
@@ -50,6 +55,7 @@ const disciplinasData = {
     saldoAtual: 950,
   },
   bio: {
+    idDisciplina: 3, // Biologia
     nome: "Biologia",
     icon: Atom,
     gradient: "from-emerald-500 to-emerald-600",
@@ -60,6 +66,7 @@ const disciplinasData = {
     saldoAtual: 1100,
   },
   art: {
+    idDisciplina: 6, // Artes (pelo print da tabela)
     nome: "Artes",
     icon: Palette,
     gradient: "from-pink-500 to-pink-600",
@@ -70,6 +77,7 @@ const disciplinasData = {
     saldoAtual: 650,
   },
   fis: {
+    idDisciplina: 4, // Física
     nome: "Física",
     icon: Zap,
     gradient: "from-violet-500 to-violet-600",
@@ -85,6 +93,7 @@ export default function ConfirmarCompra() {
   const router = useRouter();
   const { disciplina, pontos, total } = router.query;
   const [confirmando, setConfirmando] = useState(false);
+  const [erroApi, setErroApi] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -111,17 +120,65 @@ export default function ConfirmarCompra() {
   }
 
   const IconComponent = disciplinaData.icon;
-  const saldoApos = disciplinaData.saldoAtual - totalNum;
+  const saldoAposMock = disciplinaData.saldoAtual - totalNum;
 
-  const handleConfirmar = () => {
-    setConfirmando(true);
+  const handleConfirmar = async () => {
+    setErroApi(null);
 
-    // Simular processamento
-    setTimeout(() => {
-      router.push(
-        `/aluno/comprar-pontos/${disciplina}/sucesso?pontos=${pontos}&total=${total}&saldoAntes=${disciplinaData.saldoAtual}&saldoDepois=${saldoApos}`
+    // Se ainda não mapeamos essa disciplina pro banco, bloqueia a compra
+    if (!disciplinaData.idDisciplina) {
+      setErroApi(
+        "Esta disciplina ainda não está configurada para compras no sistema. Fale com o administrador."
       );
-    }, 1500);
+      return;
+    }
+
+    try {
+      setConfirmando(true);
+
+      // Chama a função RPC comprar_pontos no Supabase
+      const { data, error } = await supabase.rpc("comprar_pontos", {
+        p_id_disciplina: disciplinaData.idDisciplina,
+        p_pontos: pontosNum,
+      });
+
+      if (error) {
+        console.error("Erro ao comprar pontos:", error);
+        setErroApi(error.message || "Erro ao processar a compra.");
+        setConfirmando(false);
+        return;
+      }
+
+      // A função pode retornar um array com 1 linha ou um único objeto, depende de como você definiu
+      const result = Array.isArray(data) ? data[0] : data;
+
+      if (!result) {
+        setErroApi("Não foi possível obter o resultado da compra.");
+        setConfirmando(false);
+        return;
+      }
+
+      const {
+        pontos_comprados,
+        moedas_gastas,
+        saldo_antes,
+        saldo_depois,
+      } = result as {
+        pontos_comprados: number;
+        moedas_gastas: number;
+        saldo_antes: number;
+        saldo_depois: number;
+      };
+
+      // Redireciona para a tela de sucesso com os dados REAIS do banco
+      router.push(
+        `/aluno/comprar-pontos/${disciplina}/sucesso?pontos=${pontos_comprados}&total=${moedas_gastas}&saldoAntes=${saldo_antes}&saldoDepois=${saldo_depois}`
+      );
+    } catch (err: any) {
+      console.error(err);
+      setErroApi("Erro inesperado ao processar a compra.");
+      setConfirmando(false);
+    }
   };
 
   return (
@@ -153,7 +210,7 @@ export default function ConfirmarCompra() {
               </h2>
             </div>
 
-            {/* Card da disciplina */}
+            {/* Card da disciplina (pré-visualização com dados mock) */}
             <div
               className={`bg-gradient-to-r ${disciplinaData.gradient} text-white rounded-2xl p-6 flex justify-between items-center shadow-lg`}
             >
@@ -162,8 +219,8 @@ export default function ConfirmarCompra() {
                   {disciplinaData.nome}
                 </h3>
                 <div className="space-y-1 text-sm opacity-90">
-                  <p>Saldo antes: {disciplinaData.saldoAtual} moedas</p>
-                  <p>Saldo após: {saldoApos} moedas</p>
+                  <p>Saldo antes (mock): {disciplinaData.saldoAtual} moedas</p>
+                  <p>Saldo após (estimado): {saldoAposMock} moedas</p>
                 </div>
               </div>
               <IconComponent className="h-10 w-10 opacity-80" />
@@ -195,7 +252,7 @@ export default function ConfirmarCompra() {
 
                 <div className="border-t pt-2 flex justify-between items-center">
                   <span className="font-bold text-gray-900">
-                    Total a pagar:
+                    Total estimado:
                   </span>
                   <span
                     className={`font-bold text-lg ${disciplinaData.textColor}`}
@@ -206,22 +263,15 @@ export default function ConfirmarCompra() {
               </div>
             </div>
 
-            {/* Impacto na nota */}
-            <div className="bg-green-50 border border-green-200 rounded-xl p-4">
-              <div className="flex items-start gap-3">
-                <div className="bg-green-100 p-2 rounded-lg">
-                  <span className="text-green-600 text-lg">📈</span>
-                </div>
-                <div className="text-sm text-green-800">
-                  <p className="font-semibold mb-1">Impacto na sua nota:</p>
-                  <p>
-                    Com {pontosNum} ponto{pontosNum > 1 ? "s" : ""} adicional
-                    {pontosNum > 1 ? "is" : ""}, sua classificação em{" "}
-                    {disciplinaData.nome} será melhorada significativamente!
-                  </p>
-                </div>
+            {/* Erro da API, se der ruim na função comprar_pontos */}
+            {erroApi && (
+              <div className="bg-red-50 border border-red-200 rounded-xl p-3 flex items-center gap-2">
+                <AlertCircle className="h-5 w-5 text-red-500" />
+                <span className="text-red-700 text-sm whitespace-pre-line">
+                  {erroApi}
+                </span>
               </div>
-            </div>
+            )}
 
             {/* Botões de ação */}
             <div className="flex gap-3 pt-4">
@@ -241,7 +291,7 @@ export default function ConfirmarCompra() {
               >
                 {confirmando ? (
                   <>
-                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
                     Processando...
                   </>
                 ) : (
@@ -264,9 +314,10 @@ export default function ConfirmarCompra() {
             <div className="text-sm text-amber-800">
               <p className="font-semibold mb-1">Importante:</p>
               <p>
-                Esta ação não pode ser desfeita. As moedas serão debitadas
-                imediatamente e os pontos serão adicionados à sua nota na
-                disciplina.
+                A cobrança real é feita pelo sistema usando seus dados no
+                Supabase. Os valores exibidos aqui são uma prévia. Depois de
+                confirmar, as moedas serão debitadas de acordo com as regras da
+                disciplina e os pontos serão adicionados à sua nota.
               </p>
             </div>
           </div>

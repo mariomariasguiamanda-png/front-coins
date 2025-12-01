@@ -31,7 +31,8 @@ type DisciplinaUI = {
   icon: IconComponent;
   cor: keyof typeof cores;
   progresso: number;
-  moedas: number;
+  moedas_conquistadas: number;
+  moedas_totais_disciplina?: number;
   atividades: { total: number; concluidas: number; pendentes: number };
   resumos: number;
   videoaulas: { total: number; assistidas: number };
@@ -39,7 +40,8 @@ type DisciplinaUI = {
 
 type DisciplinaDb = {
   id_disciplina: number;
-  nome: string;
+  nome?: string | null;
+  nome_disciplina?: string | null;
   codigo: string | null;
 };
 
@@ -108,7 +110,9 @@ const DISCIPLINA_VISUAL: Record<
 };
 
 // Normaliza nome vindo do banco (remove acentos e põe minúsculo)
-function normalizarNome(nome: string): string {
+// e já trata null/undefined pra não quebrar
+function normalizarNome(nome?: string | null): string {
+  if (!nome) return "";
   return nome
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
@@ -150,7 +154,7 @@ const Disciplinas = () => {
 
         const emailLower = user.email.toLowerCase();
 
-        // 2. Busca o id_usuario na tabela usuarios via email (case-insensitive via lower no banco + eq aqui)
+        // 2. Busca o id_usuario na tabela usuarios via email
         const { data: usuario, error: usuarioError } = await supabase
           .from("usuarios")
           .select("id_usuario, email")
@@ -183,167 +187,50 @@ const Disciplinas = () => {
         }
 
         const idAluno = aluno.id_aluno;
-        const idTurma = aluno.id_turma;
 
-        // 4. Disciplinas dessa turma
-        const { data: tdRows, error: tdError } = await supabase
-          .from("turmas_disciplinas")
-          .select("id_disciplina")
-          .eq("id_turma", idTurma);
+        // 4. Buscar diretamente da view agregada vw_disciplinas_moedas_aluno
+        const { data: vwRows, error: vwError } = await supabase
+          .from("vw_disciplinas_moedas_aluno")
+          .select("*")
+          .eq("id_aluno", idAluno);
 
-        if (tdError) throw tdError;
+        if (vwError) throw vwError;
 
-        if (!tdRows || tdRows.length === 0) {
+        if (!vwRows || vwRows.length === 0) {
           setDisciplinas([]);
           setLoading(false);
           return;
         }
 
-        const idsDisciplinas = tdRows.map((td: any) => td.id_disciplina);
+        // Monta UI com base na view, usando colunas já agregadas por aluno
+        const disciplinasUI: DisciplinaUI[] = vwRows.map((row: any) => {
+          const nomeDisciplina: string =
+            row.nome_disciplina || row.nome || "Disciplina";
 
-        // 5. Busca as disciplinas em si
-        const { data: disciplinasDb, error: disciplinasError } = await supabase
-          .from("disciplinas")
-          .select("id_disciplina, nome, codigo")
-          .in("id_disciplina", idsDisciplinas);
-
-        if (disciplinasError) throw disciplinasError;
-        if (!disciplinasDb) {
-          setDisciplinas([]);
-          setLoading(false);
-          return;
-        }
-
-        // 6. Progresso + moedas por aluno/disciplina
-        const { data: progressoRows, error: progressoError } = await supabase
-          .from("progresso_aluno_disciplina")
-          .select("id_disciplina, progresso_percent, moedas_ganhas")
-          .eq("id_aluno", idAluno)
-          .in("id_disciplina", idsDisciplinas);
-
-        if (progressoError) throw progressoError;
-
-        const progressoMap = new Map<
-          number,
-          { progresso: number; moedas: number }
-        >();
-        (progressoRows || []).forEach((row: any) => {
-          progressoMap.set(row.id_disciplina, {
-            progresso: row.progresso_percent ?? 0,
-            moedas: row.moedas_ganhas ?? 0,
-          });
-        });
-
-        // 7. Resumos por disciplina (contagem)
-        const { data: resumosRows, error: resumosError } = await supabase
-          .from("resumos")
-          .select("id_disciplina")
-          .in("id_disciplina", idsDisciplinas);
-
-        if (resumosError) throw resumosError;
-
-        const resumosMap = new Map<number, number>();
-        (resumosRows || []).forEach((row: any) => {
-          resumosMap.set(
-            row.id_disciplina,
-            (resumosMap.get(row.id_disciplina) || 0) + 1
-          );
-        });
-
-        // 8. Atividades por disciplina (total / concluidas / pendentes)
-        const { data: ativRows, error: ativError } = await supabase
-          .from("atividades")
-          .select("id_disciplina, status")
-          .in("id_disciplina", idsDisciplinas);
-
-        if (ativError) throw ativError;
-
-        const atividadesMap = new Map<
-          number,
-          { total: number; concluidas: number; pendentes: number }
-        >();
-
-        (ativRows || []).forEach((row: any) => {
-          const atual =
-            atividadesMap.get(row.id_disciplina) || {
-              total: 0,
-              concluidas: 0,
-              pendentes: 0,
-            };
-
-          atual.total += 1;
-          if (row.status === "concluida") atual.concluidas += 1;
-          else atual.pendentes += 1;
-
-          atividadesMap.set(row.id_disciplina, atual);
-        });
-
-        // 9. Videoaulas (total por disciplina)
-        const { data: videosRows, error: videosError } = await supabase
-          .from("videoaulas")
-          .select("id_videoaula, id_disciplina")
-          .in("id_disciplina", idsDisciplinas);
-
-        if (videosError) throw videosError;
-
-        const videoTotalMap = new Map<number, number>();
-        (videosRows || []).forEach((row: any) => {
-          videoTotalMap.set(
-            row.id_disciplina,
-            (videoTotalMap.get(row.id_disciplina) || 0) + 1
-          );
-        });
-
-        // 10. Videoaulas assistidas pelo aluno
-        const { data: videosAssistidasRows, error: videosAssistidasError } =
-          await supabase
-            .from("videoaulas_assistidas")
-            .select("id_disciplina")
-            .eq("id_aluno", idAluno)
-            .in("id_disciplina", idsDisciplinas);
-
-        if (videosAssistidasError) throw videosAssistidasError;
-
-        const videoAssistidasMap = new Map<number, number>();
-        (videosAssistidasRows || []).forEach((row: any) => {
-          videoAssistidasMap.set(
-            row.id_disciplina,
-            (videoAssistidasMap.get(row.id_disciplina) || 0) + 1
-          );
-        });
-
-        // 11. Monta o array final de disciplinas para a UI
-        const disciplinasUI: DisciplinaUI[] = (
-          disciplinasDb as DisciplinaDb[]
-        ).map((d) => {
-          const key = normalizarNome(d.nome);
+          const key = normalizarNome(nomeDisciplina);
           const visual =
             DISCIPLINA_VISUAL[key] || DISCIPLINA_VISUAL["matematica"];
 
-          const prog = progressoMap.get(d.id_disciplina) || {
-            progresso: 0,
-            moedas: 0,
-          };
-          const ativ = atividadesMap.get(d.id_disciplina) || {
-            total: 0,
-            concluidas: 0,
-            pendentes: 0,
-          };
-          const totalVideos = videoTotalMap.get(d.id_disciplina) || 0;
-          const assistidas = videoAssistidasMap.get(d.id_disciplina) || 0;
-
           return {
-            id: d.id_disciplina,
-            nome: d.nome,
+            id: row.id_disciplina,
+            nome: nomeDisciplina,
             icon: visual.icon,
             cor: visual.cor,
-            progresso: prog.progresso,
-            moedas: prog.moedas,
-            atividades: ativ,
-            resumos: resumosMap.get(d.id_disciplina) || 0,
+
+            // agora vem direto da view, já calculado por aluno
+            progresso: row.progresso_percent ?? 0,
+            moedas_conquistadas: row.moedas_conquistadas ?? 0,
+            moedas_totais_disciplina: row.moedas_totais_disciplina ?? 0,
+
+            atividades: {
+              total: row.total_atividades ?? 0,
+              concluidas: row.atividades_concluidas ?? 0,
+              pendentes: row.atividades_pendentes ?? 0,
+            },
+            resumos: row.total_resumos ?? 0,
             videoaulas: {
-              total: totalVideos,
-              assistidas,
+              total: row.total_videoaulas ?? 0,
+              assistidas: row.videoaulas_assistidas ?? 0,
             },
           };
         });
@@ -385,23 +272,37 @@ const Disciplinas = () => {
     return (
       <div className="space-y-4">
         <div className="flex items-center gap-2">
-          <BookOpen className="h-6 w-6 text-red-600" />
+          <BookOpen className="h-6 w-6 text-blue-600" />
           <h1 className="text-2xl font-bold text-gray-900">Disciplinas</h1>
         </div>
-        <p className="text-red-600 text-sm">{erro}</p>
+        <p className="text-red-500 text-sm">{erro}</p>
       </div>
     );
   }
 
-  if (disciplinaSelecionada && selecionada) {
+  if (!disciplinas.length) {
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center gap-2">
+          <BookOpen className="h-6 w-6 text-blue-600" />
+          <h1 className="text-2xl font-bold text-gray-900">Disciplinas</h1>
+        </div>
+        <p className="text-gray-600">
+          Nenhuma disciplina encontrada para o seu usuário.
+        </p>
+      </div>
+    );
+  }
+
+  // Tela de detalhes quando uma disciplina está selecionada
+  if (selecionada) {
     const t = cores[selecionada.cor];
     const Icon = selecionada.icon;
 
     const percVideo =
       selecionada.videoaulas.total > 0
         ? Math.round(
-            (selecionada.videoaulas.assistidas /
-              selecionada.videoaulas.total) *
+            (selecionada.videoaulas.assistidas / selecionada.videoaulas.total) *
               100
           )
         : 0;
@@ -426,7 +327,10 @@ const Disciplinas = () => {
                 {selecionada.nome}
               </h1>
               <p className="text-sm text-gray-600">
-                {selecionada.moedas} moedas conquistadas
+                {selecionada.moedas_conquistadas} moedas conquistadas
+                {typeof selecionada.moedas_totais_disciplina === "number" && (
+                  <> / {selecionada.moedas_totais_disciplina}</>
+                )}
               </p>
             </div>
           </div>
@@ -569,249 +473,6 @@ const Disciplinas = () => {
             </Card>
           )}
         </div>
-
-        {/* Opções disponíveis */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Resumos */}
-          <Card className="hover:shadow-lg transition-shadow">
-            <CardContent className="p-6">
-              <div
-                className="cursor-pointer"
-                role="button"
-                tabIndex={0}
-                onClick={() => {
-                  if (selecionada) {
-                    const n = selecionada.nome.toLowerCase();
-                    const slug =
-                      n === "matemática"
-                        ? "mat"
-                        : n === "português"
-                        ? "port"
-                        : n === "história" || n === "historia"
-                        ? "hist"
-                        : n === "geografia"
-                        ? "geo"
-                        : n === "biologia"
-                        ? "bio"
-                        : n === "física" || n === "fisica"
-                        ? "fis"
-                        : n === "artes"
-                        ? "art"
-                        : String(selecionada.id);
-                    router.push(`/aluno/disciplinas/${slug}/resumos`);
-                  }
-                }}
-                onKeyDown={(e: React.KeyboardEvent<HTMLDivElement>) => {
-                  if (e.key === "Enter" && selecionada) {
-                    const n = selecionada.nome.toLowerCase();
-                    const slug =
-                      n === "matemática"
-                        ? "mat"
-                        : n === "português"
-                        ? "port"
-                        : n === "história" || n === "historia"
-                        ? "hist"
-                        : n === "geografia"
-                        ? "geo"
-                        : n === "biologia"
-                        ? "bio"
-                        : n === "física" || n === "fisica"
-                        ? "fis"
-                        : n === "artes"
-                        ? "art"
-                        : String(selecionada.id);
-                    router.push(`/aluno/disciplinas/${slug}/resumos`);
-                  }
-                }}
-              >
-                <div className="flex items-center gap-3 mb-4">
-                  <div className={`p-2 ${t.iconBg} rounded-lg`}>
-                    <FileText className={`h-5 w-5 ${t.text}`} />
-                  </div>
-                  <h3 className="font-semibold text-gray-900">Resumos</h3>
-                </div>
-                <p className="text-sm text-gray-600 mb-4">
-                  Materiais de estudo e resumos postados pelos professores
-                </p>
-                <div className="flex items-center justify-between">
-                  <span className={`text-2xl font-bold ${t.text}`}>
-                    {selecionada.resumos}
-                  </span>
-                  <ArrowRight className="h-5 w-5 text-gray-400" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Atividades */}
-          <Card className="hover:shadow-lg transition-shadow">
-            <CardContent className="p-6">
-              <div
-                className="cursor-pointer"
-                role="button"
-                tabIndex={0}
-                onClick={() => {
-                  if (selecionada) {
-                    const n = selecionada.nome.toLowerCase();
-                    const slug =
-                      n === "matemática"
-                        ? "mat"
-                        : n === "português"
-                        ? "port"
-                        : n === "história" || n === "historia"
-                        ? "hist"
-                        : n === "geografia"
-                        ? "geo"
-                        : n === "biologia"
-                        ? "bio"
-                        : n === "física" || n === "fisica"
-                        ? "fis"
-                        : n === "artes"
-                        ? "art"
-                        : String(selecionada.id);
-                    router.push(`/aluno/disciplinas/${slug}/atividades`);
-                  }
-                }}
-                onKeyDown={(e: React.KeyboardEvent<HTMLDivElement>) => {
-                  if (e.key === "Enter" && selecionada) {
-                    const n = selecionada.nome.toLowerCase();
-                    const slug =
-                      n === "matemática"
-                        ? "mat"
-                        : n === "português"
-                        ? "port"
-                        : n === "história" || n === "historia"
-                        ? "hist"
-                        : n === "geografia"
-                        ? "geo"
-                        : n === "biologia"
-                        ? "bio"
-                        : n === "física" || n === "fisica"
-                        ? "fis"
-                        : n === "artes"
-                        ? "art"
-                        : String(selecionada.id);
-                    router.push(`/aluno/disciplinas/${slug}/atividades`);
-                  }
-                }}
-              >
-                <div className="flex items-center gap-3 mb-4">
-                  <div className={`p-2 ${t.iconBg} rounded-lg`}>
-                    <Activity className={`h-5 w-5 ${t.text}`} />
-                  </div>
-                  <h3 className="font-semibold text-gray-900">Atividades</h3>
-                </div>
-                <p className="text-sm text-gray-600 mb-4">
-                  Tarefas, quizzes e exercícios com prazos e status
-                </p>
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="flex items-center gap-1">
-                      <CheckCircle className="h-4 w-4 text-green-500" />
-                      Concluídas
-                    </span>
-                    <span className="font-semibold">
-                      {selecionada.atividades.concluidas}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="flex items-center gap-1">
-                      <Clock className="h-4 w-4 text-orange-500" />
-                      Pendentes
-                    </span>
-                    <span className="font-semibold">
-                      {selecionada.atividades.pendentes}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Videoaulas */}
-          <Card className="hover:shadow-lg transition-shadow">
-            <CardContent className="p-6">
-              <div
-                className="cursor-pointer"
-                role="button"
-                tabIndex={0}
-                onClick={() => {
-                  if (selecionada) {
-                    const n = selecionada.nome.toLowerCase();
-                    const slug =
-                      n === "matemática"
-                        ? "mat"
-                        : n === "português"
-                        ? "port"
-                        : n === "história" || n === "historia"
-                        ? "hist"
-                        : n === "geografia"
-                        ? "geo"
-                        : n === "biologia"
-                        ? "bio"
-                        : n === "física" || n === "fisica"
-                        ? "fis"
-                        : n === "artes"
-                        ? "art"
-                        : String(selecionada.id);
-                    router.push(`/aluno/disciplinas/${slug}/videoaulas`);
-                  }
-                }}
-                onKeyDown={(e: React.KeyboardEvent<HTMLDivElement>) => {
-                  if (e.key === "Enter" && selecionada) {
-                    const n = selecionada.nome.toLowerCase();
-                    const slug =
-                      n === "matemática"
-                        ? "mat"
-                        : n === "português"
-                        ? "port"
-                        : n === "história" || n === "historia"
-                        ? "hist"
-                        : n === "geografia"
-                        ? "geo"
-                        : n === "biologia"
-                        ? "bio"
-                        : n === "física" || n === "fisica"
-                        ? "fis"
-                        : n === "artes"
-                        ? "art"
-                        : String(selecionada.id);
-                    router.push(`/aluno/disciplinas/${slug}/videoaulas`);
-                  }
-                }}
-              >
-                <div className="flex items-center gap-3 mb-4">
-                  <div className={`p-2 ${t.iconBg} rounded-lg`}>
-                    <Play className={`h-5 w-5 ${t.text}`} />
-                  </div>
-                  <h3 className="font-semibold text-gray-900">Videoaulas</h3>
-                </div>
-                <p className="text-sm text-gray-600 mb-4">
-                  Player integrado com progresso salvo automaticamente
-                </p>
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm text-gray-600">
-                    <span>Progresso</span>
-                    <span>{percVideo}%</span>
-                  </div>
-                  <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
-                    <div
-                      className={`h-full ${t.bar} transition-all duration-300`}
-                      style={{
-                        width: `${percVideo}%`,
-                      }}
-                    />
-                  </div>
-                  <div className="text-xs text-gray-500">
-                    {selecionada.videoaulas.assistidas} de{" "}
-                    {selecionada.videoaulas.total} assistidas
-                  </div>
-                </div>
-                {/* fecha wrapper clicável */}
-                </div>
-              </CardContent>
-            </Card>
-        </div>
       </div>
     );
   }
@@ -827,63 +488,6 @@ const Disciplinas = () => {
         Acompanhe seu progresso em cada disciplina e acesse conteúdos
         exclusivos.
       </p>
-
-      {/* Cards de Estatísticas */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
-        <Card className="border border-gray-200 rounded-xl bg-white shadow-sm hover:shadow-md transition-all">
-          <CardContent className="p-4 flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">
-                Total de Disciplinas
-              </p>
-              <p className="text-2xl font-bold text-violet-700">
-                {disciplinas.length}
-              </p>
-            </div>
-            <div className="p-3 rounded-xl text-white bg-gradient-to-br from-violet-400 to-violet-500">
-              <BookOpen className="h-5 w-5" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border border-gray-200 rounded-xl bg-white shadow-sm hover:shadow-md transition-all">
-          <CardContent className="p-4 flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">
-                Progresso Médio
-              </p>
-              <p className="text-2xl font-bold text-violet-700">
-                {disciplinas.length > 0
-                  ? Math.round(
-                      disciplinas.reduce((acc, d) => acc + d.progresso, 0) /
-                        disciplinas.length
-                    )
-                  : 0}
-                %
-              </p>
-            </div>
-            <div className="p-3 rounded-xl text-white bg-gradient-to-br from-green-400 to-green-500">
-              <TrendingUp className="h-5 w-5" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border border-gray-200 rounded-xl bg-white shadow-sm hover:shadow-md transition-all">
-          <CardContent className="p-4 flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">
-                Total de Moedas
-              </p>
-              <p className="text-2xl font-bold text-violet-700">
-                {disciplinas.reduce((acc, d) => acc + d.moedas, 0)}
-              </p>
-            </div>
-            <div className="p-3 rounded-xl text-white bg-gradient-to-br from-yellow-400 to-yellow-500">
-              <Award className="h-5 w-5" />
-            </div>
-          </CardContent>
-        </Card>
-      </div>
 
       {/* Cards das disciplinas */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
@@ -950,7 +554,11 @@ const Disciplinas = () => {
                         {disciplina.nome}
                       </h3>
                       <p className="text-xs text-gray-600">
-                        {disciplina.moedas} moedas conquistadas
+                        {disciplina.moedas_conquistadas} moedas conquistadas
+                        {typeof disciplina.moedas_totais_disciplina ===
+                          "number" && (
+                          <> / {disciplina.moedas_totais_disciplina}</>
+                        )}
                       </p>
                     </div>
                   </div>
