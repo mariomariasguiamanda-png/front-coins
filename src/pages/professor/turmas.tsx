@@ -1,91 +1,142 @@
+import { useState, useEffect } from "react";
 import { ProfessorLayout } from "@/components/professor/ProfessorLayout";
-import { TurmasProfessor } from "@/components/professor/TurmasProfessor";
-import { useState } from "react";
+import { TurmasProfessor, Class } from "@/components/professor/TurmasProfessor";
+import { supabase } from "@/lib/supabaseClient";
 
-// Mock data
-const mockClasses = [
-  {
-    id: "1",
-    name: "3º Ano A",
-    year: "2025",
-    shift: "morning" as const,
-    totalStudents: 35,
-    activeStudents: 33,
-    disciplines: ["Matemática", "Física", "Química", "Biologia"],
-    averageGrade: 8.2,
-    startDate: "2025-02-01",
-    endDate: "2025-12-15",
-  },
-  {
-    id: "2",
-    name: "3º Ano B",
-    year: "2025",
-    shift: "afternoon" as const,
-    totalStudents: 32,
-    activeStudents: 30,
-    disciplines: ["Matemática", "Física", "Química"],
-    averageGrade: 7.8,
-    startDate: "2025-02-01",
-    endDate: "2025-12-15",
-  },
-  {
-    id: "3",
-    name: "2º Ano A",
-    year: "2025",
-    shift: "morning" as const,
-    totalStudents: 38,
-    activeStudents: 36,
-    disciplines: ["Matemática", "História", "Geografia"],
-    averageGrade: 7.5,
-    startDate: "2025-02-01",
-    endDate: "2025-12-15",
-  },
-  {
-    id: "4",
-    name: "1º Ano C",
-    year: "2025",
-    shift: "night" as const,
-    totalStudents: 28,
-    activeStudents: 25,
-    disciplines: ["Português", "Matemática", "Inglês"],
-    averageGrade: 7.2,
-    startDate: "2025-02-01",
-    endDate: "2025-12-15",
-  },
-];
+// Nova interface simplificada para refletir tabela turmas atual
+interface TurmaUI {
+  id: string;
+  name: string;
+  shift: string; // morning, afternoon, night, etc.
+}
+
+// Mapeia linha do banco para TurmaUI mínima
+function mapTurmaRowToUI(row: any): TurmaUI {
+  return {
+    id: String(row.id_turma),
+    name: row.nome,
+    shift: row.turno ?? "",
+  };
+}
+
+// Converte TurmaUI mínima para Class (expectativa do componente TurmasProfessor)
+function convertTurmaToClass(t: TurmaUI): Class {
+  return {
+    id: t.id,
+    name: t.name,
+    shift: (t.shift || "morning") as Class["shift"],
+    totalStudents: 0,
+    activeStudents: 0,
+    disciplines: [],
+    averageGrade: 0,
+  };
+}
 
 export default function TurmasPage() {
-  const [classes, setClasses] = useState(mockClasses);
+  const [turmas, setTurmas] = useState<TurmaUI[]>([]);
+  const classes: Class[] = turmas.map(convertTurmaToClass);
+  const [loading, setLoading] = useState(true);
 
-  const handleCreateClass = (classData: any) => {
-    const newClass = {
-      ...classData,
-      id: Date.now().toString(),
-    };
-    setClasses([...classes, newClass]);
-    console.log("Turma criada:", newClass);
+  // ==========================
+  // CARREGAR TURMAS DO SUPABASE
+  // ==========================
+  useEffect(() => {
+    async function carregarTurmas() {
+      setLoading(true);
+
+      const { data, error } = await supabase
+        .from("turmas") // nome da tabela no Supabase
+        .select("*");
+
+      if (error) {
+        console.error("Erro ao buscar turmas:", error);
+      } else if (data) {
+        setTurmas(data.map(mapTurmaRowToUI));
+      }
+
+      setLoading(false);
+    }
+
+    carregarTurmas();
+  }, []);
+
+  // ==========================
+  // CRIAR TURMA
+  // ==========================
+  const handleCreateClass = async (classData: any) => {
+    const { data, error } = await supabase
+      .from("turmas")
+      .insert({
+        nome: classData.name,
+        turno: classData.shift,
+      })
+      .select("*")
+      .single();
+
+    if (error) {
+      console.error("Erro ao criar turma:", error);
+      return;
+    }
+
+    if (data) {
+      setTurmas((prev) => [...prev, mapTurmaRowToUI(data)]);
+      console.log("Turma criada:", data);
+    }
   };
 
-  const handleEditClass = (id: string, classData: any) => {
-    setClasses(classes.map(cls => 
-      cls.id === id ? { ...cls, ...classData } : cls
-    ));
-    console.log("Turma editada:", id, classData);
+  // ==========================
+  // EDITAR TURMA
+  // ==========================
+  const handleEditClass = async (id: string, classData: any) => {
+    const { data, error } = await supabase
+      .from("turmas")
+      .update({
+        ...(classData.name && { nome: classData.name }),
+        ...(classData.shift && { turno: classData.shift }),
+      })
+      .eq("id_turma", id)
+      .select("*")
+      .single();
+
+    if (error) {
+      console.error("Erro ao editar turma:", error);
+      return;
+    }
+
+    if (data) {
+      setTurmas((prev) =>
+        prev.map((t) => (t.id === id ? mapTurmaRowToUI(data) : t))
+      );
+      console.log("Turma editada:", id, data);
+    }
   };
 
-  const handleDeleteClass = (id: string) => {
-    setClasses(classes.filter(cls => cls.id !== id));
+  // ==========================
+  // DELETAR TURMA
+  // ==========================
+  const handleDeleteClass = async (id: string) => {
+    const { error } = await supabase.from("turmas").delete().eq("id_turma", id);
+
+    if (error) {
+      console.error("Erro ao deletar turma:", error);
+      return;
+    }
+
+    setTurmas((prev) => prev.filter((t) => t.id !== id));
     console.log("Turma deletada:", id);
   };
 
   return (
     <ProfessorLayout>
+      {/* Se quiser, dá pra mostrar um loading aqui */}
+      {/* {loading ? <div>Carregando turmas...</div> : ( */}
       <TurmasProfessor
         classes={classes}
         onCreateClass={handleCreateClass}
         onEditClass={handleEditClass}
         onDeleteClass={handleDeleteClass}
       />
+      {/* )} */}
     </ProfessorLayout>
   );
 }
