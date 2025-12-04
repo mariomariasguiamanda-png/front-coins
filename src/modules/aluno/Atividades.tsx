@@ -1,5 +1,6 @@
 import { CalendarDays } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/Card";
+import { supabase } from "@/lib/supabaseClient";
 
 // Tipos para os dados
 interface Atividade {
@@ -183,12 +184,46 @@ export default function Atividades() {
                   </span>
                 </div>
 
-                {/* Botão Abrir */}
-                <button
-                  className={`w-full bg-gradient-to-r from-${cor}-500 to-${cor}-600 text-white py-2 px-4 rounded-lg font-medium hover:shadow-md transition-all duration-200 hover:from-${cor}-600 hover:to-${cor}-700`}
-                >
-                  Abrir
-                </button>
+                {/* Ações: Abrir e Concluir */}
+                <div className="flex gap-3">
+                  <button
+                    className={`flex-1 bg-gradient-to-r from-${cor}-500 to-${cor}-600 text-white py-2 px-4 rounded-lg font-medium hover:shadow-md transition-all duration-200 hover:from-${cor}-600 hover:to-${cor}-700`}
+                  >
+                    Abrir
+                  </button>
+                  <button
+                    onClick={async () => {
+                      try {
+                        // TODO: pegar idUsuario do contexto de auth
+                        const idUsuario = 1;
+                        const idAtividade = atividade.id;
+
+                        const { error } = await supabase
+                          .from("alunos_atividades")
+                          .upsert(
+                            {
+                              id_aluno: idUsuario,
+                              id_atividade: idAtividade,
+                              concluida: true,
+                              data_conclusao: new Date().toISOString(),
+                            },
+                            { onConflict: "id_aluno,id_atividade" }
+                          );
+
+                        if (error) throw error;
+                        // Opcional: feedback visual
+                        // alert("Atividade marcada como concluída!");
+                      } catch (e) {
+                        console.error(e);
+                        // Opcional: feedback de erro
+                        // alert("Falha ao concluir a atividade.");
+                      }
+                    }}
+                    className={`px-4 py-2 rounded-lg font-medium border border-${cor}-200 text-${cor}-700 bg-white hover:bg-${cor}-50 transition-all`}
+                  >
+                    Concluir
+                  </button>
+                </div>
               </CardContent>
             </Card>
           );
