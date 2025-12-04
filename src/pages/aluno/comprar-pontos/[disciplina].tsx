@@ -15,8 +15,9 @@ import {
   Zap,
   AlertCircle,
 } from "lucide-react";
+import { supabase } from "@/lib/supabaseClient";
 
-// Dados das disciplinas (mesmo do arquivo anterior)
+// Dados visuais das disciplinas (cores/ícone) + fallback de preço/saldo
 const disciplinasData = {
   mat: {
     nome: "Matemática",
@@ -25,7 +26,7 @@ const disciplinasData = {
     textColor: "text-blue-600",
     bgColor: "bg-blue-500/10",
     color: "#3B82F6",
-    precoMoedas: 750,
+    precoMoedas: 750, // Fallback (não será mais o valor principal)
     saldoAtual: 1200,
   },
   port: {
@@ -80,16 +81,88 @@ const disciplinasData = {
   },
 };
 
+type ConfigDisciplina = {
+  id_disciplina: number;
+  codigo_disciplina: string;
+  nome_disciplina: string;
+  pontos: number;
+  preco_moedas: number;
+};
+
 export default function ComprarPontosDisciplina() {
   const router = useRouter();
   const { disciplina } = router.query;
+
   const [pontos, setPontos] = useState(1);
   const [erro, setErro] = useState("");
   const [mounted, setMounted] = useState(false);
 
+  const [saldoAtual, setSaldoAtual] = useState<number | null>(null);
+  const [carregandoSaldo, setCarregandoSaldo] = useState(true);
+
+  const [precoPorPonto, setPrecoPorPonto] = useState<number | null>(null);
+  const [carregandoPreco, setCarregandoPreco] = useState(true);
+
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  // Carregar saldo por disciplina + preço real da tabela config_compra_pontos
+  useEffect(() => {
+    if (!mounted || typeof disciplina !== "string") return;
+
+    const codigo = disciplina.toLowerCase();
+    const metaDisciplina =
+      disciplinasData[disciplina as keyof typeof disciplinasData];
+
+    const carregarDados = async () => {
+      // 1) Saldo por disciplina (view/mecanismo que você já tem)
+      const { data: saldoData, error: saldoError } = await supabase.rpc(
+        "get_moedas_por_disciplina_compra"
+      );
+
+      if (saldoError) {
+        console.error("Erro ao buscar saldo:", saldoError);
+        setSaldoAtual(metaDisciplina?.saldoAtual ?? 0);
+      } else {
+        const listaSaldo = (saldoData ?? []) as {
+          codigo_disciplina: string;
+          moedas_disponiveis: number;
+        }[];
+
+        const itemSaldo = listaSaldo.find(
+          (d) => d.codigo_disciplina.toLowerCase() === codigo
+        );
+        setSaldoAtual(itemSaldo?.moedas_disponiveis ?? 0);
+      }
+      setCarregandoSaldo(false);
+
+      // 2) Preço por ponto vindo da config_compra_pontos
+      const { data: cfgData, error: cfgError } = await supabase.rpc(
+        "get_config_compra_pontos_por_aluno"
+      );
+
+      if (cfgError) {
+        console.error("Erro ao buscar config de compra:", cfgError);
+        setPrecoPorPonto(metaDisciplina?.precoMoedas ?? 0);
+        setCarregandoPreco(false);
+        return;
+      }
+
+      const listaCfg = (cfgData ?? []) as ConfigDisciplina[];
+
+      const itemCfg = listaCfg.find(
+        (c) => c.codigo_disciplina.toLowerCase() === codigo
+      );
+
+      setPrecoPorPonto(
+        itemCfg?.preco_moedas ?? metaDisciplina?.precoMoedas ?? 0
+      );
+      setCarregandoPreco(false);
+    };
+
+    carregarDados();
+  }, [mounted, disciplina]);
 
   if (!mounted || typeof disciplina !== "string") {
     return null;
@@ -111,8 +184,13 @@ export default function ComprarPontosDisciplina() {
   }
 
   const IconComponent = disciplinaData.icon;
-  const total = pontos * disciplinaData.precoMoedas;
-  const saldoInsuficiente = total > disciplinaData.saldoAtual;
+
+  // Usa o preço real se já carregou, senão fallback do mock
+  const precoUnitario = precoPorPonto ?? disciplinaData.precoMoedas;
+  const total = pontos * precoUnitario;
+
+  const saldoUsado = saldoAtual ?? disciplinaData.saldoAtual;
+  const saldoInsuficiente = total > saldoUsado;
 
   const handleComprar = () => {
     if (saldoInsuficiente) {
@@ -154,8 +232,16 @@ export default function ComprarPontosDisciplina() {
                   {disciplinaData.nome}
                 </h2>
                 <div className="space-y-1 text-sm opacity-90">
-                  <p>Preço por ponto: {disciplinaData.precoMoedas} moedas</p>
-                  <p>Seu saldo atual: {disciplinaData.saldoAtual} moedas</p>
+                  <p>
+                    Preço por ponto:{" "}
+                    {carregandoPreco
+                      ? "carregando..."
+                      : `${precoUnitario} moedas`}
+                  </p>
+                  <p>
+                    Seu saldo atual:{" "}
+                    {carregandoSaldo ? "carregando..." : `${saldoUsado} moedas`}
+                  </p>
                 </div>
               </div>
               <IconComponent className="h-12 w-12 opacity-80" />
@@ -210,7 +296,9 @@ export default function ComprarPontosDisciplina() {
                 <div className="flex justify-between items-center">
                   <span className="text-gray-600">Preço unitário:</span>
                   <span className="font-semibold">
-                    {disciplinaData.precoMoedas} moedas
+                    {carregandoPreco
+                      ? "carregando..."
+                      : `${precoUnitario} moedas`}
                   </span>
                 </div>
                 <div className="border-t pt-2 flex justify-between items-center">
@@ -238,34 +326,22 @@ export default function ComprarPontosDisciplina() {
               {/* Botão de compra */}
               <Button
                 onClick={handleComprar}
-                disabled={saldoInsuficiente}
+                disabled={saldoInsuficiente || carregandoPreco}
                 className={`w-full h-12 text-lg font-semibold rounded-xl smooth-transition ${
-                  saldoInsuficiente
+                  saldoInsuficiente || carregandoPreco
                     ? "bg-gray-300 text-gray-500 cursor-not-allowed"
                     : `bg-gradient-to-r ${disciplinaData.gradient} hover:opacity-90 text-white`
                 }`}
               >
-                {saldoInsuficiente ? "Saldo Insuficiente" : "Realizar Compra"}
+                {saldoInsuficiente
+                  ? "Saldo Insuficiente"
+                  : carregandoPreco
+                  ? "Carregando preço..."
+                  : "Realizar Compra"}
               </Button>
             </div>
           </CardContent>
         </Card>
-
-        {/* Dica */}
-        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
-          <div className="flex items-start gap-3">
-            <div className="bg-blue-100 p-2 rounded-lg">
-              <span className="text-blue-600 text-lg">💡</span>
-            </div>
-            <div className="text-sm text-blue-800">
-              <p className="font-semibold mb-1">Dica importante:</p>
-              <p>
-                Os pontos comprados serão adicionados diretamente à sua nota na
-                disciplina. Quanto mais pontos, melhor sua classificação!
-              </p>
-            </div>
-          </div>
-        </div>
       </div>
     </AlunoLayout>
   );
