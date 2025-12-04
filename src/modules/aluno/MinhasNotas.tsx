@@ -1,182 +1,306 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/Card";
 import { BarChart3, Award, TrendingUp, Calendar } from "lucide-react";
+import { supabase } from "@/lib/supabaseClient";
+import { getAlunoFromSession } from "@/lib/getAlunoFromSession";
+
+type NotaFinalDisciplina = {
+  id_disciplina: number;
+  nome_disciplina: string;
+  codigo_disciplina: string | null;
+  nota_final: number | null;
+  status_final: string | null;
+  atualizado_em: string | null;
+};
+
+type Stats = {
+  mediaGeral: number | null;
+  aprovadas: number;
+  recuperacao: number;
+  totalDisciplinasComNota: number;
+};
 
 export default function MinhasNotas() {
-  // Dados mockados para as estatísticas
-  const stats = {
-    mediaGeral: 8.0,
-    aprovadas: 5,
-    recuperacao: 1,
-    totalProvas: 6,
-  };
+  const [stats, setStats] = useState<Stats>({
+    mediaGeral: null,
+    aprovadas: 0,
+    recuperacao: 0,
+    totalDisciplinasComNota: 0,
+  });
 
-  // Dados mockados para o histórico de avaliações
-  const historico = [
-    {
-      disciplina: "Matemática",
-      avaliacao: "Avaliação",
-      data: "14/09/2024",
-      nota: 8.5,
-      status: "Aprovado",
-    },
-    {
-      disciplina: "Português",
-      avaliacao: "Avaliação",
-      data: "19/09/2024",
-      nota: 9.2,
-      status: "Aprovado",
-    },
-    {
-      disciplina: "História",
-      avaliacao: "Avaliação",
-      data: "17/09/2024",
-      nota: 7.8,
-      status: "Aprovado",
-    },
-    {
-      disciplina: "Biologia",
-      avaliacao: "Avaliação",
-      data: "21/09/2024",
-      nota: 6.5,
-      status: "Recuperação",
-    },
-  ];
+  const [notasFinais, setNotasFinais] = useState<NotaFinalDisciplina[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [erro, setErro] = useState<string | null>(null);
 
-  const getNotaColor = (nota: number) => {
+  useEffect(() => {
+    (async () => {
+      try {
+        setLoading(true);
+        setErro(null);
+
+        // 1) pega id do aluno logado
+        const { idAluno } = await getAlunoFromSession();
+
+        // 2) consulta a view vw_notas_finais_aluno
+        const { data, error } = await supabase
+          .from("vw_notas_finais_aluno")
+          .select(
+            `
+            id_disciplina,
+            nome_disciplina,
+            codigo_disciplina,
+            nota_final,
+            status_final,
+            atualizado_em
+          `
+          )
+          .eq("id_aluno", idAluno);
+
+        if (error) {
+          console.error(error);
+          throw new Error("Erro ao carregar notas finais.");
+        }
+
+        const rows = (data ?? []) as any[];
+
+        const convertidos: NotaFinalDisciplina[] = rows.map((row) => ({
+          id_disciplina: row.id_disciplina,
+          nome_disciplina: row.nome_disciplina,
+          codigo_disciplina: row.codigo_disciplina,
+          nota_final:
+            row.nota_final !== null && row.nota_final !== undefined
+              ? Number(row.nota_final)
+              : null,
+          status_final: row.status_final,
+          atualizado_em: row.atualizado_em,
+        }));
+
+        // 3) calcula estatísticas em cima das notas finais
+        let soma = 0;
+        let qtd = 0;
+        let aprov = 0;
+        let rec = 0;
+
+        for (const n of convertidos) {
+          if (n.nota_final !== null && !isNaN(n.nota_final)) {
+            soma += n.nota_final;
+            qtd += 1;
+
+            if (n.status_final === "aprovado") aprov += 1;
+            else if (n.status_final === "recuperacao") rec += 1;
+            else {
+              // se não tiver status_final, podemos inferir pela nota
+              if (n.nota_final >= 6) aprov += 1;
+              else rec += 1;
+            }
+          }
+        }
+
+        setNotasFinais(convertidos);
+        setStats({
+          mediaGeral: qtd > 0 ? soma / qtd : null,
+          aprovadas: aprov,
+          recuperacao: rec,
+          totalDisciplinasComNota: qtd,
+        });
+      } catch (err: any) {
+        console.error(err);
+        setErro(err.message || "Erro ao carregar suas notas.");
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, []);
+
+  const getNotaColor = (nota: number | null) => {
+    if (nota === null) return "text-gray-500";
     if (nota >= 8) return "text-green-600";
     if (nota >= 7) return "text-blue-600";
     if (nota >= 6) return "text-yellow-600";
     return "text-red-600";
   };
 
+  const getStatusBadgeClasses = (status: string | null) => {
+    if (status === "aprovado")
+      return "bg-green-100 text-green-700";
+    if (status === "recuperacao")
+      return "bg-yellow-100 text-yellow-700";
+    if (status === "reprovado")
+      return "bg-red-100 text-red-700";
+    return "bg-gray-100 text-gray-700";
+  };
+
+  // ---------------- RENDER ----------------
+
+  if (loading) {
+    return (
+      <div>
+        <h1 className="text-3xl font-bold text-violet-700">Minhas Notas</h1>
+        <p className="text-gray-500 mt-2">Carregando...</p>
+      </div>
+    );
+  }
+
+  if (erro) {
+    return (
+      <div>
+        <h1 className="text-3xl font-bold text-violet-700">Minhas Notas</h1>
+        <p className="mt-4 text-red-600">{erro}</p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
-      {/* Título e Descrição */}
-      <div className="mb-4">
+      {/* Título */}
+      <div>
         <h1 className="text-3xl font-bold text-violet-700">Minhas Notas</h1>
         <p className="text-gray-600 mt-2">
-          Acompanhe seu desempenho acadêmico e histórico de avaliações.
+          Acompanhe sua nota final em cada disciplina.
         </p>
       </div>
 
-      {/* Cards de Estatísticas */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-4">
-        <Card className="border border-gray-200 rounded-xl bg-white shadow-sm hover:shadow-md transition-all">
-          <CardContent className="p-4 flex items-center justify-between">
+      {/* Cards Estatísticos */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card className="rounded-xl border">
+          <CardContent className="p-4 flex justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">Média Geral</p>
+              <p className="text-sm text-gray-600">Média Geral</p>
               <p className="text-2xl font-bold text-violet-700">
-                {stats.mediaGeral}
+                {stats.mediaGeral !== null
+                  ? stats.mediaGeral.toFixed(1)
+                  : "-"}
               </p>
             </div>
-            <div className="p-3 rounded-xl text-white bg-gradient-to-br from-violet-400 to-violet-500">
-              <BarChart3 className="h-5 w-5" />
+            <div className="p-3 bg-violet-500 text-white rounded-xl">
+              <BarChart3 className="w-5 h-5" />
             </div>
           </CardContent>
         </Card>
 
-        <Card className="border border-gray-200 rounded-xl bg-white shadow-sm hover:shadow-md transition-all">
-          <CardContent className="p-4 flex items-center justify-between">
+        <Card className="rounded-xl border">
+          <CardContent className="p-4 flex justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">Aprovadas</p>
+              <p className="text-sm text-gray-600">Aprovadas</p>
               <p className="text-2xl font-bold text-violet-700">
                 {stats.aprovadas}
               </p>
             </div>
-            <div className="p-3 rounded-xl text-white bg-gradient-to-br from-green-400 to-green-500">
-              <Award className="h-5 w-5" />
+            <div className="p-3 bg-green-500 text-white rounded-xl">
+              <Award className="w-5 h-5" />
             </div>
           </CardContent>
         </Card>
 
-        <Card className="border border-gray-200 rounded-xl bg-white shadow-sm hover:shadow-md transition-all">
-          <CardContent className="p-4 flex items-center justify-between">
+        <Card className="rounded-xl border">
+          <CardContent className="p-4 flex justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">Recuperação</p>
+              <p className="text-sm text-gray-600">Recuperação</p>
               <p className="text-2xl font-bold text-violet-700">
                 {stats.recuperacao}
               </p>
             </div>
-            <div className="p-3 rounded-xl text-white bg-gradient-to-br from-yellow-400 to-yellow-500">
-              <TrendingUp className="h-5 w-5" />
+            <div className="p-3 bg-yellow-500 text-white rounded-xl">
+              <TrendingUp className="w-5 h-5" />
             </div>
           </CardContent>
         </Card>
 
-        <Card className="border border-gray-200 rounded-xl bg-white shadow-sm hover:shadow-md transition-all">
-          <CardContent className="p-4 flex items-center justify-between">
+        <Card className="rounded-xl border">
+          <CardContent className="p-4 flex justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">Total Provas</p>
+              <p className="text-sm text-gray-600">
+                Disciplinas com Nota
+              </p>
               <p className="text-2xl font-bold text-violet-700">
-                {stats.totalProvas}
+                {stats.totalDisciplinasComNota}
               </p>
             </div>
-            <div className="p-3 rounded-xl text-white bg-gradient-to-br from-blue-400 to-blue-500">
-              <Calendar className="h-5 w-5" />
+            <div className="p-3 bg-blue-500 text-white rounded-xl">
+              <Calendar className="w-5 h-5" />
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Histórico de Avaliações */}
-      <Card className="border border-gray-200 rounded-xl shadow-sm bg-white mt-8 mb-8">
+      {/* Tabela de Notas Finais */}
+      <Card className="rounded-xl border mt-6">
         <CardContent className="p-0">
-          <div className="p-6 border-b border-gray-200">
-            <h3 className="text-xl font-bold text-gray-900">
-              Histórico de Avaliações
-            </h3>
+          <div className="p-6 border-b">
+            <h3 className="text-xl font-bold">Notas Finais por Disciplina</h3>
           </div>
+
           <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-gray-200">
-                  <th className="text-left py-3 px-4 text-gray-700 font-semibold">
-                    Disciplina
-                  </th>
-                  <th className="text-left py-3 px-4 text-gray-700 font-semibold">
-                    Avaliação
-                  </th>
-                  <th className="text-left py-3 px-4 text-gray-700 font-semibold">
-                    Data
-                  </th>
-                  <th className="text-center py-3 px-4 text-gray-700 font-semibold">
-                    Nota
-                  </th>
-                  <th className="text-center py-3 px-4 text-gray-700 font-semibold">
-                    Status
+            <table className="w-full text-sm">
+              <thead className="border-b">
+                <tr>
+                  <th className="text-left py-3 px-4">Disciplina</th>
+                  <th className="text-left py-3 px-4">Código</th>
+                  <th className="text-center py-3 px-4">Nota Final</th>
+                  <th className="text-center py-3 px-4">Status</th>
+                  <th className="text-center py-3 px-4">
+                    Atualizado em
                   </th>
                 </tr>
               </thead>
               <tbody>
-                {historico.map((item, index) => (
-                  <tr key={index} className="hover:bg-gray-50 transition-all">
-                    <td className="py-3 px-4 text-gray-900 font-medium">
-                      {item.disciplina}
-                    </td>
-                    <td className="py-3 px-4 text-gray-600">
-                      {item.avaliacao}
-                    </td>
-                    <td className="py-3 px-4 text-gray-600">{item.data}</td>
+                {notasFinais.length === 0 ? (
+                  <tr>
                     <td
-                      className={`py-3 px-4 text-center font-bold ${getNotaColor(
-                        item.nota
-                      )}`}
+                      colSpan={5}
+                      className="py-4 text-center text-gray-500"
                     >
-                      {item.nota}
-                    </td>
-                    <td className="py-3 px-4 text-center">
-                      <span
-                        className={`px-3 py-1 rounded-full text-sm font-medium ${
-                          item.status === "Aprovado"
-                            ? "bg-green-100 text-green-700"
-                            : "bg-yellow-100 text-yellow-700"
-                        }`}
-                      >
-                        {item.status}
-                      </span>
+                      Nenhuma disciplina cadastrada ou nota final registrada.
                     </td>
                   </tr>
-                ))}
+                ) : (
+                  notasFinais.map((item) => (
+                    <tr
+                      key={item.id_disciplina}
+                      className="border-b hover:bg-gray-50"
+                    >
+                      <td className="py-3 px-4">
+                        {item.nome_disciplina}
+                      </td>
+                      <td className="py-3 px-4">
+                        {item.codigo_disciplina ?? "-"}
+                      </td>
+                      <td
+                        className={`py-3 px-4 text-center font-bold ${getNotaColor(
+                          item.nota_final
+                        )}`}
+                      >
+                        {item.nota_final !== null
+                          ? item.nota_final.toFixed(1)
+                          : "-"}
+                      </td>
+                      <td className="py-3 px-4 text-center">
+                        <span
+                          className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusBadgeClasses(
+                            item.status_final
+                          )}`}
+                        >
+                          {item.status_final
+                            ? item.status_final === "aprovado"
+                              ? "Aprovado"
+                              : item.status_final === "recuperacao"
+                              ? "Recuperação"
+                              : "Reprovado"
+                            : "-"}
+                        </span>
+                      </td>
+                      <td className="py-3 px-4 text-center text-gray-500">
+                        {item.atualizado_em
+                          ? new Date(
+                              item.atualizado_em
+                            ).toLocaleDateString("pt-BR")
+                          : "-"}
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
