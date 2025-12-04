@@ -52,10 +52,7 @@ export default function RankingPage() {
         const idTurma = 1;
 
         const { data, error } = await supabase
-          .from("ranking_moedas_turma")
-          .select("*")
-          .eq("id_turma", idTurma)
-          .order("total_moedas_ganhas", { ascending: false });
+          .rpc("get_ranking_moedas_turma", { p_id_turma: idTurma });
 
         if (error) throw error;
 

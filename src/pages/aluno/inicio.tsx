@@ -3,9 +3,8 @@ import dynamic from "next/dynamic";
 import AlunoLayout from "../../components/layout/AlunoLayout";
 import { Card, CardContent } from "../../components/ui/Card";
 import { TrendingUp, Award, BookOpen, Target } from "lucide-react";
-import { supabase } from "@/lib/supabaseClient";
+import { supabase } from "@/lib/supabaseClient"; // <- AJUSTA O CAMINHO
 
-// Dynamic import para o gráfico
 const GraficoMoedas = dynamic(
   () => import("../../components/aluno/GraficoMoedas"),
   {
@@ -32,177 +31,171 @@ const GraficoMoedas = dynamic(
 );
 
 type AtividadeRecente = {
-  id: number;
   disciplina: string;
   atividade: string;
   status: string;
   moedas: number;
 };
 
-type DashboardData = {
-  totalMoedas: number;
-  atividadesConcluidas: number;
-  disciplinasAtivas: number;
-  progressoSemanal: number;
-  atividadesRecentes: AtividadeRecente[];
-};
-
 export default function Inicio() {
-  const [dados, setDados] = useState<DashboardData>({
-    totalMoedas: 0,
-    atividadesConcluidas: 0,
-    disciplinasAtivas: 0,
-    progressoSemanal: 0,
-    atividadesRecentes: [],
-  });
-
-  const [loading, setLoading] = useState<boolean>(true);
+  const [loading, setLoading] = useState(true);
+  const [totalMoedas, setTotalMoedas] = useState(0);
+  const [atividadesConcluidas, setAtividadesConcluidas] = useState(0);
+  const [disciplinasAtivas, setDisciplinasAtivas] = useState(0);
+  const [progressoGeral, setProgressoGeral] = useState(0);
+  const [atividadesRecentes, setAtividadesRecentes] = useState<
+    AtividadeRecente[]
+  >([]);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    async function carregarDashboardAluno() {
+    const carregarDashboard = async () => {
       try {
         setLoading(true);
         setError(null);
 
-        // 1) Sessão do usuário logado (Supabase Auth)
+        // 1) Descobrir usuário autenticado
         const {
-          data: { session },
-          error: sessionError,
-        } = await supabase.auth.getSession();
+          data: { user },
+          error: authError,
+        } = await supabase.auth.getUser();
 
-        if (sessionError) throw sessionError;
-        if (!session) {
-          setError("Sessão expirada. Faça login novamente.");
-          setLoading(false);
-          return;
+        if (authError || !user) {
+          throw new Error("Não foi possível obter o usuário autenticado.");
         }
 
-        const authUserId = session.user.id; // UUID do Supabase Auth
-
-        // 2) Buscar o usuário na tabela "usuarios" usando auth_user_id
-        const { data: usuarioRow, error: usuarioError } = await supabase
+        // 2) Buscar id_usuario na tabela usuarios
+        const { data: usuarios, error: usuariosError } = await supabase
           .from("usuarios")
-          .select("id_usuario, auth_user_id")
-          .eq("auth_user_id", authUserId)
-          .single();
+          .select("id_usuario")
+          .eq("auth_user_id", user.id)
+          .maybeSingle();
 
-        if (usuarioError) throw usuarioError;
-        if (!usuarioRow) {
-          setError("Usuário não encontrado na tabela usuarios.");
-          setLoading(false);
-          return;
+        if (usuariosError || !usuarios) {
+          throw new Error("Usuário não encontrado na tabela usuarios.");
         }
 
-        // ESTE é o ID que é usado nas tabelas relacionais (alunos_atividades, alunos_turmas, transacoes_moedas)
-        const alunoId = usuarioRow.id_usuario as number;
+        const idUsuario = usuarios.id_usuario as number;
 
-        // 3) TOTAL DE MOEDAS (tabela transacoes_moedas)
-        const { data: transacoes, error: transacoesError } = await supabase
-          .from("transacoes_moedas")
-          .select("quantidade, tipo")
-          .eq("id_aluno", alunoId);
+        // 3) Buscar id_aluno na tabela alunos
+        const { data: aluno, error: alunoError } = await supabase
+          .from("alunos")
+          .select("id_aluno")
+          .eq("id_usuario", idUsuario)
+          .maybeSingle();
 
-        if (transacoesError) throw transacoesError;
+        if (alunoError || !aluno) {
+          throw new Error("Aluno não encontrado na tabela alunos.");
+        }
 
-        const totalMoedas =
-          transacoes?.reduce((acc, t: any) => {
-            const qtd = Number(t.quantidade) || 0;
-            return acc + (t.tipo === "ganho" ? qtd : -qtd);
-          }, 0) ?? 0;
+        const idAluno = aluno.id_aluno as number;
 
-        // 4) ATIVIDADES CONCLUÍDAS (tabela alunos_atividades)
-        const {
-          data: atividadesConcluidasData,
-          error: atvError,
-        } = await supabase
-          .from("alunos_atividades")
-          .select("status")
-          .eq("id_aluno", alunoId)
-          .eq("status", "concluida");
+        // 4) Buscar total de moedas (vw_disciplinas_moedas_aluno)
+        const { data: moedasRows, error: moedasError } = await supabase
+          .from("vw_disciplinas_moedas_aluno")
+          .select("moedas_conquistadas")
+          .eq("id_aluno", idAluno);
 
-        if (atvError) throw atvError;
+        if (moedasError) throw moedasError;
 
-        const atividadesConcluidas = atividadesConcluidasData?.length ?? 0;
+        const totalMoedasCalc =
+          moedasRows?.reduce(
+            (sum, row: any) => sum + (row.moedas_conquistadas ?? 0),
+            0
+          ) ?? 0;
+        setTotalMoedas(totalMoedasCalc);
 
-        // 5) DISCIPLINAS / TURMAS ATIVAS (tabela alunos_turmas)
-        const { data: turmasData, error: turmasError } = await supabase
-          .from("alunos_turmas")
-          .select("id_turma")
-          .eq("id_aluno", alunoId);
+        // 5) Atividades concluídas (progresso_atividades)
+        const { count: atividadesCount, error: atividadesError } =
+          await supabase
+            .from("progresso_atividades")
+            .select("*", { count: "exact", head: true })
+            .eq("id_aluno", idAluno)
+            .eq("status", "concluida"); // ajuste aqui se o texto no banco for outro
 
-        if (turmasError) throw turmasError;
+        if (atividadesError) throw atividadesError;
 
-        const disciplinasAtivas = turmasData?.length ?? 0;
+        setAtividadesConcluidas(atividadesCount ?? 0);
 
-        // 6) PROGRESSO SEMANAL (atividades concluídas nos últimos 7 dias)
-        const seteDiasAtras = new Date();
-        seteDiasAtras.setDate(seteDiasAtras.getDate() - 7);
+        // 6) Disciplinas ativas (vw_disciplinas_por_aluno)
+        const { data: discRows, error: discError } = await supabase
+          .from("vw_disciplinas_por_aluno")
+          .select("id_disciplina")
+          .eq("id_aluno", idAluno);
 
-        const { data: atividadesSemana, error: semanaError } = await supabase
-          .from("alunos_atividades")
-          .select("id_atividade, concluido_em")
-          .eq("id_aluno", alunoId)
-          .eq("status", "concluida")
-          .gte("concluido_em", seteDiasAtras.toISOString());
+        if (discError) throw discError;
 
-        if (semanaError) throw semanaError;
-
-        const progressoSemanal = Math.min(
-          100,
-          Math.round(((atividadesSemana?.length ?? 0) / 20) * 100)
+        const disciplinasSet = new Set(
+          discRows?.map((row: any) => row.id_disciplina)
         );
+        setDisciplinasAtivas(disciplinasSet.size);
 
-        // 7) ATIVIDADES RECENTES
-        const {
-          data: atividadesRecentesData,
-          error: recentesError,
-        } = await supabase
-          .from("alunos_atividades")
+        // 7) Progresso geral (média de progresso_percent)
+        const { data: progRows, error: progError } = await supabase
+          .from("vw_disciplinas_moedas_aluno")
+          .select("progresso_percent")
+          .eq("id_aluno", idAluno);
+
+        if (progError) throw progError;
+
+        const progresso =
+          progRows && progRows.length > 0
+            ? Math.round(
+                progRows.reduce(
+                  (sum: number, row: any) =>
+                    sum + Number(row.progresso_percent ?? 0),
+                  0
+                ) / progRows.length
+              )
+            : 0;
+
+        setProgressoGeral(progresso);
+
+        // 8) Atividades recentes
+        const { data: recentes, error: recentesError } = await supabase
+          .from("progresso_atividades")
           .select(
             `
-            id_atividade,
             status,
             concluido_em,
             atividades (
               titulo,
               recompensa_moedas,
-              disciplinas (nome)
+              disciplinas (
+                nome
+              )
             )
           `
           )
-          .eq("id_aluno", alunoId)
+          .eq("id_aluno", idAluno)
           .order("concluido_em", { ascending: false })
           .limit(5);
 
         if (recentesError) throw recentesError;
 
-        const atividadesRecentes: AtividadeRecente[] =
-          atividadesRecentesData?.map((item: any) => ({
-            id: item.id_atividade,
-            atividade: item.atividades?.titulo ?? "Atividade",
-            disciplina: item.atividades?.disciplinas?.nome ?? "Disciplina",
-            status: item.status,
-            moedas: item.atividades?.recompensa_moedas ?? 0,
+        const formatadas: AtividadeRecente[] =
+          recentes?.map((row: any) => ({
+            atividade: row.atividades?.titulo ?? "Atividade",
+            disciplina: row.atividades?.disciplinas?.nome ?? "Disciplina",
+            status:
+              row.status === "concluida"
+                ? "Concluída"
+                : row.status === "pendente"
+                  ? "Pendente"
+                  : "Em Progresso",
+            moedas: row.atividades?.recompensa_moedas ?? 0,
           })) ?? [];
 
-        // 8) Atualizar o estado com tudo
-        setDados({
-          totalMoedas,
-          atividadesConcluidas,
-          disciplinasAtivas,
-          progressoSemanal,
-          atividadesRecentes,
-        });
+        setAtividadesRecentes(formatadas);
       } catch (err: any) {
-        console.error("Erro no dashboard do aluno:", err);
-        setError("Erro ao carregar dados do dashboard do aluno.");
+        console.error(err);
+        setError(err.message ?? "Erro ao carregar dashboard.");
       } finally {
         setLoading(false);
       }
-    }
+    };
 
-    carregarDashboardAluno();
+    carregarDashboard();
   }, []);
 
   return (
@@ -211,12 +204,12 @@ export default function Inicio() {
         <div>
           <h1 className="text-3xl font-bold text-violet-700">Bem-vindo(a)!</h1>
           <p className="text-gray-600 mt-2">
-            Resumo do seu desempenho semanal, moedas e atividades recentes.
+            Resumo do seu desempenho, moedas e atividades recentes.
           </p>
         </div>
 
         {error && (
-          <div className="p-3 rounded-lg bg-red-100 text-red-700 text-sm">
+          <div className="p-3 rounded-lg bg-red-50 text-red-700 text-sm">
             {error}
           </div>
         )}
@@ -231,7 +224,7 @@ export default function Inicio() {
                     Total de Moedas
                   </p>
                   <p className="text-2xl font-bold text-violet-700">
-                    {loading ? "..." : dados.totalMoedas}
+                    {loading ? "..." : totalMoedas}
                   </p>
                 </div>
                 <div className="p-3 bg-gradient-to-br from-yellow-400 to-yellow-500 rounded-xl">
@@ -249,7 +242,7 @@ export default function Inicio() {
                     Atividades Concluídas
                   </p>
                   <p className="text-2xl font-bold text-violet-700">
-                    {loading ? "..." : dados.atividadesConcluidas}
+                    {loading ? "..." : atividadesConcluidas}
                   </p>
                 </div>
                 <div className="p-3 bg-gradient-to-br from-green-400 to-green-500 rounded-xl">
@@ -267,7 +260,7 @@ export default function Inicio() {
                     Disciplinas Ativas
                   </p>
                   <p className="text-2xl font-bold text-violet-700">
-                    {loading ? "..." : dados.disciplinasAtivas}
+                    {loading ? "..." : disciplinasAtivas}
                   </p>
                 </div>
                 <div className="p-3 bg-gradient-to-br from-blue-400 to-blue-500 rounded-xl">
@@ -282,10 +275,10 @@ export default function Inicio() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-gray-600">
-                    Progresso Semanal
+                    Progresso Geral
                   </p>
                   <p className="text-2xl font-bold text-violet-700">
-                    {loading ? "..." : `${dados.progressoSemanal}%`}
+                    {loading ? "..." : `${progressoGeral}%`}
                   </p>
                 </div>
                 <div className="p-3 bg-gradient-to-br from-violet-400 to-violet-500 rounded-xl">
@@ -296,7 +289,7 @@ export default function Inicio() {
           </Card>
         </div>
 
-        {/* Gráfico de evolução de moedas */}
+        {/* Gráfico de Evolução de Moedas */}
         <GraficoMoedas />
 
         {/* Atividades Recentes */}
@@ -313,44 +306,42 @@ export default function Inicio() {
                     key={i}
                     className="flex items-center justify-between p-3 bg-gray-50 rounded-lg animate-pulse"
                   >
-                    <div className="space-y-2">
-                      <div className="h-3 w-40 bg-gray-200 rounded" />
+                    <div>
+                      <div className="h-4 w-32 bg-gray-200 rounded mb-2" />
                       <div className="h-3 w-24 bg-gray-200 rounded" />
                     </div>
                     <div className="flex items-center gap-3">
-                      <div className="h-5 w-20 bg-gray-200 rounded-full" />
-                      <div className="h-3 w-24 bg-gray-200 rounded" />
+                      <div className="h-6 w-20 bg-gray-200 rounded-full" />
+                      <div className="h-4 w-16 bg-gray-200 rounded" />
                     </div>
                   </div>
                 ))}
               </div>
-            ) : dados.atividadesRecentes.length === 0 ? (
-              <p className="text-sm text-gray-600">
-                Você ainda não possui atividades recentes.
+            ) : atividadesRecentes.length === 0 ? (
+              <p className="text-sm text-gray-500">
+                Você ainda não tem atividades registradas.
               </p>
             ) : (
               <div className="space-y-3">
-                {dados.atividadesRecentes.map((item) => (
+                {atividadesRecentes.map((item, index) => (
                   <div
-                    key={item.id}
+                    key={index}
                     className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
                   >
                     <div>
                       <p className="font-medium text-gray-900">
                         {item.atividade}
                       </p>
-                      <p className="text-sm text-gray-600">
-                        {item.disciplina}
-                      </p>
+                      <p className="text-sm text-gray-600">{item.disciplina}</p>
                     </div>
                     <div className="flex items-center gap-3">
                       <span
                         className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          item.status === "concluida"
+                          item.status === "Concluída"
                             ? "bg-green-100 text-green-700"
-                            : item.status === "pendente"
-                            ? "bg-yellow-100 text-yellow-700"
-                            : "bg-blue-100 text-blue-700"
+                            : item.status === "Pendente"
+                              ? "bg-yellow-100 text-yellow-700"
+                              : "bg-blue-100 text-blue-700"
                         }`}
                       >
                         {item.status}
