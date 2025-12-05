@@ -1,202 +1,262 @@
+import { useEffect, useState } from "react";
 import { ProfessorLayout } from "@/components/professor/ProfessorLayout";
 import { NotasProfessor } from "@/components/professor/NotasProfessor";
-import { useState } from "react";
+import { supabase } from "@/lib/supabaseClient";
+
+// Tipos básicos
+type DisciplinaOption = {
+  id_disciplina: number;
+  nome: string;
+};
+
+type TurmaOption = {
+  id_turma: number;
+  nome: string;
+};
+
+type NotaProfessorRow = {
+  id_turma: number;
+  nome_turma: string;
+  id_disciplina: number;
+  nome_disciplina: string;
+  id_aluno: number;
+  matricula: string;
+  nome_aluno: string;
+  nota_final: number | null;
+  status_final: string | null;
+  atualizado_em: string | null;
+};
 
 export default function NotasPage() {
-  // Mock data - replace with API calls later
-  const [grades, setGrades] = useState([
-    {
-      id: "1",
-      studentName: "João Silva",
-      studentId: "2024001",
-      activity: "Prova 1 - Funções",
-      grade: 8.5,
-      maxGrade: 10,
-      date: "2024-02-10",
-      discipline: "Matemática",
-      class: "1º A",
-    },
-    {
-      id: "2",
-      studentName: "Maria Santos",
-      studentId: "2024002",
-      activity: "Trabalho em Grupo",
-      grade: 9.5,
-      maxGrade: 10,
-      date: "2024-02-08",
-      discipline: "Física",
-      class: "2º B",
-    },
-    {
-      id: "3",
-      studentName: "Pedro Oliveira",
-      studentId: "2024003",
-      activity: "Lista de Exercícios",
-      grade: 7.0,
-      maxGrade: 10,
-      date: "2024-02-12",
-      discipline: "Química",
-      class: "3º C",
-    },
-    {
-      id: "4",
-      studentName: "Ana Costa",
-      studentId: "2024004",
-      activity: "Prova 2 - Termodinâmica",
-      grade: 6.5,
-      maxGrade: 10,
-      date: "2024-02-11",
-      discipline: "Física",
-      class: "2º B",
-    },
-    {
-      id: "5",
-      studentName: "Carlos Ferreira",
-      studentId: "2024005",
-      activity: "Seminário - Verbos Irregulares",
-      grade: 8.0,
-      maxGrade: 10,
-      date: "2024-02-09",
-      discipline: "Inglês",
-      class: "1º A",
-    },
-    {
-      id: "6",
-      studentName: "Beatriz Lima",
-      studentId: "2024006",
-      activity: "Prova 1 - Geometria",
-      grade: 9.0,
-      maxGrade: 10,
-      date: "2024-02-14",
-      discipline: "Matemática",
-      class: "1º A",
-    },
-    {
-      id: "7",
-      studentName: "Rafael Souza",
-      studentId: "2024007",
-      activity: "Trabalho - Revolução Francesa",
-      grade: 7.5,
-      maxGrade: 10,
-      date: "2024-02-13",
-      discipline: "História",
-      class: "3º C",
-    },
-    {
-      id: "8",
-      studentName: "Juliana Alves",
-      studentId: "2024008",
-      activity: "Prova - Fotossíntese",
-      grade: 8.8,
-      maxGrade: 10,
-      date: "2024-02-15",
-      discipline: "Biologia",
-      class: "2º B",
-    },
-    {
-      id: "9",
-      studentName: "Lucas Mendes",
-      studentId: "2024009",
-      activity: "Lista - Equações Químicas",
-      grade: 5.5,
-      maxGrade: 10,
-      date: "2024-02-10",
-      discipline: "Química",
-      class: "3º C",
-    },
-    {
-      id: "10",
-      studentName: "Fernanda Rocha",
-      studentId: "2024010",
-      activity: "Prova 1 - Literatura",
-      grade: 9.2,
-      maxGrade: 10,
-      date: "2024-02-12",
-      discipline: "Português",
-      class: "1º A",
-    },
-    {
-      id: "11",
-      studentName: "Gabriel Torres",
-      studentId: "2024011",
-      activity: "Trabalho - Cinemática",
-      grade: 7.8,
-      maxGrade: 10,
-      date: "2024-02-11",
-      discipline: "Física",
-      class: "2º B",
-    },
-    {
-      id: "12",
-      studentName: "Larissa Martins",
-      studentId: "2024012",
-      activity: "Prova 2 - Trigonometria",
-      grade: 6.0,
-      maxGrade: 10,
-      date: "2024-02-14",
-      discipline: "Matemática",
-      class: "1º A",
-    },
-  ]);
+  const [disciplinas, setDisciplinas] = useState<DisciplinaOption[]>([]);
+  const [turmas, setTurmas] = useState<TurmaOption[]>([]);
+  const [disciplinaSelecionada, setDisciplinaSelecionada] = useState<number | null>(null);
+  const [turmaSelecionada, setTurmaSelecionada] = useState<number | null>(null);
 
-  const handleAddGrade = (grade: any) => {
-    const newGrade = {
-      ...grade,
-      id: String(grades.length + 1),
+  const [grades, setGrades] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [erro, setErro] = useState<string | null>(null);
+
+  // Carrega disciplinas e turmas
+  useEffect(() => {
+    const carregarDisciplinasETurmas = async () => {
+      try {
+        setErro(null);
+
+        const [
+          { data: discData, error: discError },
+          { data: turmaData, error: turmaError }
+        ] = await Promise.all([
+          supabase.from("disciplinas").select("id_disciplina, nome").order("nome"),
+          supabase.from("turmas").select("id_turma, nome").order("nome"),
+        ]);
+
+        if (discError) throw discError;
+        if (turmaError) throw turmaError;
+
+        setDisciplinas((discData ?? []) as DisciplinaOption[]);
+        setTurmas((turmaData ?? []) as TurmaOption[]);
+      } catch (err: any) {
+        console.error(err);
+        setErro("Erro ao carregar disciplinas e turmas.");
+      }
     };
-    setGrades([...grades, newGrade]);
+
+    carregarDisciplinasETurmas();
+  }, []);
+
+  // Busca alunos + notas finais da view
+  const carregarNotas = async (idDisciplina: number, idTurma: number) => {
+    try {
+      setLoading(true);
+      setErro(null);
+
+      const { data, error } = await supabase
+        .from("vw_lancamento_notas_professor")
+        .select(`
+          id_turma,
+          nome_turma,
+          id_disciplina,
+          nome_disciplina,
+          id_aluno,
+          matricula,
+          nome_aluno,
+          nota_final,
+          status_final,
+          atualizado_em
+        `)
+        .eq("id_disciplina", idDisciplina)
+        .eq("id_turma", idTurma);
+
+      if (error) throw error;
+
+      const rows = (data ?? []) as NotaProfessorRow[];
+
+      const mapped = rows.map((row) => ({
+        id: `${row.id_aluno}-${row.id_disciplina}`,
+        studentName: row.nome_aluno,
+        studentId: row.matricula,
+        activity: "Nota Final",
+        grade: row.nota_final,
+        maxGrade: 10,
+        date: row.atualizado_em
+          ? new Date(row.atualizado_em).toISOString().split("T")[0]
+          : "",
+        discipline: row.nome_disciplina,
+        class: row.nome_turma,
+
+        // dados internos para salvar no banco
+        _idAluno: row.id_aluno,
+        _idDisciplina: row.id_disciplina,
+      }));
+
+      setGrades(mapped);
+    } catch (err: any) {
+      console.error(err);
+      setErro("Erro ao carregar notas.");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleEditGrade = (id: string, updatedGrade: any) => {
-    setGrades(grades.map((grade: any) => 
-      grade.id === id ? { ...grade, ...updatedGrade } : grade
-    ));
+  // Recarrega quando selecionar Disciplina + Turma
+  useEffect(() => {
+    if (disciplinaSelecionada && turmaSelecionada) {
+      carregarNotas(disciplinaSelecionada, turmaSelecionada);
+    } else {
+      setGrades([]);
+    }
+  }, [disciplinaSelecionada, turmaSelecionada]);
+
+  // Regra do status final
+  const getStatusFromNota = (nota: number | null): string | null => {
+    if (nota === null || isNaN(nota)) return null;
+    if (nota >= 6) return "aprovado";
+    if (nota >= 4) return "recuperacao";
+    return "reprovado";
   };
 
-  const handleDeleteGrade = (id: string) => {
-    setGrades(grades.filter((grade: any) => grade.id !== id));
+  // Salvar nota editada
+  const handleEditGrade = async (id: string, updatedGrade: any) => {
+    try {
+      const atual = grades.find((g) => g.id === id);
+      if (!atual) return;
+
+      const notaRaw =
+        updatedGrade.grade !== undefined ? updatedGrade.grade : atual.grade;
+
+      const nota = Number(String(notaRaw).replace(",", "."));
+      const status_final = getStatusFromNota(nota);
+
+      const payload = {
+        id_aluno: atual._idAluno,
+        id_disciplina: atual._idDisciplina,
+        nota_final: nota,
+        status_final,
+      };
+
+      const { error } = await supabase
+        .from("notas_finais")
+        .upsert(payload, { onConflict: "id_aluno,id_disciplina" });
+
+      if (error) throw error;
+
+      // Atualizar UI recarregando da view
+      if (disciplinaSelecionada && turmaSelecionada) {
+        await carregarNotas(disciplinaSelecionada, turmaSelecionada);
+      }
+    } catch (err: any) {
+      console.error(err);
+      alert("Erro ao salvar nota final.");
+    }
   };
+
+  // Ações extras (não usadas agora)
+  const handleAddGrade = () =>
+    alert("Para adicionar aluno, use a tela de matrícula.");
+
+  const handleDeleteGrade = () =>
+    alert("Remover nota final será implementado depois.");
 
   const handleExportGrades = () => {
-    // Criar CSV
-    const headers = ["Aluno", "Matrícula", "Disciplina", "Turma", "Atividade", "Nota", "Data"];
+    const headers = [
+      "Aluno",
+      "Matrícula",
+      "Disciplina",
+      "Turma",
+      "Nota Final",
+      "Data",
+    ];
+
     const csvContent = [
       headers.join(","),
-      ...grades.map((grade: any) => 
+      ...grades.map((g: any) =>
         [
-          `"${grade.studentName}"`,
-          grade.studentId,
-          `"${grade.discipline}"`,
-          `"${grade.class}"`,
-          `"${grade.activity}"`,
-          grade.grade,
-          grade.date
+          `"${g.studentName}"`,
+          g.studentId,
+          `"${g.discipline}"`,
+          `"${g.class}"`,
+          g.grade ?? "",
+          g.date ?? "",
         ].join(",")
       )
     ].join("\n");
 
-    // Download do arquivo
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
     const link = document.createElement("a");
-    const url = URL.createObjectURL(blob);
-    link.setAttribute("href", url);
-    link.setAttribute("download", `historico_notas_${new Date().toISOString().split('T')[0]}.csv`);
-    link.style.visibility = "hidden";
-    document.body.appendChild(link);
+    link.href = URL.createObjectURL(blob);
+    link.download = "notas_finais.csv";
     link.click();
-    document.body.removeChild(link);
   };
 
-  const handleImportGrades = (importedGrades: any[]) => {
-    const newGrades = importedGrades.map((grade, index) => ({
-      ...grade,
-      id: String(grades.length + index + 1),
-    }));
-    setGrades([...grades, ...newGrades]);
-  };
+  const handleImportGrades = () =>
+    alert("Importação de CSV será implementada futuramente.");
 
   return (
     <ProfessorLayout>
+      {/* Filtros */}
+      <div className="px-6 pt-6 pb-4 flex flex-wrap gap-6">
+        <div>
+          <label className="text-sm text-gray-600">Disciplina</label>
+          <select
+            className="border rounded px-3 py-2 block min-w-[220px]"
+            value={disciplinaSelecionada ?? ""}
+            onChange={(e) =>
+              setDisciplinaSelecionada(e.target.value ? Number(e.target.value) : null)
+            }
+          >
+            <option value="">Selecione...</option>
+            {disciplinas.map((d) => (
+              <option key={d.id_disciplina} value={d.id_disciplina}>
+                {d.nome}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <label className="text-sm text-gray-600">Turma</label>
+          <select
+            className="border rounded px-3 py-2 block min-w-[180px]"
+            value={turmaSelecionada ?? ""}
+            onChange={(e) =>
+              setTurmaSelecionada(e.target.value ? Number(e.target.value) : null)
+            }
+          >
+            <option value="">Selecione...</option>
+            {turmas.map((t) => (
+              <option key={t.id_turma} value={t.id_turma}>
+                {t.nome}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {loading && <span className="text-gray-500">Carregando...</span>}
+        {erro && <span className="text-red-600">{erro}</span>}
+      </div>
+
+      {/* Tabela */}
       <NotasProfessor
         grades={grades}
         onAddGrade={handleAddGrade}
