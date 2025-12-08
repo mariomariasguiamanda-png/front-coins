@@ -3,9 +3,10 @@
 import Image from "next/image";
 import Link from "next/link";
 import { Bell, Menu, ChevronLeft } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Notifications } from "@/components/ui/Notifications";
-import { UserChip } from "@/components/aluno/UserChip";
+import { useAlunoFoto } from "@/hooks/useAlunoFoto";
+import { supabase } from "@/lib/supabaseClient";
 
 type AlunoHeaderProps = {
   onToggleSidebar?: () => void;
@@ -61,6 +62,28 @@ export default function AlunoHeader({
   sidebarOpen,
 }: AlunoHeaderProps) {
   const [notifications, setNotifications] = useState(mockNotifications);
+  const { fotoUrl } = useAlunoFoto();
+  const [nome, setNome] = useState<string>("");
+
+  useEffect(() => {
+    async function loadNome() {
+      const { data: auth } = await supabase.auth.getUser();
+      if (!auth?.user) return;
+
+      const idUsuario = auth.user.user_metadata?.id_usuario;
+      if (!idUsuario) return;
+
+      const { data } = await supabase
+        .from("usuarios")
+        .select("nome")
+        .eq("id_usuario", idUsuario)
+        .single();
+
+      if (data?.nome) setNome(data.nome as string);
+    }
+
+    loadNome();
+  }, []);
   return (
     <header className="sticky top-0 z-30 bg-gradient-to-br from-[#7C3AED] via-[#7C3AED] to-[#7C3AED] text-white border-b border-white/20">
       <div className="w-full px-5 h-14 flex items-center justify-between">
@@ -114,7 +137,24 @@ export default function AlunoHeader({
             }}
           />
 
-          <UserChip />
+          <Link
+            href="/aluno/perfil"
+            title="Ver meu perfil"
+            className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition"
+          >
+            <span className="text-sm font-medium">{nome || "Meu Perfil"}</span>
+            {fotoUrl ? (
+              <img
+                src={fotoUrl}
+                alt="Foto do usuário"
+                className="w-10 h-10 rounded-full object-cover border border-gray-300 shadow-sm"
+              />
+            ) : (
+              <div className="w-10 h-10 rounded-full bg-purple-600 text-white flex items-center justify-center text-sm font-semibold shadow-sm">
+                {(nome ? nome.charAt(0) : "?").toUpperCase()}
+              </div>
+            )}
+          </Link>
         </div>
       </div>
     </header>
