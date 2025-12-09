@@ -236,12 +236,29 @@ const DisciplinaDetalhePage = () => {
         }
       }
 
-      // 1. Buscar disciplina (case-insensitive) pelo código
-      const { data: disciplinaData, error: disciplinaError } = await supabase
-        .from("disciplinas")
-        .select("*")
-        .ilike("codigo", codigoStr)
-        .maybeSingle();
+      // 1. Buscar disciplina (case-insensitive) pelo código ou pelo ID numérico
+      let disciplinaData;
+      let disciplinaError;
+
+      const isNumeric = /^\d+$/.test(codigoStr);
+
+      if (isNumeric) {
+        const res = await supabase
+          .from("disciplinas")
+          .select("*")
+          .eq("id_disciplina", Number(codigoStr))
+          .maybeSingle();
+        disciplinaData = res.data;
+        disciplinaError = res.error;
+      } else {
+        const res = await supabase
+          .from("disciplinas")
+          .select("*")
+          .ilike("codigo", codigoStr)
+          .maybeSingle();
+        disciplinaData = res.data;
+        disciplinaError = res.error;
+      }
 
       if (disciplinaError) {
         throw new Error(disciplinaError.message);
