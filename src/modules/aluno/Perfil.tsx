@@ -42,9 +42,7 @@ export default function Perfil() {
     foto_url: null,
   });
 
-  const [originalProfile, setOriginalProfile] = useState<ProfileData | null>(
-    null
-  );
+  const [originalProfile, setOriginalProfile] = useState<ProfileData | null>(null);
 
   const [idUsuario, setIdUsuario] = useState<number | null>(null);
   const [isEditing, setIsEditing] = useState(false);
