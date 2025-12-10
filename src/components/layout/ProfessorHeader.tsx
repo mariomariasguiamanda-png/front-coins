@@ -2,8 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { Bell, Menu, ChevronLeft } from "lucide-react";
-import { useState } from "react";
+import { Menu, ChevronLeft } from "lucide-react";
 import { professor } from "@/lib/mock/professor";
 import { Notifications } from "@/components/ui/Notifications";
 
@@ -12,56 +11,10 @@ type ProfessorHeaderProps = {
   sidebarOpen?: boolean;
 };
 
-// Mock de notificações
-const mockNotifications = [
-  {
-    id: "1",
-    type: "info" as const,
-    category: "atividade" as const,
-    title: "Nova Submissão",
-    message: "João Silva enviou a atividade 'Equações de 2º Grau'",
-    discipline: "Matemática",
-    time: "Há 30 minutos",
-    read: false,
-  },
-  {
-    id: "2",
-    type: "warning" as const,
-    category: "prazo" as const,
-    title: "Prazo de Correção",
-    message: "Prazo para correção da Prova 2 se encerra amanhã às 18:00",
-    discipline: "Sistema",
-    time: "Há 1 hora",
-    read: false,
-  },
-  {
-    id: "3",
-    type: "success" as const,
-    category: "conquista" as const,
-    title: "Meta Atingida",
-    message: "A turma 1º A atingiu 95% de entregas na atividade 'Lista de Funções'",
-    discipline: "Matemática",
-    time: "Há 3 horas",
-    read: false,
-  },
-  {
-    id: "4",
-    type: "info" as const,
-    category: "resumo" as const,
-    title: "Novo Resumo para Revisar",
-    message: "Um aluno enviou um resumo para sua revisão: 'Revisão de Trigonometria - João Silva'",
-    discipline: "Matemática",
-    time: "Há 5 horas",
-    read: true,
-  },
-];
-
 export default function ProfessorHeader({
   onToggleSidebar,
   sidebarOpen,
 }: ProfessorHeaderProps) {
-  const [notifications, setNotifications] = useState(mockNotifications);
-
   return (
     <header className="sticky top-0 z-30 bg-gradient-to-br from-[#7C3AED] via-[#7C3AED] to-[#7C3AED] text-white border-b border-white/20">
       <div className="w-full px-5 h-14 flex items-center justify-between">
@@ -83,7 +36,10 @@ export default function ProfessorHeader({
               )}
             </button>
           )}
-          <Link href="/professor/inicio" className="flex items-center gap-2 group">
+          <Link
+            href="/professor/inicio"
+            className="flex items-center gap-2 group"
+          >
             <Image
               src="/logo-coins.png"
               alt="Coins for Study"
@@ -98,20 +54,7 @@ export default function ProfessorHeader({
         </div>
 
         <div className="flex items-center gap-3">
-          <Notifications
-            notifications={notifications}
-            onMarkAsRead={(id) => {
-              setNotifications((prev) =>
-                prev.map((n) => (n.id === id ? { ...n, read: true } : n))
-              );
-            }}
-            onMarkAllAsRead={() => {
-              setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
-            }}
-            onDelete={(id) => {
-              setNotifications((prev) => prev.filter((n) => n.id !== id));
-            }}
-          />
+          <Notifications />
 
           <Link
             href="/professor/perfil"
