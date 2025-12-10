@@ -23,24 +23,12 @@ type ProgressoAtividade = {
   concluido_em: string | null;
 };
 
-// Questões da atividade (VF + múltipla escolha)
+// Questões da atividade (VF)
 type Questao = {
   id_questao: number;
   enunciado: string;
-  correta: boolean | null; // usado nas questões V/F
-  alternativa_a: string | null;
-  alternativa_b: string | null;
-  alternativa_c: string | null;
-  alternativa_d: string | null;
-  letra_correta: "A" | "B" | "C" | "D" | null; // usado nas de múltipla escolha
+  correta: boolean;
 };
-
-// helper: identifica se a questão é Verdadeiro/Falso (sem alternativas)
-const isVFQuestao = (q: Questao) =>
-  !q.alternativa_a &&
-  !q.alternativa_b &&
-  !q.alternativa_c &&
-  !q.alternativa_d;
 
 const AtividadeDetalhePage = () => {
   const router = useRouter();
@@ -55,7 +43,9 @@ const AtividadeDetalhePage = () => {
   const [progresso, setProgresso] = useState<ProgressoAtividade | null>(null);
   const [notaInput, setNotaInput] = useState<string>("");
   const [questoes, setQuestoes] = useState<Questao[]>([]);
-  const [respostas, setRespostas] = useState<Record<number, string | null>>({});
+  const [respostas, setRespostas] = useState<Record<number, boolean | null>>(
+    {}
+  );
   const [corrigindo, setCorrigindo] = useState(false);
   const [showReenvioModal, setShowReenvioModal] = useState(false);
 
@@ -70,6 +60,13 @@ const AtividadeDetalhePage = () => {
       if (userError) {
         console.error("Erro ao obter usuário autenticado:", userError);
         return null;
+
+        // Respostas do aluno (para exibir feedback e bloquear refazer)
+        type RespostaAluno = {
+          id_questao: number;
+          resposta: boolean;
+          correta: boolean;
+        };
       }
 
       if (!user || !user.email) {
@@ -81,7 +78,7 @@ const AtividadeDetalhePage = () => {
       const { data: usuario, error: usuarioError } = await supabase
         .from("usuarios")
         .select("id_usuario")
-        .eq("email", user.email.toLowerCase())
+        .eq("email", user.email)
         .maybeSingle();
 
       if (usuarioError) {
@@ -140,6 +137,7 @@ const AtividadeDetalhePage = () => {
         if (!alunoIdLocal) {
           throw new Error("Não foi possível identificar o aluno logado.");
         }
+        // **não** inicializa respostas aqui, vamos decidir depois
         setAlunoId(alunoIdLocal);
       }
 
@@ -164,6 +162,7 @@ const AtividadeDetalhePage = () => {
         .maybeSingle();
 
       if (progError) {
+        // se der erro de "no rows", o maybeSingle não lança erro, então aqui é erro real
         console.error("Erro ao buscar progresso_atividades:", progError);
       }
 
@@ -179,23 +178,20 @@ const AtividadeDetalhePage = () => {
         setNotaInput("");
       }
 
-      // 4) buscar questões dessa atividade
+      // 3) buscar questões dessa atividade (prova)
       const { data: questoesData, error: questoesError } = await supabase
         .from("questoes_atividade")
-        .select(
-          "id_questao, enunciado, correta, alternativa_a, alternativa_b, alternativa_c, alternativa_d, letra_correta"
-        )
+        .select("*")
         .eq("id_atividade", idAtividade)
         .order("id_questao", { ascending: true });
 
       if (questoesError) throw new Error(questoesError.message);
 
-      const qs = (questoesData || []) as Questao[];
-      setQuestoes(qs);
+      setQuestoes((questoesData || []) as Questao[]);
 
       // inicia o state de respostas com null (não respondida)
-      const respostasIniciais: Record<number, string | null> = {};
-      qs.forEach((q) => {
+      const respostasIniciais: Record<number, boolean | null> = {};
+      (questoesData || []).forEach((q: any) => {
         respostasIniciais[q.id_questao] = null;
       });
       setRespostas(respostasIniciais);
@@ -212,8 +208,8 @@ const AtividadeDetalhePage = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
-  // marcar resposta (string: "true"/"false" ou "A"/"B"/"C"/"D")
-  const handleRespostaChange = (idQuestao: number, valor: string) => {
+  // marcar resposta VF
+  const handleRespostaChange = (idQuestao: number, valor: boolean) => {
     setRespostas((prev) => ({
       ...prev,
       [idQuestao]: valor,
@@ -253,27 +249,12 @@ const AtividadeDetalhePage = () => {
 
       setCorrigindo(true);
 
-      // Calcula acertos (VF + múltipla escolha)
+      // Calcula acertos
       let acertos = 0;
-
       questoes.forEach((q) => {
-        const resp = respostas[q.id_questao];
-        if (!resp) return;
-
-        let acertou = false;
-
-        if (isVFQuestao(q)) {
-          // questão Verdadeiro/Falso: compara "true"/"false" com o gabarito boolean
-          if (q.correta !== null && q.correta !== undefined) {
-            const gabarito = q.correta ? "true" : "false";
-            acertou = resp === gabarito;
-          }
-        } else if (q.letra_correta) {
-          // múltipla escolha: compara letra marcada com letra_correta
-          acertou = resp === q.letra_correta;
+        if (respostas[q.id_questao] === q.correta) {
+          acertos++;
         }
-
-        if (acertou) acertos++;
       });
 
       const total = questoes.length;
@@ -283,25 +264,13 @@ const AtividadeDetalhePage = () => {
       // Monta array de respostas para salvar no banco
       const respostasParaSalvar = questoes.map((q) => {
         const resp = respostas[q.id_questao];
-
-        let correta = false;
-
-        if (resp) {
-          if (isVFQuestao(q)) {
-            if (q.correta !== null && q.correta !== undefined) {
-              const gabarito = q.correta ? "true" : "false";
-              correta = resp === gabarito;
-            }
-          } else if (q.letra_correta) {
-            correta = resp === q.letra_correta;
-          }
-        }
+        const correta = resp === q.correta;
 
         return {
           id_atividade: atividade.id_atividade,
           id_questao: q.id_questao,
           id_aluno: alunoId,
-          resposta: resp, // string: "true"/"false"/"A"/"B"/"C"/"D"
+          resposta: resp as boolean,
           correta,
         };
       });
@@ -458,7 +427,6 @@ const AtividadeDetalhePage = () => {
                 <div className="space-y-4">
                   {questoes.map((q, index) => {
                     const respostaAtual = respostas[q.id_questao];
-                    const ehVF = isVFQuestao(q);
 
                     return (
                       <div
@@ -469,96 +437,33 @@ const AtividadeDetalhePage = () => {
                           {index + 1}. {q.enunciado}
                         </p>
 
-                        {ehVF ? (
-                          // ===== Questão Verdadeiro / Falso =====
-                          <div className="flex flex-wrap gap-4 text-sm">
-                            <label className="inline-flex items-center gap-2 cursor-pointer">
-                              <input
-                                type="radio"
-                                name={`q-${q.id_questao}`}
-                                className="h-4 w-4 text-purple-600 border-gray-300 focus:ring-purple-500"
-                                checked={respostaAtual === "true"}
-                                onChange={() =>
-                                  handleRespostaChange(q.id_questao, "true")
-                                }
-                              />
-                              <span>Verdadeiro</span>
-                            </label>
+                        <div className="flex flex-wrap gap-4 text-sm">
+                          <label className="inline-flex items-center gap-2 cursor-pointer">
+                            <input
+                              type="radio"
+                              name={`q-${q.id_questao}`}
+                              className="h-4 w-4 text-purple-600 border-gray-300 focus:ring-purple-500"
+                              checked={respostaAtual === true}
+                              onChange={() =>
+                                handleRespostaChange(q.id_questao, true)
+                              }
+                            />
+                            <span>Verdadeiro</span>
+                          </label>
 
-                            <label className="inline-flex items-center gap-2 cursor-pointer">
-                              <input
-                                type="radio"
-                                name={`q-${q.id_questao}`}
-                                className="h-4 w-4 text-purple-600 border-gray-300 focus:ring-purple-500"
-                                checked={respostaAtual === "false"}
-                                onChange={() =>
-                                  handleRespostaChange(q.id_questao, "false")
-                                }
-                              />
-                              <span>Falso</span>
-                            </label>
-                          </div>
-                        ) : (
-                          // ===== Questão Múltipla Escolha =====
-                          <div className="flex flex-col gap-2 text-sm">
-                            {q.alternativa_a && (
-                              <label className="inline-flex items-center gap-2 cursor-pointer">
-                                <input
-                                  type="radio"
-                                  name={`q-${q.id_questao}`}
-                                  className="h-4 w-4 text-purple-600 border-gray-300 focus:ring-purple-500"
-                                  checked={respostaAtual === "A"}
-                                  onChange={() =>
-                                    handleRespostaChange(q.id_questao, "A")
-                                  }
-                                />
-                                <span>A) {q.alternativa_a}</span>
-                              </label>
-                            )}
-                            {q.alternativa_b && (
-                              <label className="inline-flex items-center gap-2 cursor-pointer">
-                                <input
-                                  type="radio"
-                                  name={`q-${q.id_questao}`}
-                                  className="h-4 w-4 text-purple-600 border-gray-300 focus:ring-purple-500"
-                                  checked={respostaAtual === "B"}
-                                  onChange={() =>
-                                    handleRespostaChange(q.id_questao, "B")
-                                  }
-                                />
-                                <span>B) {q.alternativa_b}</span>
-                              </label>
-                            )}
-                            {q.alternativa_c && (
-                              <label className="inline-flex items-center gap-2 cursor-pointer">
-                                <input
-                                  type="radio"
-                                  name={`q-${q.id_questao}`}
-                                  className="h-4 w-4 text-purple-600 border-gray-300 focus:ring-purple-500"
-                                  checked={respostaAtual === "C"}
-                                  onChange={() =>
-                                    handleRespostaChange(q.id_questao, "C")
-                                  }
-                                />
-                                <span>C) {q.alternativa_c}</span>
-                              </label>
-                            )}
-                            {q.alternativa_d && (
-                              <label className="inline-flex items-center gap-2 cursor-pointer">
-                                <input
-                                  type="radio"
-                                  name={`q-${q.id_questao}`}
-                                  className="h-4 w-4 text-purple-600 border-gray-300 focus:ring-purple-500"
-                                  checked={respostaAtual === "D"}
-                                  onChange={() =>
-                                    handleRespostaChange(q.id_questao, "D")
-                                  }
-                                />
-                                <span>D) {q.alternativa_d}</span>
-                              </label>
-                            )}
-                          </div>
-                        )}
+                          <label className="inline-flex items-center gap-2 cursor-pointer">
+                            <input
+                              type="radio"
+                              name={`q-${q.id_questao}`}
+                              className="h-4 w-4 text-purple-600 border-gray-300 focus:ring-purple-500"
+                              checked={respostaAtual === false}
+                              onChange={() =>
+                                handleRespostaChange(q.id_questao, false)
+                              }
+                            />
+                            <span>Falso</span>
+                          </label>
+                        </div>
                       </div>
                     );
                   })}
