@@ -163,16 +163,16 @@ const DisciplinaDetalhePage = () => {
         return null;
       }
 
-      if (!user || !user.email) {
-        console.warn("Nenhum usuário autenticado ou email ausente.");
+      if (!user || !user.id) {
+        console.warn("Nenhum usuário autenticado ou id ausente.");
         return null;
       }
 
-      // 1) Busca o usuário na tabela `usuarios` pelo email
+      // 1) Busca o usuário na tabela `usuarios` pelo auth_user_id
       const { data: usuario, error: usuarioError } = await supabase
         .from("usuarios")
         .select("id_usuario")
-        .eq("email", user.email)
+        .eq("auth_user_id", user.id)
         .maybeSingle();
 
       if (usuarioError) {

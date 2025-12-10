@@ -332,18 +332,6 @@ export default function AtividadesPage() {
 
         {/* Cards de Estatísticas */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {/* <Card className="border border-red-200 bg-red-50 hover:shadow-md transition-shadow">
-            <CardContent className="p-4 flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-red-600">Pendentes</p>
-                <p className="text-2xl font-bold text-red-700">
-                  {estatisticas.atividadesPendentes}
-                </p>
-              </div>
-              <AlertCircle className="h-8 w-8 text-red-500" />
-            </CardContent>
-          </Card> */}
-
           <Card className="border border-green-200 bg-green-50 hover:shadow-md transition-shadow">
             <CardContent className="p-4 flex items-center justify-between">
               <div>
@@ -365,20 +353,6 @@ export default function AtividadesPage() {
                 </p>
               </div>
               <FileText className="h-8 w-8 text-blue-500" />
-            </CardContent>
-          </Card>
-
-          <Card className="border border-amber-200 bg-amber-50 hover:shadow-md transition-shadow">
-            <CardContent className="p-4 flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-amber-600">
-                  Moedas Pendentes
-                </p>
-                <p className="text-2xl font-bold text-amber-700">
-                  {estatisticas.moedasPendentes}
-                </p>
-              </div>
-              <Award className="h-8 w-8 text-amber-500" />
             </CardContent>
           </Card>
         </div>

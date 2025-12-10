@@ -37,10 +37,7 @@ type Questao = {
 
 // helper: identifica se a questão é Verdadeiro/Falso (sem alternativas)
 const isVFQuestao = (q: Questao) =>
-  !q.alternativa_a &&
-  !q.alternativa_b &&
-  !q.alternativa_c &&
-  !q.alternativa_d;
+  !q.alternativa_a && !q.alternativa_b && !q.alternativa_c && !q.alternativa_d;
 
 const AtividadeDetalhePage = () => {
   const router = useRouter();
@@ -72,8 +69,8 @@ const AtividadeDetalhePage = () => {
         return null;
       }
 
-      if (!user || !user.email) {
-        console.warn("Nenhum usuário autenticado ou email ausente.");
+      if (!user || !user.id) {
+        console.warn("Nenhum usuário autenticado ou id ausente.");
         return null;
       }
 
@@ -81,7 +78,7 @@ const AtividadeDetalhePage = () => {
       const { data: usuario, error: usuarioError } = await supabase
         .from("usuarios")
         .select("id_usuario")
-        .eq("email", user.email.toLowerCase())
+        .eq("auth_user_id", user.id)
         .maybeSingle();
 
       if (usuarioError) {

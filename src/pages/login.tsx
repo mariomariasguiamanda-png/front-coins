@@ -19,68 +19,70 @@ export default function LoginPage() {
 
   // Mapeia vários formatos possíveis de tipo_usuario
   const redirectByRole = (tipo: string | null | undefined) => {
-  console.log("Redirecionando para o tipo:", tipo);
-  switch (tipo) {
-    case "admin":
-      return "/adm/dashboard";
-    case "professor":
-      return "/professor/dashboard";
-    case "aluno":
-    default:
-      return "/aluno/inicio";
-  }
-};
-
+    console.log("Redirecionando para o tipo:", tipo);
+    switch (tipo) {
+      case "admin":
+        return "/adm/dashboard";
+      case "professor":
+        return "/professor/dashboard";
+      case "aluno":
+      default:
+        return "/aluno/inicio";
+    }
+  };
 
   const onSubmit = async (e: FormEvent) => {
-  e.preventDefault();
-  setError(null);
-  setIsLoading(true);
+    e.preventDefault();
+    setError(null);
+    setIsLoading(true);
 
-  try {
-    // 1) Login no Supabase com e-mail e senha
-    const { data: signInData, error: signInErr } =
-      await supabase.auth.signInWithPassword({ email, password });
+    try {
+      // 1) Login no Supabase com e-mail e senha
+      const { data: signInData, error: signInErr } =
+        await supabase.auth.signInWithPassword({ email, password });
 
-    console.log("signInData:", signInData);
+      console.log("signInData:", signInData);
 
-    if (signInErr) {
-      console.error("Erro no signIn:", signInErr);
-      throw new Error(signInErr.message);
+      if (signInErr) {
+        console.error("Erro no signIn:", signInErr);
+        throw new Error(signInErr.message);
+      }
+
+      const userId = signInData.user?.id;
+      console.log("userId:", userId);
+
+      if (!userId) throw new Error("Não foi possível identificar o usuário.");
+
+      // 2) Consulta o tipo de usuário na tabela `usuarios` usando o auth_user_id
+      const { data: perfil, error: perfilErr } = await supabase
+        .from("usuarios")
+        .select("tipo_usuario")
+        .eq("auth_user_id", userId)
+        .maybeSingle();
+
+      console.log("🟢 Resultado da consulta em usuarios:", {
+        perfil,
+        perfilErr,
+      });
+
+      if (perfilErr) {
+        console.warn("⚠️ Erro ao buscar perfil em usuarios:", perfilErr);
+      }
+
+      const tipo = perfil?.tipo_usuario ?? "aluno";
+      const destino = redirectByRole(tipo);
+
+      console.log("redirectByRole | tipo_usuario recebido:", tipo);
+      console.log("Redirecionando para:", destino);
+
+      router.push(destino);
+    } catch (err: any) {
+      console.error("Erro no login:", err);
+      setError(err?.message || "Não foi possível fazer login.");
+    } finally {
+      setIsLoading(false);
     }
-
-    const userId = signInData.user?.id;
-    console.log("userId:", userId);
-
-    if (!userId) throw new Error("Não foi possível identificar o usuário.");
-
-    // 2) Consulta o tipo de usuário na tabela `usuarios` USANDO O EMAIL
-    const { data: perfil, error: perfilErr } = await supabase
-      .from("usuarios")
-      .select("tipo_usuario")
-      .eq("email", email) // 🔥 TROCA AQUI: antes era auth_user_id
-      .maybeSingle();
-
-    console.log("🟢 Resultado da consulta em usuarios:", { perfil, perfilErr });
-
-    if (perfilErr) {
-      console.warn("⚠️ Erro ao buscar perfil em usuarios:", perfilErr);
-    }
-
-    const tipo = perfil?.tipo_usuario ?? "aluno";
-    const destino = redirectByRole(tipo);
-
-    console.log("redirectByRole | tipo_usuario recebido:", tipo);
-    console.log("Redirecionando para:", destino);
-
-    router.push(destino);
-  } catch (err: any) {
-    console.error("Erro no login:", err);
-    setError(err?.message || "Não foi possível fazer login.");
-  } finally {
-    setIsLoading(false);
-  }
-};
+  };
 
   return (
     <>
@@ -93,10 +95,10 @@ export default function LoginPage() {
       >
         <div className="relative hidden md:block md:col-span-8 overflow-hidden">
           <img
-  src="/imagem_login.jpeg"
-  alt="A plataforma recompensa o aprendizado"
-  className="w-full h-full object-cover object-center"
-/>
+            src="/imagem_login.jpeg"
+            alt="A plataforma recompensa o aprendizado"
+            className="w-full h-full object-cover object-center"
+          />
           <div className="absolute inset-y-0 right-0 w-[240px] bg-gradient-to-r from-white/0 via-white/100 to-[#f9fafb] pointer-events-none" />
         </div>
 
@@ -149,10 +151,16 @@ export default function LoginPage() {
                   <button
                     type="button"
                     onClick={() => setShowPassword((v) => !v)}
-                    aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
+                    aria-label={
+                      showPassword ? "Ocultar senha" : "Mostrar senha"
+                    }
                     className="absolute inset-y-0 right-0 px-3 flex items-center text-gray-600 hover:text-black focus:outline-none"
                   >
-                    {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                    {showPassword ? (
+                      <EyeOff className="h-5 w-5" />
+                    ) : (
+                      <Eye className="h-5 w-5" />
+                    )}
                   </button>
                 </div>
                 <div className="text-right mt-1">
@@ -189,5 +197,4 @@ export default function LoginPage() {
       </div>
     </>
   );
-
 }
