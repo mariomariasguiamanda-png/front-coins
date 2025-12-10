@@ -234,10 +234,7 @@ export default function AtividadesPage() {
 
     const moedasPendentes = atividades
       .filter((a) => a.status === "pendente")
-      .reduce(
-        (s, a) => s + (a.atividades?.recompensa_moedas ?? 0),
-        0
-      );
+      .reduce((s, a) => s + (a.atividades?.recompensa_moedas ?? 0), 0);
 
     return {
       atividadesPendentes: pendentes,
@@ -250,7 +247,8 @@ export default function AtividadesPage() {
   }, [atividades, resumos, videoaulas]);
 
   const formatarPrazo = (prazo: string | null) => {
-    if (!prazo) return { texto: "Sem prazo", cor: "text-gray-500", bgCor: "bg-gray-50" };
+    if (!prazo)
+      return { texto: "Sem prazo", cor: "text-gray-500", bgCor: "bg-gray-50" };
 
     const data = new Date(prazo);
     const hoje = new Date();
@@ -328,14 +326,13 @@ export default function AtividadesPage() {
             <Activity className="h-6 w-6 text-white" />
           </div>
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Atividades</h1>
-            <p className="text-gray-600">Envie revisões e colete moedas</p>
+            <h1 className="text-3xl font-bold text-gray-900">Painel de Desempenho</h1>
           </div>
         </div>
 
         {/* Cards de Estatísticas */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card className="border border-red-200 bg-red-50 hover:shadow-md transition-shadow">
+          {/* <Card className="border border-red-200 bg-red-50 hover:shadow-md transition-shadow">
             <CardContent className="p-4 flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-red-600">Pendentes</p>
@@ -345,7 +342,7 @@ export default function AtividadesPage() {
               </div>
               <AlertCircle className="h-8 w-8 text-red-500" />
             </CardContent>
-          </Card>
+          </Card> */}
 
           <Card className="border border-green-200 bg-green-50 hover:shadow-md transition-shadow">
             <CardContent className="p-4 flex items-center justify-between">
@@ -520,8 +517,8 @@ export default function AtividadesPage() {
                                     a.status === "pendente"
                                       ? "bg-red-100 text-red-700"
                                       : a.status === "enviado"
-                                      ? "bg-green-100 text-green-700"
-                                      : "bg-blue-100 text-blue-700"
+                                        ? "bg-green-100 text-green-700"
+                                        : "bg-blue-100 text-blue-700"
                                   }`}
                                 >
                                   {a.status}
@@ -542,7 +539,9 @@ export default function AtividadesPage() {
 
                                 <div className="flex items-center gap-1">
                                   <Award className="h-4 w-4 text-amber-500" />
-                                  <span>{a.atividades.recompensa_moedas} moedas</span>
+                                  <span>
+                                    {a.atividades.recompensa_moedas} moedas
+                                  </span>
                                 </div>
                               </div>
                             </div>
@@ -607,9 +606,7 @@ export default function AtividadesPage() {
 
                         <button
                           onClick={() =>
-                            router.push(
-                              `/aluno/disciplinas/${discId}/resumos`
-                            )
+                            router.push(`/aluno/disciplinas/${discId}/resumos`)
                           }
                           className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg"
                         >
