@@ -37,12 +37,12 @@ const ResumoDetalhePage = () => {
         error: userError,
       } = await supabase.auth.getUser();
 
-      if (userError || !user?.email) return null;
+      if (userError || !user?.id) return null;
 
       const { data: usuario, error: usuarioError } = await supabase
         .from("usuarios")
         .select("id_usuario")
-        .eq("email", user.email)
+        .eq("auth_user_id", user.id)
         .maybeSingle();
 
       if (usuarioError || !usuario) return null;

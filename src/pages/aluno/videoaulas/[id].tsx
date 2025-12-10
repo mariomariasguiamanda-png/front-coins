@@ -270,7 +270,7 @@ const VideoaulaDetalhePage = () => {
         error: userError,
       } = await supabase.auth.getUser();
 
-      if (userError || !user?.email) {
+      if (userError || !user?.id) {
         console.warn("Nenhum usuário autenticado para progresso de videoaula.");
         return null;
       }
@@ -278,7 +278,7 @@ const VideoaulaDetalhePage = () => {
       const { data: usuario, error: usuarioError } = await supabase
         .from("usuarios")
         .select("id_usuario")
-        .eq("email", user.email)
+        .eq("auth_user_id", user.id)
         .maybeSingle();
 
       if (usuarioError || !usuario) {

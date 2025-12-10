@@ -156,19 +156,17 @@ const Disciplinas = () => {
         } = await supabase.auth.getUser();
 
         if (authError) throw authError;
-        if (!user || !user.email) {
+        if (!user || !user.id) {
           setErro("Usuário não autenticado.");
           setLoading(false);
           return;
         }
 
-        const emailLower = user.email.toLowerCase();
-
-        // 2. Busca o id_usuario na tabela usuarios via email
+        // 2. Busca o id_usuario na tabela usuarios via auth_user_id
         const { data: usuario, error: usuarioError } = await supabase
           .from("usuarios")
           .select("id_usuario, email")
-          .eq("email", emailLower)
+          .eq("auth_user_id", user.id)
           .single();
 
         if (usuarioError || !usuario) {
