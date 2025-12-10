@@ -8,13 +8,15 @@ import { Button } from "@/components/ui/Button";
 import {
   Calculator,
   BookOpen,
-  Clock,
+  ScrollText,
   Atom,
   Palette,
   Zap,
   CheckCircle,
   Home,
   Repeat,
+  Globe2,
+  Flame,
 } from "lucide-react";
 
 // Dados das disciplinas (mesmo dos arquivos anteriores)
@@ -37,7 +39,7 @@ const disciplinasData = {
   },
   hist: {
     nome: "História",
-    icon: Clock,
+    icon: ScrollText,
     gradient: "from-amber-500 to-amber-600",
     textColor: "text-amber-600",
     bgColor: "bg-amber-500/10",
@@ -66,6 +68,22 @@ const disciplinasData = {
     textColor: "text-violet-600",
     bgColor: "bg-violet-500/10",
     color: "#8B5CF6",
+  },
+  geo: {
+    nome: "Geografia",
+    icon: Globe2,
+    gradient: "from-teal-500 to-teal-600",
+    textColor: "text-teal-600",
+    bgColor: "bg-teal-500/10",
+    color: "#14B8A6",
+  },
+  qui: {
+    nome: "Química",
+    icon: Flame,
+    gradient: "from-orange-500 to-red-500",
+    textColor: "text-orange-600",
+    bgColor: "bg-orange-500/10",
+    color: "#F97316",
   },
 };
 

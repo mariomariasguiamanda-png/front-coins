@@ -9,13 +9,15 @@ import { BackButton } from "@/components/ui/BackButton";
 import {
   Calculator,
   BookOpen,
-  Clock,
+  ScrollText,
   Atom,
   Palette,
   Zap,
   ShoppingCart,
   ArrowRight,
   AlertCircle,
+  Globe2,
+  Flame,
 } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 
@@ -42,7 +44,7 @@ const disciplinasData = {
   hist: {
     idDisciplina: 2,
     nome: "História",
-    icon: Clock,
+    icon: ScrollText,
     gradient: "from-amber-500 to-amber-600",
     textColor: "text-amber-600",
     bgColor: "bg-amber-500/10",
@@ -75,6 +77,29 @@ const disciplinasData = {
     bgColor: "bg-violet-500/10",
     color: "#8B5CF6",
   },
+  geo: {
+    idDisciplina: null,
+    nome: "Geografia",
+    icon: Globe2,
+    gradient: "from-teal-500 to-teal-600",
+    textColor: "text-teal-600",
+    bgColor: "bg-teal-500/10",
+    color: "#14B8A6",
+  },
+  qui: {
+    idDisciplina: null,
+    nome: "Química",
+    icon: Flame,
+    gradient: "from-orange-500 to-red-500",
+    textColor: "text-orange-600",
+    bgColor: "bg-orange-500/10",
+    color: "#F97316",
+  },
+};
+
+type ConfigDisciplina = {
+  id_disciplina: number;
+  codigo_disciplina: string;
 };
 
 export default function ConfirmarCompra() {
@@ -88,6 +113,12 @@ export default function ConfirmarCompra() {
   // 🔹 saldo total do aluno (mesma fonte do card da listagem)
   const [saldoAtual, setSaldoAtual] = useState<number>(0);
   const [carregandoSaldo, setCarregandoSaldo] = useState(true);
+
+  // 🔹 id real da disciplina vindo da config (evita hardcode)
+  const [idDisciplinaConfig, setIdDisciplinaConfig] = useState<number | null>(
+    null
+  );
+  const [carregandoIdDisciplina, setCarregandoIdDisciplina] = useState(true);
 
   useEffect(() => {
     setMounted(true);
@@ -129,6 +160,34 @@ export default function ConfirmarCompra() {
     carregarSaldoTotal();
   }, [mounted]);
 
+  // Busca o id da disciplina via RPC para não depender do mapa local
+  useEffect(() => {
+    if (!mounted || typeof disciplina !== "string") return;
+
+    const carregarIdDisciplina = async () => {
+      const { data, error } = await supabase.rpc(
+        "get_config_compra_pontos_por_aluno"
+      );
+
+      if (error) {
+        console.error("Erro ao buscar id da disciplina (confirmar):", error);
+        setCarregandoIdDisciplina(false);
+        return;
+      }
+
+      const listaCfg = (data ?? []) as ConfigDisciplina[];
+      const itemCfg = listaCfg.find(
+        (cfg) =>
+          cfg.codigo_disciplina.toLowerCase() === disciplina.toLowerCase()
+      );
+
+      setIdDisciplinaConfig(itemCfg?.id_disciplina ?? null);
+      setCarregandoIdDisciplina(false);
+    };
+
+    carregarIdDisciplina();
+  }, [mounted, disciplina]);
+
   if (!mounted || typeof disciplina !== "string") {
     return null;
   }
@@ -159,7 +218,9 @@ export default function ConfirmarCompra() {
   const handleConfirmar = async () => {
     setErroApi(null);
 
-    if (!disciplinaData.idDisciplina) {
+    const idParaCompra = idDisciplinaConfig ?? disciplinaData.idDisciplina;
+
+    if (!idParaCompra) {
       setErroApi(
         "Esta disciplina ainda não está configurada para compras no sistema. Fale com o administrador."
       );
@@ -170,7 +231,7 @@ export default function ConfirmarCompra() {
       setConfirmando(true);
 
       const { data, error } = await supabase.rpc("comprar_pontos", {
-        p_id_disciplina: disciplinaData.idDisciplina,
+        p_id_disciplina: idParaCompra,
         p_pontos: pontosNum,
       });
 
@@ -189,17 +250,13 @@ export default function ConfirmarCompra() {
         return;
       }
 
-      const {
-        pontos_comprados,
-        moedas_gastas,
-        saldo_antes,
-        saldo_depois,
-      } = result as {
-        pontos_comprados: number;
-        moedas_gastas: number;
-        saldo_antes: number;
-        saldo_depois: number;
-      };
+      const { pontos_comprados, moedas_gastas, saldo_antes, saldo_depois } =
+        result as {
+          pontos_comprados: number;
+          moedas_gastas: number;
+          saldo_antes: number;
+          saldo_depois: number;
+        };
 
       router.push(
         `/aluno/comprar-pontos/${disciplina}/sucesso?pontos=${pontos_comprados}&total=${moedas_gastas}&saldoAntes=${saldo_antes}&saldoDepois=${saldo_depois}`
@@ -259,9 +316,7 @@ export default function ConfirmarCompra() {
                     Saldo após (estimado):{" "}
                     {carregandoSaldo
                       ? "Carregando..."
-                      : `${saldoDepoisEstimado.toLocaleString(
-                          "pt-BR"
-                        )} moedas`}
+                      : `${saldoDepoisEstimado.toLocaleString("pt-BR")} moedas`}
                   </p>
                 </div>
               </div>
@@ -287,9 +342,7 @@ export default function ConfirmarCompra() {
 
                 <div className="flex justify-between items-center">
                   <span className="text-gray-600">Preço unitário:</span>
-                  <span className="font-semibold">
-                    {precoUnitario} moedas
-                  </span>
+                  <span className="font-semibold">{precoUnitario} moedas</span>
                 </div>
 
                 <div className="border-t pt-2 flex justify-between items-center">
@@ -328,10 +381,15 @@ export default function ConfirmarCompra() {
 
               <Button
                 onClick={handleConfirmar}
-                disabled={confirmando}
+                disabled={confirmando || carregandoIdDisciplina}
                 className={`flex-1 h-12 text-lg font-semibold rounded-xl smooth-transition bg-gradient-to-r ${disciplinaData.gradient} hover:opacity-90 text-white flex items-center justify-center gap-2`}
               >
-                {confirmando ? (
+                {carregandoIdDisciplina ? (
+                  <>
+                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    Carregando...
+                  </>
+                ) : confirmando ? (
                   <>
                     <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
                     Processando...
