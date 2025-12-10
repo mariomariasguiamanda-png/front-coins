@@ -2,8 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { Bell, Menu, ChevronLeft } from "lucide-react";
-import { useState } from "react";
+import { Menu, ChevronLeft } from "lucide-react";
 import { Notifications } from "@/components/ui/Notifications";
 import { useUsuarioLogado } from "@/hooks/useUsuarioLogado";
 
@@ -12,55 +11,10 @@ type AlunoHeaderProps = {
   sidebarOpen?: boolean;
 };
 
-// Mock de notificações
-const mockNotifications = [
-  {
-    id: "1",
-    type: "info" as const,
-    category: "resumo" as const,
-    title: "Novo Resumo Disponível",
-    message: "Professor Silva publicou um novo resumo de Trigonometria",
-    discipline: "Matemática",
-    time: "Há 30 minutos",
-    read: false,
-  },
-  {
-    id: "2",
-    type: "warning" as const,
-    category: "prazo" as const,
-    title: "Prazo de Atividade",
-    message: "A atividade 'Equações Diferenciais' vence amanhã às 23:59",
-    discipline: "Matemática",
-    time: "Há 2 horas",
-    read: false,
-  },
-  {
-    id: "3",
-    type: "success" as const,
-    category: "nota" as const,
-    title: "Nota Publicada",
-    message: "Sua nota da Prova 2 foi publicada: 9.5",
-    discipline: "Física",
-    time: "Há 5 horas",
-    read: false,
-  },
-  {
-    id: "4",
-    type: "achievement" as const,
-    category: "conquista" as const,
-    title: "Conquista Desbloqueada!",
-    message: "Você completou 10 atividades seguidas! 🏆",
-    discipline: "Sistema",
-    time: "Há 1 dia",
-    read: true,
-  },
-];
-
 export default function AlunoHeader({
   onToggleSidebar,
   sidebarOpen,
 }: AlunoHeaderProps) {
-  const [notifications, setNotifications] = useState(mockNotifications);
   const { nome, fotoUrl } = useUsuarioLogado();
 
   return (
@@ -99,22 +53,7 @@ export default function AlunoHeader({
         </div>
 
         <div className="flex items-center gap-3">
-          <Notifications
-            notifications={notifications}
-            onMarkAsRead={(id: string) => {
-              setNotifications((prev) =>
-                prev.map((n) => (n.id === id ? { ...n, read: true } : n))
-              );
-            }}
-            onMarkAllAsRead={() => {
-              setNotifications((prev) =>
-                prev.map((n) => ({ ...n, read: true }))
-              );
-            }}
-            onDelete={(id: string) => {
-              setNotifications((prev) => prev.filter((n) => n.id !== id));
-            }}
-          />
+          <Notifications />
 
           <Link
             href="/aluno/perfil"

@@ -2,8 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { Bell, Menu, ChevronLeft } from "lucide-react";
-import { useState } from "react";
+import { Menu, ChevronLeft } from "lucide-react";
 import { admin } from "@/lib/mock/admin";
 import { Notifications } from "@/components/ui/Notifications";
 
@@ -12,53 +11,7 @@ type HeaderAdmProps = {
   sidebarOpen?: boolean;
 };
 
-// Mock de notificações
-const mockNotifications = [
-  {
-    id: "1",
-    type: "error" as const,
-    category: "sistema" as const,
-    title: "Falha no Backup",
-    message: "O backup automático das 02:00 falhou. Verificação necessária.",
-    discipline: "Sistema",
-    time: "Há 15 minutos",
-    read: false,
-  },
-  {
-    id: "2",
-    type: "info" as const,
-    category: "sistema" as const,
-    title: "Novos Usuários",
-    message: "15 novos alunos se cadastraram hoje",
-    discipline: "Sistema",
-    time: "Há 1 hora",
-    read: false,
-  },
-  {
-    id: "3",
-    type: "warning" as const,
-    category: "sistema" as const,
-    title: "Armazenamento",
-    message: "Uso de armazenamento atingiu 85% da capacidade",
-    discipline: "Sistema",
-    time: "Há 3 horas",
-    read: false,
-  },
-  {
-    id: "4",
-    type: "success" as const,
-    category: "sistema" as const,
-    title: "Atualização Concluída",
-    message: "Sistema atualizado para versão 2.5.0 com sucesso",
-    discipline: "Sistema",
-    time: "Há 1 dia",
-    read: true,
-  },
-];
-
 export function HeaderAdm({ onToggleSidebar, sidebarOpen }: HeaderAdmProps) {
-  const [notifications, setNotifications] = useState(mockNotifications);
-
   return (
     <header className="sticky top-0 z-30 bg-gradient-to-br from-[#7C3AED] via-[#7C3AED] to-[#7C3AED] text-white border-b border-white/20">
       <div className="w-full px-5 h-14 flex items-center justify-between">
@@ -95,20 +48,7 @@ export function HeaderAdm({ onToggleSidebar, sidebarOpen }: HeaderAdmProps) {
         </div>
 
         <div className="flex items-center gap-3">
-          <Notifications
-            notifications={notifications}
-            onMarkAsRead={(id: string) => {
-              setNotifications((prev) =>
-                prev.map((n) => (n.id === id ? { ...n, read: true } : n))
-              );
-            }}
-            onMarkAllAsRead={() => {
-              setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
-            }}
-            onDelete={(id: string) => {
-              setNotifications((prev) => prev.filter((n) => n.id !== id));
-            }}
-          />
+          <Notifications />
 
           <Link
             href="/adm/perfil"
