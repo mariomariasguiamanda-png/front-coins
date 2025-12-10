@@ -4,7 +4,16 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import AlunoLayout from "@/components/layout/AlunoLayout";
 import { Card, CardContent } from "@/components/ui/Card";
-import { Calculator, BookOpen, Clock, Atom, Palette, Zap } from "lucide-react";
+import {
+  Calculator,
+  BookOpen,
+  ScrollText,
+  Atom,
+  Palette,
+  Zap,
+  Globe2,
+  Flame,
+} from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 
 // Metadados visuais das disciplinas (cores/ícone/slug)
@@ -54,10 +63,26 @@ const DISCIPLINAS_META: Record<
   hist: {
     slug: "hist",
     nome: "História",
-    icon: Clock,
+    icon: ScrollText,
     gradient: "from-amber-500 to-amber-600",
     textColor: "text-amber-600",
     bgColor: "bg-amber-500/10",
+  },
+  geo: {
+    slug: "geo",
+    nome: "Geografia",
+    icon: Globe2,
+    gradient: "from-teal-500 to-teal-600",
+    textColor: "text-teal-600",
+    bgColor: "bg-teal-500/10",
+  },
+  qui: {
+    slug: "qui",
+    nome: "Química",
+    icon: Flame,
+    gradient: "from-orange-500 to-red-500",
+    textColor: "text-orange-600",
+    bgColor: "bg-orange-500/10",
   },
   // se criar mais (geo, qui etc), só adicionar aqui
 };
@@ -90,43 +115,42 @@ export default function ComprarPontosPage() {
 
   // Carrega saldo total
   useEffect(() => {
-  if (!mounted) return;
+    if (!mounted) return;
 
-  const carregarSaldoTotal = async () => {
-    const { data, error } = await supabase.rpc("get_total_moedas_aluno");
+    const carregarSaldoTotal = async () => {
+      const { data, error } = await supabase.rpc("get_total_moedas_aluno");
 
-    if (error) {
-      console.error("Erro ao buscar saldo total:", error);
-      setErroSaldo("Não foi possível carregar o saldo de moedas.");
-      setCarregandoSaldo(false);
-      return;
-    }
-
-    // data deve ser um número; se vier qualquer outra coisa, converte/faz fallback
-    let valor = 0;
-    if (typeof data === "number") {
-      valor = data;
-    } else if (Array.isArray(data)) {
-      // se por algum motivo vier array, soma os campos que fizerem sentido
-      valor = data.reduce(
-        (acc, item) => acc + (typeof item === "number" ? item : 0),
-        0
-      );
-    } else if (data && typeof data === "object") {
-      // caso raro: objeto do tipo { total: 90 }
-      const maybeTotal = (data as any).total;
-      if (typeof maybeTotal === "number") {
-        valor = maybeTotal;
+      if (error) {
+        console.error("Erro ao buscar saldo total:", error);
+        setErroSaldo("Não foi possível carregar o saldo de moedas.");
+        setCarregandoSaldo(false);
+        return;
       }
-    }
 
-    setSaldoTotal(valor);
-    setCarregandoSaldo(false);
-  };
+      // data deve ser um número; se vier qualquer outra coisa, converte/faz fallback
+      let valor = 0;
+      if (typeof data === "number") {
+        valor = data;
+      } else if (Array.isArray(data)) {
+        // se por algum motivo vier array, soma os campos que fizerem sentido
+        valor = data.reduce(
+          (acc, item) => acc + (typeof item === "number" ? item : 0),
+          0
+        );
+      } else if (data && typeof data === "object") {
+        // caso raro: objeto do tipo { total: 90 }
+        const maybeTotal = (data as any).total;
+        if (typeof maybeTotal === "number") {
+          valor = maybeTotal;
+        }
+      }
 
-  carregarSaldoTotal();
-}, [mounted]);
+      setSaldoTotal(valor);
+      setCarregandoSaldo(false);
+    };
 
+    carregarSaldoTotal();
+  }, [mounted]);
 
   // Carrega configs de compra da tabela config_compra_pontos (apenas disciplinas do aluno)
   useEffect(() => {
@@ -219,9 +243,7 @@ export default function ComprarPontosPage() {
           )}
 
           {erroConfigs && !carregandoConfigs && (
-            <p className="text-center text-red-500 col-span-2">
-              {erroConfigs}
-            </p>
+            <p className="text-center text-red-500 col-span-2">{erroConfigs}</p>
           )}
 
           {!carregandoConfigs &&

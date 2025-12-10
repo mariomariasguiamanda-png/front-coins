@@ -9,11 +9,13 @@ import { BackButton } from "@/components/ui/BackButton";
 import {
   Calculator,
   BookOpen,
-  Clock,
+  ScrollText,
   Atom,
   Palette,
   Zap,
   AlertCircle,
+  Globe2,
+  Flame,
 } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 
@@ -41,7 +43,7 @@ const disciplinasData = {
   },
   hist: {
     nome: "História",
-    icon: Clock,
+    icon: ScrollText,
     gradient: "from-amber-500 to-amber-600",
     textColor: "text-amber-600",
     bgColor: "bg-amber-500/10",
@@ -78,6 +80,26 @@ const disciplinasData = {
     color: "#8B5CF6",
     precoMoedas: 900,
     saldoAtual: 1300,
+  },
+  geo: {
+    nome: "Geografia",
+    icon: Globe2,
+    gradient: "from-teal-500 to-teal-600",
+    textColor: "text-teal-600",
+    bgColor: "bg-teal-500/10",
+    color: "#14B8A6",
+    precoMoedas: 700,
+    saldoAtual: 800,
+  },
+  qui: {
+    nome: "Química",
+    icon: Flame,
+    gradient: "from-orange-500 to-red-500",
+    textColor: "text-orange-600",
+    bgColor: "bg-orange-500/10",
+    color: "#F97316",
+    precoMoedas: 750,
+    saldoAtual: 900,
   },
 };
 
@@ -336,8 +358,8 @@ export default function ComprarPontosDisciplina() {
                 {saldoInsuficiente
                   ? "Saldo Insuficiente"
                   : carregandoPreco
-                  ? "Carregando preço..."
-                  : "Realizar Compra"}
+                    ? "Carregando preço..."
+                    : "Realizar Compra"}
               </Button>
             </div>
           </CardContent>
