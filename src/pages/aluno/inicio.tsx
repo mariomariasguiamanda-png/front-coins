@@ -47,6 +47,7 @@ export default function Inicio() {
     AtividadeRecente[]
   >([]);
   const [error, setError] = useState<string | null>(null);
+  const [nomeAluno, setNomeAluno] = useState<string | null>(null);
 
   useEffect(() => {
     const carregarDashboard = async () => {
@@ -89,6 +90,17 @@ export default function Inicio() {
         }
 
         const idAluno = aluno.id_aluno as number;
+
+        // 3b) Buscar nome do aluno na tabela usuarios
+        const { data: usuarioNome, error: nomeError } = await supabase
+          .from("usuarios")
+          .select("nome")
+          .eq("id_usuario", idUsuario)
+          .maybeSingle();
+
+        if (!nomeError && usuarioNome) {
+          setNomeAluno(usuarioNome.nome || null);
+        }
 
         // 4) Buscar total de moedas (vw_disciplinas_moedas_aluno)
         const { data: moedasRows, error: moedasError } = await supabase
@@ -202,7 +214,9 @@ export default function Inicio() {
     <AlunoLayout>
       <div className="space-y-6">
         <div>
-          <h1 className="text-3xl font-bold text-violet-700">Bem-vindo(a)!</h1>
+          <h1 className="text-3xl font-bold text-violet-700">
+            Bem-vindo(a){nomeAluno ? `, ${nomeAluno}` : ""}!
+          </h1>
           <p className="text-gray-600 mt-2">
             Resumo do seu desempenho, moedas e atividades recentes.
           </p>
