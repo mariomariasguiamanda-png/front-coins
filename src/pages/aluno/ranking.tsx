@@ -14,25 +14,21 @@ import {
 } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 
-type RankingRowFromDB = {
+type RankingAluno = {
   id_turma: number;
   nome_turma: string;
   id_aluno: number;
   nome_aluno: string;
   total_moedas_ganhas: number;
+  foto_url: string | null;
 };
 
-type RankingAluno = {
-  id_aluno: number;
-  nome: string;
-  moedas: number;
-  posicao: number;
-};
+type RankingAlunoWithPos = RankingAluno & { posicao: number };
 
 export default function RankingPage() {
   const [showFullRanking, setShowFullRanking] = useState(false);
   const [mounted, setMounted] = useState(false);
-  const [ranking, setRanking] = useState<RankingAluno[]>([]);
+  const [ranking, setRanking] = useState<RankingAlunoWithPos[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -52,16 +48,19 @@ export default function RankingPage() {
         const idTurma = 1;
 
         const { data, error } = await supabase
-          .rpc("get_ranking_moedas_turma", { p_id_turma: idTurma });
+          .from("vw_ranking_moedas_turma")
+          .select(
+            "id_turma, nome_turma, id_aluno, nome_aluno, total_moedas_ganhas, foto_url"
+          )
+          .eq("id_turma", idTurma)
+          .order("total_moedas_ganhas", { ascending: false });
 
         if (error) throw error;
 
-        const rows = (data ?? []) as RankingRowFromDB[];
+        const rows = (data ?? []) as RankingAluno[];
 
-        const mapped: RankingAluno[] = rows.map((row, index) => ({
-          id_aluno: row.id_aluno,
-          nome: row.nome_aluno,
-          moedas: row.total_moedas_ganhas,
+        const mapped: RankingAlunoWithPos[] = rows.map((row, index) => ({
+          ...row,
           posicao: index + 1,
         }));
 
@@ -149,12 +148,12 @@ export default function RankingPage() {
 
             <div className="space-y-3">
               {displayedRanking.map((aluno, displayIndex) => {
-                const isCurrentUser = aluno.nome === "Ana Souza";
+                const isCurrentUser = aluno.nome_aluno === "Ana Souza";
                 const actualPosition = aluno.posicao - 1; // Índice real baseado na posição
 
                 return (
                   <div
-                    key={aluno.nome}
+                    key={aluno.id_aluno}
                     className={`flex items-center justify-between p-4 rounded-lg border smooth-transition ${
                       isCurrentUser
                         ? "bg-gradient-to-r from-violet-50 to-purple-50 border-violet-200 ring-2 ring-violet-200"
@@ -183,28 +182,44 @@ export default function RankingPage() {
                       >
                         {aluno.posicao}
                       </div>
-                      <div>
-                        <p
-                          className={`font-medium ${
-                            isCurrentUser ? "text-violet-700" : ""
-                          }`}
-                        >
-                          {aluno.nome}
-                          {isCurrentUser && (
-                            <span className="ml-2 px-2 py-1 bg-violet-100 text-violet-700 text-xs rounded-full">
-                              Você
-                            </span>
-                          )}
-                        </p>
-                        <p className="text-sm text-gray-600">
-                          {actualPosition < 3
-                            ? actualPosition === 0
-                              ? "🥇 Primeiro lugar"
-                              : actualPosition === 1
-                                ? "🥈 Segundo lugar"
-                                : "🥉 Terceiro lugar"
-                            : `Posição #${aluno.posicao}`}
-                        </p>
+                      <div className="flex items-center gap-3">
+                        {aluno.foto_url ? (
+                          <img
+                            src={aluno.foto_url}
+                            alt={aluno.nome_aluno}
+                            className="w-10 h-10 rounded-full object-cover border border-gray-300 shadow-sm"
+                          />
+                        ) : (
+                          <div className="w-10 h-10 rounded-full bg-purple-600 text-white flex items-center justify-center text-sm font-semibold shadow-sm">
+                            {aluno.nome_aluno
+                              ? aluno.nome_aluno.charAt(0).toUpperCase()
+                              : "?"}
+                          </div>
+                        )}
+
+                        <div>
+                          <p
+                            className={`font-medium ${
+                              isCurrentUser ? "text-violet-700" : ""
+                            }`}
+                          >
+                            {aluno.nome_aluno}
+                            {isCurrentUser && (
+                              <span className="ml-2 px-2 py-1 bg-violet-100 text-violet-700 text-xs rounded-full">
+                                Você
+                              </span>
+                            )}
+                          </p>
+                          <p className="text-sm text-gray-600">
+                            {actualPosition < 3
+                              ? actualPosition === 0
+                                ? "🥇 Primeiro lugar"
+                                : actualPosition === 1
+                                  ? "🥈 Segundo lugar"
+                                  : "🥉 Terceiro lugar"
+                              : `Posição #${aluno.posicao}`}
+                          </p>
+                        </div>
                       </div>
                     </div>
 
@@ -219,7 +234,7 @@ export default function RankingPage() {
                           isCurrentUser ? "text-violet-600" : "text-amber-600"
                         }`}
                       >
-                        {aluno.moedas} moedas
+                        {aluno.total_moedas_ganhas} moedas
                       </span>
                     </div>
                   </div>
@@ -260,8 +275,10 @@ export default function RankingPage() {
                 <div className="text-2xl font-bold text-green-600">
                   {ranking.length > 0
                     ? Math.round(
-                        ranking.reduce((acc, aluno) => acc + aluno.moedas, 0) /
-                          ranking.length
+                        ranking.reduce(
+                          (acc, aluno) => acc + aluno.total_moedas_ganhas,
+                          0
+                        ) / ranking.length
                       )
                     : 0}
                 </div>
@@ -271,7 +288,9 @@ export default function RankingPage() {
               <div className="text-center p-4 bg-purple-50 rounded-lg hover-lift smooth-transition">
                 <div className="text-2xl font-bold text-purple-600">
                   {ranking.length > 0
-                    ? Math.max(...ranking.map((aluno) => aluno.moedas))
+                    ? Math.max(
+                        ...ranking.map((aluno) => aluno.total_moedas_ganhas)
+                      )
                     : 0}
                 </div>
                 <div className="text-sm text-purple-700">Maior Pontuação</div>
