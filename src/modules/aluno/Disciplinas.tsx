@@ -9,24 +9,24 @@ import {
   ArrowRight,
   ArrowLeft,
   Award,
-  Clock,
   CheckCircle,
   TrendingUp,
+  Calculator,
+  Atom,
+  Palette,
+  Zap,
+  Globe2,
+  Flame,
+  ScrollText,
+  Clock,
 } from "lucide-react";
-import {
-  FaCalculator,
-  FaFlask,
-  FaGlobeAmericas,
-  FaBook,
-  FaAtom,
-  FaPalette,
-} from "react-icons/fa";
 import { supabase } from "@/lib/supabaseClient";
 
 type IconComponent = React.ComponentType<{ className?: string }>;
 
 type DisciplinaUI = {
   id: number;
+  codigo: string; // mat, hist, bio, qui, etc
   nome: string;
   icon: IconComponent;
   cor: keyof typeof cores;
@@ -94,6 +94,14 @@ const cores = {
     bar: "bg-pink-600",
     iconBg: "bg-pink-100",
   },
+  orange: {
+    grad: "from-orange-500 to-red-500",
+    text: "text-orange-600",
+    bgLight: "bg-orange-50",
+    border: "border-orange-200",
+    bar: "bg-orange-600",
+    iconBg: "bg-orange-100",
+  },
 } as const;
 
 // Só visual (ícone + cor), nada de número mock
@@ -101,12 +109,14 @@ const DISCIPLINA_VISUAL: Record<
   string,
   { icon: IconComponent; cor: keyof typeof cores }
 > = {
-  matematica: { icon: FaCalculator, cor: "blue" },
-  historia: { icon: FaBook, cor: "amber" },
-  biologia: { icon: FaFlask, cor: "green" },
-  fisica: { icon: FaAtom, cor: "purple" },
-  geografia: { icon: FaGlobeAmericas, cor: "teal" },
-  artes: { icon: FaPalette, cor: "pink" },
+  matematica: { icon: Calculator, cor: "blue" },
+  historia: { icon: ScrollText, cor: "amber" },
+  biologia: { icon: Atom, cor: "green" },
+  fisica: { icon: Zap, cor: "purple" },
+  geografia: { icon: Globe2, cor: "teal" },
+  artes: { icon: Palette, cor: "pink" },
+  portugues: { icon: BookOpen, cor: "green" },
+  quimica: { icon: Flame, cor: "orange" },
 };
 
 // Normaliza nome vindo do banco (remove acentos e põe minúsculo)
@@ -206,6 +216,7 @@ const Disciplinas = () => {
         const disciplinasUI: DisciplinaUI[] = vwRows.map((row: any) => {
           const nomeDisciplina: string =
             row.nome_disciplina || row.nome || "Disciplina";
+          const codigoDisciplina: string = row.codigo || "";
 
           const key = normalizarNome(nomeDisciplina);
           const visual =
@@ -213,6 +224,7 @@ const Disciplinas = () => {
 
           return {
             id: row.id_disciplina,
+            codigo: codigoDisciplina,
             nome: nomeDisciplina,
             icon: visual.icon,
             cor: visual.cor,
@@ -504,38 +516,13 @@ const Disciplinas = () => {
                 <div
                   className="cursor-pointer h-full flex flex-col justify-between"
                   onClick={() => {
-                    const slug =
-                      n === "matemática"
-                        ? "mat"
-                        : n === "português"
-                        ? "port"
-                        : n === "história" || n === "historia"
-                        ? "hist"
-                        : n === "geografia"
-                        ? "geo"
-                        : n === "biologia"
-                        ? "bio"
-                        : n === "física" || n === "fisica"
-                        ? "fis"
-                        : n === "artes"
-                        ? "art"
-                        : String(disciplina.id);
-                    const tema =
-                      n === "matemática"
-                        ? "matematica"
-                        : n === "português"
-                        ? "portugues"
-                        : n === "história" || n === "historia"
-                        ? "historia"
-                        : n === "geografia"
-                        ? "geografia"
-                        : n === "biologia"
-                        ? "biologia"
-                        : n === "física" || n === "fisica"
-                        ? "fisica"
-                        : n === "artes"
-                        ? "artes"
-                        : "matematica";
+                    // Usa codigo direto da disciplina (mat, hist, bio, qui, etc)
+                    const slug = disciplina.codigo || String(disciplina.id);
+                    // Normaliza nome para tema (remove acentos e deixa minúsculo)
+                    const tema = disciplina.nome
+                      .normalize("NFD")
+                      .replace(/[\u0300-\u036f]/g, "")
+                      .toLowerCase();
                     setDisciplinaSelecionada(disciplina.id);
                     router.push({
                       pathname: `/aluno/disciplinas/${slug}`,

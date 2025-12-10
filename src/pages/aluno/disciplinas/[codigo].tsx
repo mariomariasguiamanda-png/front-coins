@@ -35,13 +35,13 @@ const DISCIPLINA_CORES: Record<
     gradTo: "to-blue-400",
   },
 
-  // História – laranja
+  // História – amber
   HIST: {
-    titleText: "text-orange-700",
-    badgeBg: "bg-orange-50",
-    badgeText: "text-orange-700",
-    gradFrom: "from-orange-500",
-    gradTo: "to-orange-400",
+    titleText: "text-amber-700",
+    badgeBg: "bg-amber-50",
+    badgeText: "text-amber-700",
+    gradFrom: "from-amber-500",
+    gradTo: "to-amber-600",
   },
 
   // Biologia – verde
@@ -80,13 +80,13 @@ const DISCIPLINA_CORES: Record<
     gradTo: "to-pink-400",
   },
 
-  // Química – azul (mesmo tom dos cards azuis)
+  // Química – laranja/vermelho
   QUI: {
-    titleText: "text-blue-700",
-    badgeBg: "bg-blue-50",
-    badgeText: "text-blue-700",
-    gradFrom: "from-blue-500",
-    gradTo: "to-blue-400",
+    titleText: "text-orange-700",
+    badgeBg: "bg-orange-50",
+    badgeText: "text-orange-700",
+    gradFrom: "from-orange-500",
+    gradTo: "to-red-500",
   },
 
   // fallback padrão (mantenho roxo, igual ao texto de progresso da UI)
@@ -1014,8 +1014,8 @@ const DisciplinaDetalhePage = () => {
                         modalTipo === "atividades"
                           ? item.id_atividade
                           : modalTipo === "resumos"
-                          ? item.id_resumo
-                          : item.id_videoaula
+                            ? item.id_resumo
+                            : item.id_videoaula
                       }
                       type="button"
                       onClick={handleClick}
