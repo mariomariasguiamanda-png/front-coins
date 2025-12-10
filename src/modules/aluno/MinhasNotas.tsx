@@ -123,12 +123,9 @@ export default function MinhasNotas() {
   };
 
   const getStatusBadgeClasses = (status: string | null) => {
-    if (status === "aprovado")
-      return "bg-green-100 text-green-700";
-    if (status === "recuperacao")
-      return "bg-yellow-100 text-yellow-700";
-    if (status === "reprovado")
-      return "bg-red-100 text-red-700";
+    if (status === "aprovado") return "bg-green-100 text-green-700";
+    if (status === "recuperacao") return "bg-yellow-100 text-yellow-700";
+    if (status === "reprovado") return "bg-red-100 text-red-700";
     return "bg-gray-100 text-gray-700";
   };
 
@@ -164,14 +161,12 @@ export default function MinhasNotas() {
 
       {/* Cards Estatísticos */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="rounded-xl border">
-          <CardContent className="p-4 flex justify-between">
+        <Card className="bg-white rounded-xl shadow-md">
+          <CardContent className="p-6 flex justify-between">
             <div>
               <p className="text-sm text-gray-600">Média Geral</p>
               <p className="text-2xl font-bold text-violet-700">
-                {stats.mediaGeral !== null
-                  ? stats.mediaGeral.toFixed(1)
-                  : "-"}
+                {stats.mediaGeral !== null ? stats.mediaGeral.toFixed(1) : "-"}
               </p>
             </div>
             <div className="p-3 bg-violet-500 text-white rounded-xl">
@@ -180,8 +175,8 @@ export default function MinhasNotas() {
           </CardContent>
         </Card>
 
-        <Card className="rounded-xl border">
-          <CardContent className="p-4 flex justify-between">
+        <Card className="bg-white rounded-xl shadow-md">
+          <CardContent className="p-6 flex justify-between">
             <div>
               <p className="text-sm text-gray-600">Aprovadas</p>
               <p className="text-2xl font-bold text-violet-700">
@@ -194,8 +189,8 @@ export default function MinhasNotas() {
           </CardContent>
         </Card>
 
-        <Card className="rounded-xl border">
-          <CardContent className="p-4 flex justify-between">
+        <Card className="bg-white rounded-xl shadow-md">
+          <CardContent className="p-6 flex justify-between">
             <div>
               <p className="text-sm text-gray-600">Recuperação</p>
               <p className="text-2xl font-bold text-violet-700">
@@ -208,12 +203,10 @@ export default function MinhasNotas() {
           </CardContent>
         </Card>
 
-        <Card className="rounded-xl border">
-          <CardContent className="p-4 flex justify-between">
+        <Card className="bg-white rounded-xl shadow-md">
+          <CardContent className="p-6 flex justify-between">
             <div>
-              <p className="text-sm text-gray-600">
-                Disciplinas com Nota
-              </p>
+              <p className="text-sm text-gray-600">Disciplinas com Nota</p>
               <p className="text-2xl font-bold text-violet-700">
                 {stats.totalDisciplinasComNota}
               </p>
@@ -226,32 +219,27 @@ export default function MinhasNotas() {
       </div>
 
       {/* Tabela de Notas Finais */}
-      <Card className="rounded-xl border mt-6">
+      <Card className="bg-white rounded-xl shadow-md mt-6">
         <CardContent className="p-0">
-          <div className="p-6 border-b">
+          <div className="p-6 border-b border-gray-200">
             <h3 className="text-xl font-bold">Notas Finais por Disciplina</h3>
           </div>
 
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="border-b">
+              <thead className="border-b border-gray-200">
                 <tr>
                   <th className="text-left py-3 px-4">Disciplina</th>
                   <th className="text-left py-3 px-4">Código</th>
                   <th className="text-center py-3 px-4">Nota Final</th>
                   <th className="text-center py-3 px-4">Status</th>
-                  <th className="text-center py-3 px-4">
-                    Atualizado em
-                  </th>
+                  <th className="text-center py-3 px-4">Atualizado em</th>
                 </tr>
               </thead>
               <tbody>
                 {notasFinais.length === 0 ? (
                   <tr>
-                    <td
-                      colSpan={5}
-                      className="py-4 text-center text-gray-500"
-                    >
+                    <td colSpan={5} className="py-4 text-center text-gray-500">
                       Nenhuma disciplina cadastrada ou nota final registrada.
                     </td>
                   </tr>
@@ -259,11 +247,9 @@ export default function MinhasNotas() {
                   notasFinais.map((item) => (
                     <tr
                       key={item.id_disciplina}
-                      className="border-b hover:bg-gray-50"
+                      className="border-b border-gray-200 hover:bg-gray-50"
                     >
-                      <td className="py-3 px-4">
-                        {item.nome_disciplina}
-                      </td>
+                      <td className="py-3 px-4">{item.nome_disciplina}</td>
                       <td className="py-3 px-4">
                         {item.codigo_disciplina ?? "-"}
                       </td>
@@ -286,16 +272,16 @@ export default function MinhasNotas() {
                             ? item.status_final === "aprovado"
                               ? "Aprovado"
                               : item.status_final === "recuperacao"
-                              ? "Recuperação"
-                              : "Reprovado"
+                                ? "Recuperação"
+                                : "Reprovado"
                             : "-"}
                         </span>
                       </td>
                       <td className="py-3 px-4 text-center text-gray-500">
                         {item.atualizado_em
-                          ? new Date(
-                              item.atualizado_em
-                            ).toLocaleDateString("pt-BR")
+                          ? new Date(item.atualizado_em).toLocaleDateString(
+                              "pt-BR"
+                            )
                           : "-"}
                       </td>
                     </tr>
