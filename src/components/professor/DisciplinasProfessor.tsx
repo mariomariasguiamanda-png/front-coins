@@ -35,7 +35,6 @@ import {
   ChevronRight,
   X,
   GraduationCap,
-  Target,
   BarChart2
 } from "lucide-react";
 import { useState, useEffect } from "react";
@@ -198,7 +197,7 @@ export function DisciplinasProfessor({
       </div>
 
       {/* Cards de Estatísticas */}
-      <div className="grid gap-6 md:grid-cols-5">
+      <div className="grid gap-6 md:grid-cols-4">
         <Card className="rounded-xl shadow-sm border-l-4 border-l-violet-500">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
@@ -213,20 +212,7 @@ export function DisciplinasProfessor({
           </CardContent>
         </Card>
 
-        <Card className="rounded-xl shadow-sm border-l-4 border-l-green-500">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Ativas</p>
-                <p className="text-2xl font-bold text-gray-900 mt-1">{stats.activeDisciplines}</p>
-              </div>
-              <div className="h-10 w-10 rounded-lg bg-green-100 flex items-center justify-center">
-                <Target className="h-5 w-5 text-green-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
+        
         <Card className="rounded-xl shadow-sm border-l-4 border-l-blue-500">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
