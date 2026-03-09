@@ -276,27 +276,7 @@ export function DashboardProfessor({ teacherName, activities = [] }: DashboardPr
               </Link>
             </div>
 
-            {/* Atividades Recentes */}
-            <div className="pt-6 border-t border-gray-200">
-              <div className="flex items-center gap-2 mb-4">
-                <Activity className="h-4 w-4 text-violet-600" />
-                <h4 className="text-sm font-semibold text-gray-900">Atividades Recentes</h4>
-              </div>
-              <div className="space-y-3">
-                {recentActivity.map((item) => (
-                  <div key={item.id} className="flex items-start gap-3">
-                    <div className={`h-2 w-2 rounded-full mt-2 flex-shrink-0 ${
-                      item.type === 'correction' ? 'bg-green-500' : 
-                      item.type === 'alert' ? 'bg-amber-500' : 'bg-blue-500'
-                    }`} />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm text-gray-900">{item.message}</p>
-                      <p className="text-xs text-gray-500 mt-0.5">{item.time}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
+            {/* Atividades Recentes removidas conforme solicitado */}
           </CardContent>
         </Card>
       </div>
