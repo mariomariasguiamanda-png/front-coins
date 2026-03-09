@@ -184,7 +184,7 @@ export function TurmasProfessor({
       </div>
 
       {/* Cards de Estatísticas */}
-      <div className="grid gap-6 md:grid-cols-4">
+      <div className="grid gap-6 md:grid-cols-2">
         <Card className="rounded-xl shadow-sm border-l-4 border-l-violet-500">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
@@ -221,39 +221,7 @@ export function TurmasProfessor({
           </CardContent>
         </Card>
 
-        <Card className="rounded-xl shadow-sm border-l-4 border-l-green-500">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">
-                  Alunos Ativos
-                </p>
-                <p className="text-2xl font-bold text-gray-900 mt-1">
-                  {stats.activeStudents}
-                </p>
-              </div>
-              <div className="h-10 w-10 rounded-lg bg-green-100 flex items-center justify-center">
-                <UserCheck className="h-5 w-5 text-green-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="rounded-xl shadow-sm border-l-4 border-l-amber-500">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Média Geral</p>
-                <p className="text-2xl font-bold text-gray-900 mt-1">
-                  {stats.avgGrade}
-                </p>
-              </div>
-              <div className="h-10 w-10 rounded-lg bg-amber-100 flex items-center justify-center">
-                <Award className="h-5 w-5 text-amber-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        
       </div>
 
       {/* Filtros e Busca */}
