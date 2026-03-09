@@ -103,20 +103,7 @@ export function DashboardProfessor({ teacherName, activities = [] }: DashboardPr
           </CardContent>
         </Card>
 
-        <Card className="rounded-xl shadow-sm border-l-4 border-l-blue-500">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Taxa</p>
-                <p className="text-2xl font-bold text-gray-900 mt-1">{completionRate}%</p>
-                <p className="text-xs text-gray-500 mt-1">Conclusão</p>
-              </div>
-              <div className="h-10 w-10 rounded-lg bg-blue-100 flex items-center justify-center">
-                <TrendingUp className="h-5 w-5 text-blue-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        
       </div>
 
       {/* Cards de Disciplinas */}
@@ -211,7 +198,7 @@ export function DashboardProfessor({ teacherName, activities = [] }: DashboardPr
                 </div>
                 <div>
                   <h3 className="text-lg font-semibold text-gray-900">Desempenho por Turma</h3>
-                  <p className="text-sm text-gray-500">Média e participação</p>
+                  <p className="text-sm text-gray-500">Média</p>
                 </div>
               </div>
               <Link 
@@ -230,33 +217,18 @@ export function DashboardProfessor({ teacherName, activities = [] }: DashboardPr
                     <span className="text-sm font-semibold text-gray-900">{turma.turma}</span>
                     <div className="flex items-center gap-4">
                       <span className="text-xs text-gray-600">Média: <span className="font-semibold text-violet-600">{turma.media}</span></span>
-                      <span className="text-xs text-gray-600">Participação: <span className="font-semibold text-green-600">{turma.participacao}%</span></span>
                     </div>
                   </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="text-xs text-gray-500">Média</span>
-                        <span className="text-xs font-medium text-violet-600">{turma.media}/10</span>
-                      </div>
-                      <div className="h-3 bg-gray-200 rounded-full overflow-hidden">
-                        <div 
-                          className="h-full bg-gradient-to-r from-violet-500 to-violet-600 rounded-full transition-all duration-500"
-                          style={{ width: `${(turma.media / 10) * 100}%` }}
-                        />
-                      </div>
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-xs text-gray-500">Média</span>
+                      <span className="text-xs font-medium text-violet-600">{turma.media}/10</span>
                     </div>
-                    <div>
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="text-xs text-gray-500">Participação</span>
-                        <span className="text-xs font-medium text-green-600">{turma.participacao}%</span>
-                      </div>
-                      <div className="h-3 bg-gray-200 rounded-full overflow-hidden">
-                        <div 
-                          className="h-full bg-gradient-to-r from-green-500 to-green-600 rounded-full transition-all duration-500"
-                          style={{ width: `${turma.participacao}%` }}
-                        />
-                      </div>
+                    <div className="h-3 bg-gray-200 rounded-full overflow-hidden">
+                      <div 
+                        className="h-full bg-gradient-to-r from-violet-500 to-violet-600 rounded-full transition-all duration-500"
+                        style={{ width: `${(turma.media / 10) * 100}%` }}
+                      />
                     </div>
                   </div>
                 </div>
