@@ -621,19 +621,6 @@ export function DisciplinasProfessor({
                 </span>
               </div>
 
-              {/* Descrição */}
-              {viewingDiscipline.description && (
-                <Card className="rounded-xl shadow-sm">
-                  <CardContent className="p-4">
-                    <h3 className="text-sm font-semibold text-gray-900 mb-2 flex items-center gap-2">
-                      <FileText className="h-4 w-4 text-violet-600" />
-                      Descrição
-                    </h3>
-                    <p className="text-sm text-gray-700">{viewingDiscipline.description}</p>
-                  </CardContent>
-                </Card>
-              )}
-
               {/* Estatísticas */}
               <div className="grid gap-4 md:grid-cols-2">
                 <Card className="rounded-xl shadow-sm border-l-4 border-l-blue-500">
