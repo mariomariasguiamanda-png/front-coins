@@ -281,8 +281,6 @@ export function DisciplinasProfessor({
                     </span>
                   </div>
 
-                  <p className="text-sm text-gray-600 line-clamp-2">{disc.description}</p>
-
                   <div className="grid grid-cols-3 gap-3 pt-3 border-t">
                     <div>
                       <p className="text-xs text-gray-600">Alunos</p>
@@ -312,22 +310,6 @@ export function DisciplinasProfessor({
                     >
                       <ChevronRight className="h-4 w-4 mr-1" />
                       Detalhes
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setEditingDiscipline(disc)}
-                      className="rounded-xl"
-                    >
-                      <Edit2 className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setDeletingDisciplineId(disc.id)}
-                      className="rounded-xl text-red-600 hover:text-red-700 hover:bg-red-50"
-                    >
-                      <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>
                 </div>
