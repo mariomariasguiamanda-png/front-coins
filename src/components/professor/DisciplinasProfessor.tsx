@@ -103,29 +103,6 @@ export function DisciplinasProfessor({
     totalDisciplines: disciplines.length,
     activeDisciplines: disciplines.filter(d => d.status === "active").length,
     totalStudents: disciplines.reduce((acc, disc) => acc + disc.totalStudents, 0),
-    avgGrade: disciplines.length > 0 
-      ? (disciplines.reduce((acc, disc) => acc + disc.averageGrade, 0) / disciplines.length).toFixed(1)
-      : "0.0",
-    avgCompletion: disciplines.length > 0
-      ? Math.round(disciplines.reduce((acc, disc) => acc + disc.completionRate, 0) / disciplines.length)
-      : 0,
-  };
-
-  const getCategoryColor = (category: string) => {
-    const colors: Record<string, string> = {
-      "Exatas": "bg-blue-100 text-blue-700 border-blue-200",
-      "Humanas": "bg-purple-100 text-purple-700 border-purple-200",
-      "Biológicas": "bg-green-100 text-green-700 border-green-200",
-      "Linguagens": "bg-amber-100 text-amber-700 border-amber-200",
-      "Tecnologia": "bg-violet-100 text-violet-700 border-violet-200",
-    };
-    return colors[category] || "bg-gray-100 text-gray-700 border-gray-200";
-  };
-
-  const getStatusConfig = (status: string) => {
-    return status === "active"
-      ? { label: "Ativa", color: "bg-green-100 text-green-700 border-green-200" }
-      : { label: "Inativa", color: "bg-gray-100 text-gray-700 border-gray-200" };
   };
 
   const handleCreateSubmit = (e: React.FormEvent<HTMLFormElement>) => {
@@ -197,7 +174,7 @@ export function DisciplinasProfessor({
       </div>
 
       {/* Cards de Estatísticas */}
-      <div className="grid gap-6 md:grid-cols-4">
+      <div className="grid gap-6 md:grid-cols-2">
         <Card className="rounded-xl shadow-sm border-l-4 border-l-violet-500">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
@@ -222,34 +199,6 @@ export function DisciplinasProfessor({
               </div>
               <div className="h-10 w-10 rounded-lg bg-blue-100 flex items-center justify-center">
                 <Users className="h-5 w-5 text-blue-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="rounded-xl shadow-sm border-l-4 border-l-amber-500">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Média</p>
-                <p className="text-2xl font-bold text-gray-900 mt-1">{stats.avgGrade}</p>
-              </div>
-              <div className="h-10 w-10 rounded-lg bg-amber-100 flex items-center justify-center">
-                <Award className="h-5 w-5 text-amber-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="rounded-xl shadow-sm border-l-4 border-l-purple-500">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Conclusão</p>
-                <p className="text-2xl font-bold text-gray-900 mt-1">{stats.avgCompletion}%</p>
-              </div>
-              <div className="h-10 w-10 rounded-lg bg-purple-100 flex items-center justify-center">
-                <TrendingUp className="h-5 w-5 text-purple-600" />
               </div>
             </div>
           </CardContent>
@@ -324,15 +273,9 @@ export function DisciplinasProfessor({
                       <h3 className="text-lg font-bold text-gray-900">{disc.name}</h3>
                       <p className="text-sm text-gray-600 mt-1">{disc.code}</p>
                     </div>
-                    <span className={`px-2.5 py-1 rounded-full text-xs font-semibold border ${getStatusConfig(disc.status).color}`}>
-                      {getStatusConfig(disc.status).label}
-                    </span>
                   </div>
 
                   <div className="flex items-center gap-2">
-                    <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${getCategoryColor(disc.category)}`}>
-                      {disc.category}
-                    </span>
                     <span className="px-3 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-700 border border-gray-200">
                       {disc.semester}
                     </span>
@@ -716,23 +659,11 @@ export function DisciplinasProfessor({
               )}
 
               {/* Estatísticas */}
-              <div className="grid gap-4 md:grid-cols-4">
+              <div className="grid gap-4 md:grid-cols-2">
                 <Card className="rounded-xl shadow-sm border-l-4 border-l-blue-500">
                   <CardContent className="p-4">
                     <p className="text-xs text-gray-600 mb-1">Total de Alunos</p>
                     <p className="text-2xl font-bold text-gray-900">{viewingDiscipline.totalStudents}</p>
-                  </CardContent>
-                </Card>
-                <Card className="rounded-xl shadow-sm border-l-4 border-l-amber-500">
-                  <CardContent className="p-4">
-                    <p className="text-xs text-gray-600 mb-1">Média Geral</p>
-                    <p className="text-2xl font-bold text-gray-900">{viewingDiscipline.averageGrade.toFixed(1)}</p>
-                  </CardContent>
-                </Card>
-                <Card className="rounded-xl shadow-sm border-l-4 border-l-green-500">
-                  <CardContent className="p-4">
-                    <p className="text-xs text-gray-600 mb-1">Taxa de Conclusão</p>
-                    <p className="text-2xl font-bold text-gray-900">{viewingDiscipline.completionRate}%</p>
                   </CardContent>
                 </Card>
                 <Card className="rounded-xl shadow-sm border-l-4 border-l-purple-500">
