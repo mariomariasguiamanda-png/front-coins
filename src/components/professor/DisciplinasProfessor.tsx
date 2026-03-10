@@ -281,7 +281,7 @@ export function DisciplinasProfessor({
                     </span>
                   </div>
 
-                  <div className="grid grid-cols-3 gap-3 pt-3 border-t">
+                  <div className="grid grid-cols-3 gap-3 pt-3">
                     <div>
                       <p className="text-xs text-gray-600">Alunos</p>
                       <p className="text-lg font-bold text-gray-900">{disc.totalStudents}</p>
@@ -301,7 +301,7 @@ export function DisciplinasProfessor({
                     <span>{disc.workload}h • {disc.credits} créditos</span>
                   </div>
 
-                  <div className="flex items-center gap-2 pt-3 border-t">
+                  <div className="flex items-center gap-2 pt-3">
                     <Button
                       variant="outline"
                       size="sm"
@@ -616,12 +616,6 @@ export function DisciplinasProfessor({
             <div className="space-y-6 py-4">
               {/* Badges */}
               <div className="flex items-center gap-2">
-                <span className={`px-3 py-1 rounded-full text-sm font-semibold border ${getCategoryColor(viewingDiscipline.category)}`}>
-                  {viewingDiscipline.category}
-                </span>
-                <span className={`px-3 py-1 rounded-full text-sm font-semibold border ${getStatusConfig(viewingDiscipline.status).color}`}>
-                  {getStatusConfig(viewingDiscipline.status).label}
-                </span>
                 <span className="px-3 py-1 rounded-full text-sm font-semibold bg-gray-100 text-gray-700 border border-gray-200">
                   {viewingDiscipline.semester}
                 </span>
