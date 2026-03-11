@@ -19,16 +19,13 @@ import {
 } from "@/components/ui/select";
 import {
   Users,
-  Plus,
-  Edit2,
-  Trash2,
+  
   Search,
   Filter,
   GraduationCap,
   Calendar,
   Clock,
   BookOpen,
-  UserCheck,
   AlertCircle,
   TrendingUp,
   Award,
@@ -69,10 +66,9 @@ export function TurmasProfessor({
   onEditClass,
   onDeleteClass,
 }: TurmasProfessorProps) {
-  const [showCreateForm, setShowCreateForm] = useState(false);
-  const [editingClass, setEditingClass] = useState<Class | null>(null);
-  const [deletingClassId, setDeletingClassId] = useState<string | null>(null);
   const [viewingClass, setViewingClass] = useState<Class | null>(null);
+  const [showCreateForm, setShowCreateForm] = useState(false); // kept for compatibility with other pages
+  const [editingClass, setEditingClass] = useState<Class | null>(null); // kept but not used (no UI triggers)
   const [searchTerm, setSearchTerm] = useState("");
   const [filterShift, setFilterShift] = useState<string>("todos");
 
@@ -125,20 +121,24 @@ export function TurmasProfessor({
     }
   };
 
+  // Handlers para criação/edição mantidos para segurança (verificam presença de callbacks)
   const handleCreateSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
 
     const newClass: Omit<Class, "id"> = {
-      name: formData.get("name") as string,
-      shift: formData.get("shift") as "morning" | "afternoon" | "night",
+      name: (formData.get("name") as string) || "",
+      shift: (formData.get("shift") as "morning" | "afternoon" | "night") || "morning",
       totalStudents: 0,
       activeStudents: 0,
       disciplines: [],
       averageGrade: 0,
     };
 
-    onCreateClass(newClass);
+    if (typeof onCreateClass === "function") {
+      onCreateClass(newClass);
+    }
+
     setShowCreateForm(false);
   };
 
@@ -149,20 +149,18 @@ export function TurmasProfessor({
     const formData = new FormData(e.currentTarget);
 
     const updatedClass: Partial<Class> = {
-      name: formData.get("name") as string,
-      shift: formData.get("shift") as "morning" | "afternoon" | "night",
+      name: (formData.get("name") as string) || editingClass.name,
+      shift: (formData.get("shift") as "morning" | "afternoon" | "night") || editingClass.shift,
     };
 
-    onEditClass(editingClass.id, updatedClass);
+    if (typeof onEditClass === "function") {
+      onEditClass(editingClass.id, updatedClass);
+    }
+
     setEditingClass(null);
   };
 
-  const handleDelete = () => {
-    if (deletingClassId) {
-      onDeleteClass(deletingClassId);
-      setDeletingClassId(null);
-    }
-  };
+  // Exclusão pela UI removida para professores nesta página
 
   return (
     <div className="p-6 space-y-6">
@@ -174,17 +172,11 @@ export function TurmasProfessor({
             Gerencie suas turmas e acompanhe o desempenho
           </p>
         </div>
-        <Button
-          onClick={() => setShowCreateForm(true)}
-          className="bg-violet-600 hover:bg-violet-700 text-white rounded-xl"
-        >
-          <Plus className="h-4 w-4 mr-2" />
-          Nova Turma
-        </Button>
+        {/* Criação de turma removida para professores nesta página */}
       </div>
 
       {/* Cards de Estatísticas */}
-      <div className="grid gap-6 md:grid-cols-4">
+      <div className="grid gap-6 md:grid-cols-2">
         <Card className="rounded-xl shadow-sm border-l-4 border-l-violet-500">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
@@ -221,39 +213,7 @@ export function TurmasProfessor({
           </CardContent>
         </Card>
 
-        <Card className="rounded-xl shadow-sm border-l-4 border-l-green-500">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">
-                  Alunos Ativos
-                </p>
-                <p className="text-2xl font-bold text-gray-900 mt-1">
-                  {stats.activeStudents}
-                </p>
-              </div>
-              <div className="h-10 w-10 rounded-lg bg-green-100 flex items-center justify-center">
-                <UserCheck className="h-5 w-5 text-green-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="rounded-xl shadow-sm border-l-4 border-l-amber-500">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Média Geral</p>
-                <p className="text-2xl font-bold text-gray-900 mt-1">
-                  {stats.avgGrade}
-                </p>
-              </div>
-              <div className="h-10 w-10 rounded-lg bg-amber-100 flex items-center justify-center">
-                <Award className="h-5 w-5 text-amber-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        
       </div>
 
       {/* Filtros e Busca */}
@@ -349,22 +309,8 @@ export function TurmasProfessor({
                       <ChevronRight className="h-4 w-4 mr-1" />
                       Detalhes
                     </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setEditingClass(cls)}
-                      className="rounded-xl"
-                    >
-                      <Edit2 className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setDeletingClassId(cls.id)}
-                      className="rounded-xl text-red-600 hover:text-red-700 hover:bg-red-50"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                    {/* Edição de turma removida para professores nesta página */}
+                    {/* Exclusão removida para professores nesta página */}
                   </div>
                 </div>
               </CardContent>
@@ -494,38 +440,7 @@ export function TurmasProfessor({
         </DialogContent>
       </Dialog>
 
-      {/* Dialog de Deletar */}
-      <Dialog
-        open={!!deletingClassId}
-        onOpenChange={(open) => !open && setDeletingClassId(null)}
-      >
-        <DialogContent className="rounded-xl max-w-md bg-white">
-          <DialogHeader>
-            <DialogTitle className="text-xl text-gray-900">
-              Confirmar Exclusão
-            </DialogTitle>
-            <DialogDescription className="text-gray-600 mt-2">
-              Tem certeza que deseja excluir esta turma? Esta ação não pode ser
-              desfeita.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter className="gap-2 mt-4">
-            <Button
-              variant="outline"
-              onClick={() => setDeletingClassId(null)}
-              className="rounded-xl"
-            >
-              Cancelar
-            </Button>
-            <Button
-              onClick={handleDelete}
-              className="bg-red-600 hover:bg-red-700 text-white rounded-xl"
-            >
-              Excluir
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* Diálogo de exclusão removido (professores não podem excluir turmas aqui) */}
 
       {/* Dialog de Detalhes */}
       <Dialog
