@@ -159,18 +159,9 @@ export function DisciplinasProfessor({
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Disciplinas</h1>
-          <p className="text-gray-600 mt-1">Gerencie as disciplinas e acompanhe o desempenho</p>
-        </div>
-        <Button
-          onClick={() => setShowCreateForm(true)}
-          className="bg-violet-600 hover:bg-violet-700 text-white rounded-xl"
-        >
-          <Plus className="h-4 w-4 mr-2" />
-          Nova Disciplina
-        </Button>
+      <div>
+        <h1 className="text-3xl font-bold text-gray-900">Disciplinas</h1>
+        <p className="text-gray-600 mt-1">Gerencie as disciplinas e acompanhe o desempenho</p>
       </div>
 
       {/* Cards de Estatísticas */}
