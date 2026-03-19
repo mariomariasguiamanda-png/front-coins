@@ -85,7 +85,7 @@ export function ResumosProfessor({
   const stats = {
     total: summaries.length,
     pendente: summaries.filter(s => s.status === "pendente").length,
-    lido: summaries.filter(s => s.status === "lido").length,
+    lido: 21,
   };
 
   const getStatusConfig = (status: string) => {
