@@ -694,25 +694,15 @@ export function AtividadesProfessor({
                       </div>
                       <div className="flex gap-2">
                         {activity.submissions && activity.submissions > 0 ? (
-                          <>
-                            <Button 
-                              onClick={() => setViewingSubmissions(activity)}
-                              variant="outline"
-                              className="flex-1 rounded-xl"
-                              size="sm"
-                            >
-                              <Eye className="h-4 w-4 mr-2" />
-                              Ver Submissões ({activity.submissions})
-                            </Button>
-                            <Button 
-                              onClick={() => router.push(`/professor/atividades/${activity.id}/corrigir`)}
-                              className="flex-1 rounded-xl bg-violet-600 hover:bg-violet-700"
-                              size="sm"
-                            >
-                              <ClipboardCheck className="h-4 w-4 mr-2" />
-                              Corrigir
-                            </Button>
-                          </>
+                          <Button 
+                            onClick={() => setViewingSubmissions(activity)}
+                            variant="outline"
+                            className="w-full rounded-xl"
+                            size="sm"
+                          >
+                            <Eye className="h-4 w-4 mr-2" />
+                            Ver Submissões ({activity.submissions})
+                          </Button>
                         ) : (
                           <Button 
                             disabled
