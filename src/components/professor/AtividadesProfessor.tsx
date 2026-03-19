@@ -675,7 +675,6 @@ export function AtividadesProfessor({
                         <span className="font-semibold text-gray-900">
                           {activity.submissions || 0}/{activity.totalStudents}
                         </span>
-                        <span className="text-gray-500">({submissionRate}%)</span>
                       </div>
                     )}
                   </div>
@@ -685,7 +684,6 @@ export function AtividadesProfessor({
                     <div className="mt-4 pt-4">
                       <div className="flex items-center justify-between mb-2">
                         <span className="text-xs text-gray-600">Progresso de entregas</span>
-                        <span className="text-xs font-semibold text-gray-900">{submissionRate}%</span>
                       </div>
                       <div className="w-full bg-gray-200 rounded-full h-2 mb-3">
                         <div 
