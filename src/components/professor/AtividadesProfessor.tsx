@@ -661,7 +661,6 @@ export function AtividadesProfessor({
                   <div className="flex flex-wrap items-center gap-6 text-sm">
                     <div className="flex items-center gap-2">
                       <Calendar className="h-4 w-4 text-gray-400" />
-                      <span className="text-gray-600">Entrega:</span>
                       <span className="font-semibold text-gray-900">{activity.dueDate}</span>
                     </div>
                     <div className="flex items-center gap-1.5">
@@ -671,7 +670,6 @@ export function AtividadesProfessor({
                     {activity.totalStudents && (
                       <div className="flex items-center gap-2">
                         <Users className="h-4 w-4 text-gray-400" />
-                        <span className="text-gray-600">Entregas:</span>
                         <span className="font-semibold text-gray-900">
                           {activity.submissions || 0}/{activity.totalStudents}
                         </span>
