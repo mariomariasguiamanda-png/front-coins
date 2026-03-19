@@ -91,6 +91,7 @@ export function ResumosProfessor({
     approved: summaries.filter(s => s.status === "approved").length,
     pending: summaries.filter(s => s.status === "pending").length,
     rejected: summaries.filter(s => s.status === "rejected").length,
+    resumosLidos: Math.floor(Math.random() * 150) + 50,
   };
 
   const getStatusConfig = (status: string) => {
@@ -175,7 +176,7 @@ export function ResumosProfessor({
       </div>
 
       {/* Cards de Estatísticas */}
-      <div className="grid gap-4 md:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-5">
         <Card className="rounded-xl shadow-sm border-l-4 border-l-violet-500">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
@@ -227,6 +228,20 @@ export function ResumosProfessor({
               </div>
               <div className="h-10 w-10 rounded-lg bg-red-100 flex items-center justify-center">
                 <XCircle className="h-5 w-5 text-red-600" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="rounded-xl shadow-sm border-l-4 border-l-indigo-500">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Resumos Lidos</p>
+                <p className="text-2xl font-bold text-gray-900 mt-1">{stats.resumosLidos}</p>
+              </div>
+              <div className="h-10 w-10 rounded-lg bg-indigo-100 flex items-center justify-center">
+                <BookOpen className="h-5 w-5 text-indigo-600" />
               </div>
             </div>
           </CardContent>
