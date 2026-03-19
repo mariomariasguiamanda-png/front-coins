@@ -45,7 +45,7 @@ interface Summary {
   links?: string[];
   discipline: string;
   createdAt: string;
-  status: "pending" | "approved" | "rejected";
+  status: "pendente" | "lido";
   views?: number;
   author?: string;
   date?: string;
@@ -56,8 +56,6 @@ interface ResumosProfessorProps {
   onCreateSummary: (summary: Omit<Summary, "id" | "createdAt" | "status">) => void;
   onEditSummary: (id: string, summary: Partial<Summary>) => void;
   onDeleteSummary: (id: string) => void;
-  onApproveSummary: (id: string) => void;
-  onRejectSummary: (id: string) => void;
 }
 
 export function ResumosProfessor({
@@ -65,8 +63,6 @@ export function ResumosProfessor({
   onCreateSummary,
   onEditSummary,
   onDeleteSummary,
-  onApproveSummary,
-  onRejectSummary,
 }: ResumosProfessorProps) {
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [editingSummary, setEditingSummary] = useState<Summary | null>(null);
@@ -88,31 +84,23 @@ export function ResumosProfessor({
   // Estatísticas
   const stats = {
     total: summaries.length,
-    approved: summaries.filter(s => s.status === "approved").length,
-    pending: summaries.filter(s => s.status === "pending").length,
-    rejected: summaries.filter(s => s.status === "rejected").length,
-    resumosLidos: Math.floor(Math.random() * 150) + 50,
+    pendente: summaries.filter(s => s.status === "pendente").length,
+    lido: summaries.filter(s => s.status === "lido").length,
   };
 
   const getStatusConfig = (status: string) => {
     switch(status) {
-      case "approved":
-        return { 
-          color: "text-green-700 bg-green-100 border-green-200", 
-          icon: CheckCircle2,
-          label: "Aprovado"
-        };
-      case "pending":
+      case "pendente":
         return { 
           color: "text-amber-700 bg-amber-100 border-amber-200", 
           icon: Clock,
           label: "Pendente"
         };
-      case "rejected":
+      case "lido":
         return { 
-          color: "text-red-700 bg-red-100 border-red-200", 
-          icon: XCircle,
-          label: "Rejeitado"
+          color: "text-green-700 bg-green-100 border-green-200", 
+          icon: CheckCircle2,
+          label: "Lido"
         };
       default:
         return { 
@@ -176,7 +164,7 @@ export function ResumosProfessor({
       </div>
 
       {/* Cards de Estatísticas */}
-      <div className="grid gap-4 md:grid-cols-5">
+      <div className="grid gap-4 md:grid-cols-3">
         <Card className="rounded-xl shadow-sm border-l-4 border-l-violet-500">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
@@ -191,26 +179,12 @@ export function ResumosProfessor({
           </CardContent>
         </Card>
 
-        <Card className="rounded-xl shadow-sm border-l-4 border-l-green-500">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Aprovados</p>
-                <p className="text-2xl font-bold text-gray-900 mt-1">{stats.approved}</p>
-              </div>
-              <div className="h-10 w-10 rounded-lg bg-green-100 flex items-center justify-center">
-                <CheckCircle2 className="h-5 w-5 text-green-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
         <Card className="rounded-xl shadow-sm border-l-4 border-l-amber-500">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">Pendentes</p>
-                <p className="text-2xl font-bold text-gray-900 mt-1">{stats.pending}</p>
+                <p className="text-2xl font-bold text-gray-900 mt-1">{stats.pendente}</p>
               </div>
               <div className="h-10 w-10 rounded-lg bg-amber-100 flex items-center justify-center">
                 <Clock className="h-5 w-5 text-amber-600" />
@@ -219,29 +193,15 @@ export function ResumosProfessor({
           </CardContent>
         </Card>
 
-        <Card className="rounded-xl shadow-sm border-l-4 border-l-red-500">
+        <Card className="rounded-xl shadow-sm border-l-4 border-l-green-500">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Rejeitados</p>
-                <p className="text-2xl font-bold text-gray-900 mt-1">{stats.rejected}</p>
+                <p className="text-sm font-medium text-gray-600">Lidos</p>
+                <p className="text-2xl font-bold text-gray-900 mt-1">{stats.lido}</p>
               </div>
-              <div className="h-10 w-10 rounded-lg bg-red-100 flex items-center justify-center">
-                <XCircle className="h-5 w-5 text-red-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="rounded-xl shadow-sm border-l-4 border-l-indigo-500">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Resumos Lidos</p>
-                <p className="text-2xl font-bold text-gray-900 mt-1">{stats.resumosLidos}</p>
-              </div>
-              <div className="h-10 w-10 rounded-lg bg-indigo-100 flex items-center justify-center">
-                <BookOpen className="h-5 w-5 text-indigo-600" />
+              <div className="h-10 w-10 rounded-lg bg-green-100 flex items-center justify-center">
+                <CheckCircle2 className="h-5 w-5 text-green-600" />
               </div>
             </div>
           </CardContent>
@@ -418,26 +378,26 @@ export function ResumosProfessor({
                 Todos ({stats.total})
               </button>
               <button
-                onClick={() => setFilterStatus("approved")}
+                onClick={() => setFilterStatus("pendente")}
                 className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
-                  filterStatus === "approved"
-                    ? "bg-green-500 text-white shadow-md"
-                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                }`}
-              >
-                <CheckCircle2 className="h-3.5 w-3.5 inline mr-1.5" />
-                Aprovados ({stats.approved})
-              </button>
-              <button
-                onClick={() => setFilterStatus("pending")}
-                className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
-                  filterStatus === "pending"
+                  filterStatus === "pendente"
                     ? "bg-amber-500 text-white shadow-md"
                     : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                 }`}
               >
                 <Clock className="h-3.5 w-3.5 inline mr-1.5" />
-                Pendentes ({stats.pending})
+                Pendentes ({stats.pendente})
+              </button>
+              <button
+                onClick={() => setFilterStatus("lido")}
+                className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                  filterStatus === "lido"
+                    ? "bg-green-500 text-white shadow-md"
+                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                }`}
+              >
+                <CheckCircle2 className="h-3.5 w-3.5 inline mr-1.5" />
+                Lidos ({stats.lido})
               </button>
             </div>
           </div>
