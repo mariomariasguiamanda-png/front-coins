@@ -701,7 +701,7 @@ export function AtividadesProfessor({
                             size="sm"
                           >
                             <Eye className="h-4 w-4 mr-2" />
-                            Ver Submissões ({activity.submissions})
+                            Ver Submissões
                           </Button>
                         ) : (
                           <Button 
