@@ -637,7 +637,6 @@ export function AtividadesProfessor({
                           {statusConfig.label}
                         </span>
                       </div>
-                      <p className="text-sm text-gray-600">{activity.description}</p>
                     </div>
                     <div className="flex gap-2 ml-4">
                       <Button 
@@ -665,10 +664,9 @@ export function AtividadesProfessor({
                       <span className="text-gray-600">Entrega:</span>
                       <span className="font-semibold text-gray-900">{activity.dueDate}</span>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1.5">
                       <Coins className="h-4 w-4 text-amber-500" />
-                      <span className="text-gray-600">Recompensa:</span>
-                      <span className="font-semibold text-amber-600">{activity.coins} moedas</span>
+                      <span className="font-semibold text-amber-600">{activity.coins}</span>
                     </div>
                     {activity.totalStudents && (
                       <div className="flex items-center gap-2">
@@ -684,7 +682,7 @@ export function AtividadesProfessor({
 
                   {/* Barra de progresso de entregas */}
                   {activity.totalStudents && (
-                    <div className="mt-4 pt-4 border-t">
+                    <div className="mt-4 pt-4">
                       <div className="flex items-center justify-between mb-2">
                         <span className="text-xs text-gray-600">Progresso de entregas</span>
                         <span className="text-xs font-semibold text-gray-900">{submissionRate}%</span>
