@@ -659,13 +659,13 @@ export function AtividadesProfessor({
                   </div>
 
                   <div className="flex flex-wrap items-center gap-6 text-sm">
-                    <div className="flex items-center gap-2">
-                      <Calendar className="h-4 w-4 text-gray-400" />
-                      <span className="font-semibold text-gray-900">{activity.dueDate}</span>
-                    </div>
                     <div className="flex items-center gap-1.5">
                       <Coins className="h-4 w-4 text-amber-500" />
                       <span className="font-semibold text-amber-600">{activity.coins}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Calendar className="h-4 w-4 text-gray-400" />
+                      <span className="font-semibold text-gray-900">{activity.dueDate}</span>
                     </div>
                     {activity.totalStudents && (
                       <div className="flex items-center gap-2">
