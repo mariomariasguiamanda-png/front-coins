@@ -501,6 +501,15 @@ export function VideoaulasProfessor({
                       </h3>
                       <p className="text-sm text-gray-600 mt-1">{lesson.discipline}</p>
                     </div>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="rounded-xl"
+                      onClick={() => setPreviewingLesson(lesson)}
+                    >
+                      <Play className="h-4 w-4 mr-1.5" />
+                      Preview
+                    </Button>
                   </div>
 
                   <p className="text-sm text-gray-700 leading-relaxed line-clamp-2 mb-4">
@@ -526,19 +535,10 @@ export function VideoaulasProfessor({
                         variant="outline" 
                         size="sm" 
                         className="rounded-xl flex-1"
-                        onClick={() => setPreviewingLesson(lesson)}
-                      >
-                        <Play className="h-4 w-4 mr-1.5" />
-                        Preview
-                      </Button>
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        className="rounded-xl flex-1"
                         onClick={() => setViewingStats(lesson)}
                       >
                         <BarChart3 className="h-4 w-4 mr-1.5" />
-                        Stats
+                        Detalhes
                       </Button>
                     </div>
                     <div className="flex gap-2">
