@@ -27,7 +27,6 @@ import {
   ExternalLink,
   AlertTriangle,
   Save,
-  Play,
   BarChart3,
   CheckCircle2,
   X
@@ -77,7 +76,6 @@ export function VideoaulasProfessor({
   const [editingLesson, setEditingLesson] = useState<VideoLesson | null>(null);
   const [deletingLessonId, setDeletingLessonId] = useState<string | null>(null);
   const [viewingStats, setViewingStats] = useState<VideoLesson | null>(null);
-  const [previewingLesson, setPreviewingLesson] = useState<VideoLesson | null>(null);
   const [filterDiscipline, setFilterDiscipline] = useState<string>("todas");
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedVideo, setSelectedVideo] = useState<File | null>(null);
@@ -113,13 +111,6 @@ export function VideoaulasProfessor({
       default:
         return { color: "text-green-700 bg-green-100 border-green-200", label: "Publicado" };
     }
-  };
-
-  const extractYouTubeVideoId = (url: string): string | null => {
-    if (!url) return null;
-    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
-    const match = url.match(regExp);
-    return (match && match[2].length === 11) ? match[2] : null;
   };
 
   const handleVideoSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -501,23 +492,10 @@ export function VideoaulasProfessor({
                       </h3>
                       <p className="text-sm text-gray-600 mt-1">{lesson.discipline}</p>
                     </div>
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      className="rounded-xl"
-                      onClick={() => setPreviewingLesson(lesson)}
-                    >
-                      <Play className="h-4 w-4 mr-1.5" />
-                      Preview
-                    </Button>
                   </div>
 
-                  <p className="text-sm text-gray-700 leading-relaxed line-clamp-2 mb-4">
-                    {lesson.description}
-                  </p>
-
                   {/* Métricas */}
-                  <div className="flex items-center gap-4 mb-4 pb-4 border-b text-sm text-gray-600">
+                  <div className="flex items-center gap-4 mb-4 pb-2 text-sm text-gray-600">
                     <div className="flex items-center gap-1.5">
                       <Eye className="h-4 w-4" />
                       <span>{lesson.views}</span>
@@ -542,23 +520,6 @@ export function VideoaulasProfessor({
                       </Button>
                     </div>
                     <div className="flex gap-2">
-                      {lesson.youtubeUrl && (
-                        <a 
-                          href={lesson.youtubeUrl} 
-                          target="_blank" 
-                          rel="noopener noreferrer"
-                          className="flex-1"
-                        >
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
-                            className="rounded-xl w-full"
-                          >
-                            <Youtube className="h-4 w-4 mr-1.5 text-red-600" />
-                            YouTube
-                          </Button>
-                        </a>
-                      )}
                       <Button 
                         variant="outline" 
                         size="sm" 
@@ -726,7 +687,7 @@ export function VideoaulasProfessor({
       {/* Dialog de Estatísticas */}
       <Dialog open={!!viewingStats} onOpenChange={(open) => !open && setViewingStats(null)}>
         <DialogContent className="rounded-xl max-w-3xl bg-white max-h-[85vh] overflow-hidden flex flex-col">
-          <DialogHeader className="border-b pb-4">
+          <DialogHeader className="pb-4">
             <div className="flex-1">
               <div className="flex items-center gap-3 mb-2">
                 <div className="h-12 w-12 rounded-lg bg-violet-100 flex items-center justify-center">
@@ -741,41 +702,6 @@ export function VideoaulasProfessor({
           </DialogHeader>
           
           <div className="flex-1 overflow-y-auto max-h-[calc(85vh-180px)] space-y-6 py-4">
-            {/* Estatísticas Gerais */}
-            <div className="grid gap-4 md:grid-cols-2">
-              <Card className="rounded-xl shadow-sm border-l-4 border-l-blue-500">
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-gray-600">Total de Visualizações</p>
-                      <p className="text-2xl font-bold text-gray-900 mt-1">{viewingStats?.views || 0}</p>
-                    </div>
-                    <div className="h-10 w-10 rounded-lg bg-blue-100 flex items-center justify-center">
-                      <Eye className="h-5 w-5 text-blue-600" />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className="rounded-xl shadow-sm border-l-4 border-l-violet-500">
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-gray-600">Taxa de Conclusão</p>
-                      <p className="text-2xl font-bold text-gray-900 mt-1">
-                        {viewingStats?.studentsWatched 
-                          ? Math.round((viewingStats.studentsWatched.filter(s => s.completed).length / viewingStats.studentsWatched.length) * 100)
-                          : 0}%
-                      </p>
-                    </div>
-                    <div className="h-10 w-10 rounded-lg bg-violet-100 flex items-center justify-center">
-                      <CheckCircle2 className="h-5 w-5 text-violet-600" />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-
             {/* Lista de Visualizações */}
             <div>
               <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
@@ -835,102 +761,10 @@ export function VideoaulasProfessor({
             </div>
           </div>
 
-          <DialogFooter className="border-t pt-4">
+          <DialogFooter className="pt-4">
             <Button
               variant="outline"
               onClick={() => setViewingStats(null)}
-              className="rounded-xl"
-            >
-              Fechar
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Dialog de Preview do Vídeo */}
-      <Dialog open={!!previewingLesson} onOpenChange={(open) => !open && setPreviewingLesson(null)}>
-        <DialogContent className="rounded-xl max-w-5xl bg-white max-h-[90vh] overflow-hidden flex flex-col">
-          <DialogHeader className="border-b pb-4">
-            <div className="flex-1">
-              <div className="flex items-center gap-3 mb-2">
-                <div className="h-12 w-12 rounded-lg bg-violet-100 flex items-center justify-center">
-                  <Play className="h-6 w-6 text-violet-600" />
-                </div>
-                <div className="flex-1">
-                  <DialogTitle className="text-2xl text-gray-900">{previewingLesson?.title}</DialogTitle>
-                  <p className="text-sm text-gray-600 mt-1">{previewingLesson?.discipline}</p>
-                </div>
-              </div>
-            </div>
-          </DialogHeader>
-          
-          <div className="flex-1 overflow-y-auto space-y-4 py-4">
-            {/* Player de Vídeo */}
-            {previewingLesson?.youtubeUrl && (
-              <div className="relative aspect-video w-full overflow-hidden rounded-xl bg-black">
-                <iframe
-                  src={`https://www.youtube.com/embed/${extractYouTubeVideoId(previewingLesson.youtubeUrl)}`}
-                  title={previewingLesson.title}
-                  className="absolute inset-0 w-full h-full"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  allowFullScreen
-                />
-              </div>
-            )}
-
-            {!previewingLesson?.youtubeUrl && (
-              <div className="relative aspect-video w-full overflow-hidden rounded-xl bg-gradient-to-br from-violet-100 to-blue-100 flex items-center justify-center">
-                <div className="text-center">
-                  <Video className="h-16 w-16 text-violet-300 mx-auto mb-4" />
-                  <p className="text-gray-600">Vídeo não disponível para preview</p>
-                </div>
-              </div>
-            )}
-
-            {/* Informações do Vídeo */}
-            <div className="space-y-4">
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">Descrição</h3>
-                <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">
-                  {previewingLesson?.description}
-                </p>
-              </div>
-
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="bg-gray-50 rounded-lg p-3">
-                  <p className="text-xs text-gray-600 mb-1">Visualizações</p>
-                  <p className="text-lg font-semibold text-gray-900">{previewingLesson?.views}</p>
-                </div>
-                <div className="bg-gray-50 rounded-lg p-3">
-                  <p className="text-xs text-gray-600 mb-1">Duração</p>
-                  <p className="text-lg font-semibold text-gray-900">{previewingLesson?.duration || "N/A"}</p>
-                </div>
-                <div className="bg-gray-50 rounded-lg p-3">
-                  <p className="text-xs text-gray-600 mb-1">Publicado em</p>
-                  <p className="text-lg font-semibold text-gray-900">
-                    {previewingLesson?.createdAt ? new Date(previewingLesson.createdAt).toLocaleDateString('pt-BR') : "N/A"}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <DialogFooter className="border-t pt-4 flex gap-2">
-            {previewingLesson?.youtubeUrl && (
-              <a 
-                href={previewingLesson.youtubeUrl} 
-                target="_blank" 
-                rel="noopener noreferrer"
-              >
-                <Button className="rounded-xl bg-red-600 hover:bg-red-700">
-                  <Youtube className="h-4 w-4 mr-2" />
-                  Abrir no YouTube
-                </Button>
-              </a>
-            )}
-            <Button
-              variant="outline"
-              onClick={() => setPreviewingLesson(null)}
               className="rounded-xl"
             >
               Fechar
