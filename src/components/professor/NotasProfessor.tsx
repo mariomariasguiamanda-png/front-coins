@@ -15,8 +15,26 @@ type GradeRow = {
   class: string;
 };
 
+type DisciplinaOption = {
+  id_disciplina: number;
+  nome: string;
+};
+
+type TurmaOption = {
+  id_turma: number;
+  nome: string;
+};
+
 interface NotasProfessorProps {
   grades: GradeRow[];
+  disciplinas: DisciplinaOption[];
+  turmas: TurmaOption[];
+  disciplinaSelecionada: number | null;
+  turmaSelecionada: number | null;
+  onChangeDisciplina: (value: number | null) => void;
+  onChangeTurma: (value: number | null) => void;
+  loading?: boolean;
+  erro?: string | null;
   onAddGrade: () => void; // não vamos usar de verdade no modelo 2, mas mantemos a assinatura
   onEditGrade: (id: string, updated: Partial<GradeRow>) => void | Promise<void>;
   onDeleteGrade: (id: string) => void;
@@ -26,6 +44,14 @@ interface NotasProfessorProps {
 
 export function NotasProfessor({
   grades,
+  disciplinas,
+  turmas,
+  disciplinaSelecionada,
+  turmaSelecionada,
+  onChangeDisciplina,
+  onChangeTurma,
+  loading = false,
+  erro = null,
   onAddGrade,
   onEditGrade,
   onDeleteGrade,
@@ -36,15 +62,6 @@ export function NotasProfessor({
   const [selectedGradeId, setSelectedGradeId] = useState<string>("");
   const [notaInput, setNotaInput] = useState<string>("");
   const [dataInput, setDataInput] = useState<string>("");
-
-  // Disciplina e Turma atuais (todas as linhas da tela são da mesma combinação)
-  const contextoAtual = useMemo(() => {
-    if (!grades.length) return { disciplina: "", turma: "" };
-    return {
-      disciplina: grades[0].discipline,
-      turma: grades[0].class,
-    };
-  }, [grades]);
 
   // Lista de alunos da turma+disciplina atual
   const alunosOptions = useMemo(() => {
@@ -135,22 +152,34 @@ export function NotasProfessor({
         <div className="grid grid-cols-1 gap-3 mt-4 md:grid-cols-2 xl:grid-cols-5">
           <div className="flex flex-col gap-1">
             <label className="text-xs font-semibold uppercase tracking-wide text-gray-600">Disciplina</label>
-            <input
-              type="text"
-              className="border border-gray-200 rounded-xl px-3 py-2 text-sm bg-white/90 cursor-not-allowed text-gray-700"
-              value={contextoAtual.disciplina || ""}
-              disabled
-            />
+            <select
+              className="border border-gray-200 rounded-xl px-3 py-2 text-sm bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-200"
+              value={disciplinaSelecionada ?? ""}
+              onChange={(e) => onChangeDisciplina(e.target.value ? Number(e.target.value) : null)}
+            >
+              <option value="">Selecione...</option>
+              {disciplinas.map((d) => (
+                <option key={d.id_disciplina} value={d.id_disciplina}>
+                  {d.nome}
+                </option>
+              ))}
+            </select>
           </div>
 
           <div className="flex flex-col gap-1">
             <label className="text-xs font-semibold uppercase tracking-wide text-gray-600">Turma</label>
-            <input
-              type="text"
-              className="border border-gray-200 rounded-xl px-3 py-2 text-sm bg-white/90 cursor-not-allowed text-gray-700"
-              value={contextoAtual.turma || ""}
-              disabled
-            />
+            <select
+              className="border border-gray-200 rounded-xl px-3 py-2 text-sm bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-200"
+              value={turmaSelecionada ?? ""}
+              onChange={(e) => onChangeTurma(e.target.value ? Number(e.target.value) : null)}
+            >
+              <option value="">Selecione...</option>
+              {turmas.map((t) => (
+                <option key={t.id_turma} value={t.id_turma}>
+                  {t.nome}
+                </option>
+              ))}
+            </select>
           </div>
 
           <div className="flex flex-col gap-1">
@@ -159,7 +188,7 @@ export function NotasProfessor({
               className="border border-violet-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-violet-200"
               value={selectedGradeId}
               onChange={(e) => setSelectedGradeId(e.target.value)}
-              disabled={!alunosOptions.length}
+              disabled={!alunosOptions.length || !disciplinaSelecionada || !turmaSelecionada}
             >
               {alunosOptions.length === 0 && (
                 <option value="">Nenhum aluno encontrado</option>
@@ -180,6 +209,7 @@ export function NotasProfessor({
               placeholder="Ex: 8,5"
               value={notaInput}
               onChange={(e) => setNotaInput(e.target.value)}
+              disabled={!disciplinaSelecionada || !turmaSelecionada}
             />
           </div>
 
@@ -190,9 +220,17 @@ export function NotasProfessor({
               className="border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-gray-200"
               value={dataInput}
               onChange={(e) => setDataInput(e.target.value)}
+              disabled={!disciplinaSelecionada || !turmaSelecionada}
             />
           </div>
         </div>
+
+        {(loading || erro) && (
+          <div className="mt-3 flex gap-4 text-sm">
+            {loading && <span className="text-gray-500">Carregando...</span>}
+            {erro && <span className="text-red-600">{erro}</span>}
+          </div>
+        )}
       </div>
 
       {/* Barra de ações em cima da tabela */}
