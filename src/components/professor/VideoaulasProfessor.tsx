@@ -23,9 +23,7 @@ import {
   Clock,
   Search,
   Filter,
-  TrendingUp,
   Users,
-  ThumbsUp,
   ExternalLink,
   AlertTriangle,
   Save,
@@ -99,8 +97,6 @@ export function VideoaulasProfessor({
   const stats = {
     total: lessons.length,
     totalViews: lessons.reduce((acc, lesson) => acc + lesson.views, 0),
-    avgViews: lessons.length > 0 ? Math.round(lessons.reduce((acc, lesson) => acc + lesson.views, 0) / lessons.length) : 0,
-    totalLikes: lessons.reduce((acc, lesson) => acc + (lesson.likes || 0), 0),
   };
 
   // Disciplinas únicas
@@ -193,7 +189,7 @@ export function VideoaulasProfessor({
       </div>
 
       {/* Cards de Estatísticas */}
-      <div className="grid gap-4 md:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-2">
         <Card className="rounded-xl shadow-sm border-l-4 border-l-violet-500">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
@@ -207,6 +203,7 @@ export function VideoaulasProfessor({
             </div>
           </CardContent>
         </Card>
+
 
         <Card className="rounded-xl shadow-sm border-l-4 border-l-blue-500">
           <CardContent className="p-4">
@@ -222,33 +219,6 @@ export function VideoaulasProfessor({
           </CardContent>
         </Card>
 
-        <Card className="rounded-xl shadow-sm border-l-4 border-l-green-500">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Média de Views</p>
-                <p className="text-2xl font-bold text-gray-900 mt-1">{stats.avgViews}</p>
-              </div>
-              <div className="h-10 w-10 rounded-lg bg-green-100 flex items-center justify-center">
-                <TrendingUp className="h-5 w-5 text-green-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="rounded-xl shadow-sm border-l-4 border-l-pink-500">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Curtidas</p>
-                <p className="text-2xl font-bold text-gray-900 mt-1">{stats.totalLikes}</p>
-              </div>
-              <div className="h-10 w-10 rounded-lg bg-pink-100 flex items-center justify-center">
-                <ThumbsUp className="h-5 w-5 text-pink-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
       </div>
 
       {/* Formulário de Criar Videoaula */}
@@ -543,12 +513,6 @@ export function VideoaulasProfessor({
                       <Eye className="h-4 w-4" />
                       <span>{lesson.views}</span>
                     </div>
-                    {lesson.likes !== undefined && (
-                      <div className="flex items-center gap-1.5">
-                        <ThumbsUp className="h-4 w-4" />
-                        <span>{lesson.likes}</span>
-                      </div>
-                    )}
                     <div className="flex items-center gap-1.5 ml-auto">
                       <Clock className="h-4 w-4" />
                       <span>{new Date(lesson.createdAt).toLocaleDateString('pt-BR')}</span>
@@ -778,7 +742,7 @@ export function VideoaulasProfessor({
           
           <div className="flex-1 overflow-y-auto max-h-[calc(85vh-180px)] space-y-6 py-4">
             {/* Estatísticas Gerais */}
-            <div className="grid gap-4 md:grid-cols-3">
+            <div className="grid gap-4 md:grid-cols-2">
               <Card className="rounded-xl shadow-sm border-l-4 border-l-blue-500">
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
@@ -788,22 +752,6 @@ export function VideoaulasProfessor({
                     </div>
                     <div className="h-10 w-10 rounded-lg bg-blue-100 flex items-center justify-center">
                       <Eye className="h-5 w-5 text-blue-600" />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className="rounded-xl shadow-sm border-l-4 border-l-green-500">
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-gray-600">Alunos que Assistiram</p>
-                      <p className="text-2xl font-bold text-gray-900 mt-1">
-                        {viewingStats?.studentsWatched?.length || 0}
-                      </p>
-                    </div>
-                    <div className="h-10 w-10 rounded-lg bg-green-100 flex items-center justify-center">
-                      <Users className="h-5 w-5 text-green-600" />
                     </div>
                   </div>
                 </CardContent>
@@ -956,10 +904,6 @@ export function VideoaulasProfessor({
                 <div className="bg-gray-50 rounded-lg p-3">
                   <p className="text-xs text-gray-600 mb-1">Visualizações</p>
                   <p className="text-lg font-semibold text-gray-900">{previewingLesson?.views}</p>
-                </div>
-                <div className="bg-gray-50 rounded-lg p-3">
-                  <p className="text-xs text-gray-600 mb-1">Curtidas</p>
-                  <p className="text-lg font-semibold text-gray-900">{previewingLesson?.likes || 0}</p>
                 </div>
                 <div className="bg-gray-50 rounded-lg p-3">
                   <p className="text-xs text-gray-600 mb-1">Duração</p>
