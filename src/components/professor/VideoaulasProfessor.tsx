@@ -747,7 +747,7 @@ export function VideoaulasProfessor({
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm font-medium text-gray-600">Total de Views</p>
+                      <p className="text-sm font-medium text-gray-600">Total de Visualizações</p>
                       <p className="text-2xl font-bold text-gray-900 mt-1">{viewingStats?.views || 0}</p>
                     </div>
                     <div className="h-10 w-10 rounded-lg bg-blue-100 flex items-center justify-center">
@@ -776,11 +776,11 @@ export function VideoaulasProfessor({
               </Card>
             </div>
 
-            {/* Lista de Alunos */}
+            {/* Lista de Visualizações */}
             <div>
               <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
                 <Users className="h-5 w-5 text-violet-600" />
-                Alunos que Assistiram ({viewingStats?.studentsWatched?.length || 0})
+                Visualizações ({viewingStats?.views || 0})
               </h3>
               
               {viewingStats?.studentsWatched && viewingStats.studentsWatched.length > 0 ? (
@@ -832,7 +832,7 @@ export function VideoaulasProfessor({
                 <Card className="rounded-xl shadow-sm">
                   <CardContent className="p-8 text-center">
                     <Users className="h-12 w-12 text-gray-300 mx-auto mb-3" />
-                    <p className="text-gray-600">Nenhum aluno assistiu esta videoaula ainda</p>
+                    <p className="text-gray-600">Nenhuma visualização registrada para esta videoaula</p>
                   </CardContent>
                 </Card>
               )}
