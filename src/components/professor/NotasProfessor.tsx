@@ -113,9 +113,6 @@ export function NotasProfessor({
             </div>
             <div>
               <h2 className="text-lg font-semibold text-gray-900">Lançar Nota Final</h2>
-              <p className="text-sm text-gray-600">
-                Preencha os campos abaixo para registrar a nota no mesmo fluxo da página.
-              </p>
             </div>
           </div>
           <div className="flex gap-2">
@@ -140,8 +137,8 @@ export function NotasProfessor({
             <label className="text-xs font-semibold uppercase tracking-wide text-gray-600">Disciplina</label>
             <input
               type="text"
-              className="border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white/90 cursor-not-allowed text-gray-700"
-              value={contextoAtual.disciplina || "Selecione disciplina e turma acima"}
+              className="border border-gray-200 rounded-xl px-3 py-2 text-sm bg-white/90 cursor-not-allowed text-gray-700"
+              value={contextoAtual.disciplina || ""}
               disabled
             />
           </div>
@@ -150,8 +147,8 @@ export function NotasProfessor({
             <label className="text-xs font-semibold uppercase tracking-wide text-gray-600">Turma</label>
             <input
               type="text"
-              className="border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white/90 cursor-not-allowed text-gray-700"
-              value={contextoAtual.turma || "Selecione disciplina e turma acima"}
+              className="border border-gray-200 rounded-xl px-3 py-2 text-sm bg-white/90 cursor-not-allowed text-gray-700"
+              value={contextoAtual.turma || ""}
               disabled
             />
           </div>
