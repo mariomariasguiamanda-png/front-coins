@@ -492,6 +492,24 @@ export function VideoaulasProfessor({
                       </h3>
                       <p className="text-sm text-gray-600 mt-1">{lesson.discipline}</p>
                     </div>
+                    <div className="flex items-center gap-2">
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="rounded-xl"
+                        onClick={() => setEditingLesson(lesson)}
+                      >
+                        <Edit2 className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="rounded-xl text-red-600 hover:bg-red-50 hover:border-red-300"
+                        onClick={() => setDeletingLessonId(lesson.id)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
 
                   {/* Métricas */}
@@ -517,24 +535,6 @@ export function VideoaulasProfessor({
                       >
                         <BarChart3 className="h-4 w-4 mr-1.5" />
                         Detalhes
-                      </Button>
-                    </div>
-                    <div className="flex gap-2">
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        className="rounded-xl"
-                        onClick={() => setEditingLesson(lesson)}
-                      >
-                        <Edit2 className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="rounded-xl text-red-600 hover:bg-red-50 hover:border-red-300"
-                        onClick={() => setDeletingLessonId(lesson.id)}
-                      >
-                        <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
                   </div>
