@@ -30,6 +30,7 @@ import {
   TrendingUp,
   Award,
   ChevronRight,
+  Coins,
   X,
   Settings,
 } from "lucide-react";
@@ -40,6 +41,8 @@ interface Student {
   name: string;
   email: string;
   status: "active" | "inactive";
+  averageGrade?: number;
+  totalCoins?: number;
 }
 
 export interface Class {
@@ -67,6 +70,7 @@ export function TurmasProfessor({
   onDeleteClass,
 }: TurmasProfessorProps) {
   const [viewingClass, setViewingClass] = useState<Class | null>(null);
+  const [detailsViewMode, setDetailsViewMode] = useState<"overview" | "students">("overview");
   const [showCreateForm, setShowCreateForm] = useState(false); // kept for compatibility with other pages
   const [editingClass, setEditingClass] = useState<Class | null>(null); // kept but not used (no UI triggers)
   const [searchTerm, setSearchTerm] = useState("");
@@ -303,11 +307,26 @@ export function TurmasProfessor({
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => setViewingClass(cls)}
+                      onClick={() => {
+                        setDetailsViewMode("overview");
+                        setViewingClass(cls);
+                      }}
                       className="flex-1 rounded-xl"
                     >
                       <ChevronRight className="h-4 w-4 mr-1" />
                       Detalhes
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setDetailsViewMode("students");
+                        setViewingClass(cls);
+                      }}
+                      className="flex-1 rounded-xl"
+                    >
+                      <Users className="h-4 w-4 mr-1" />
+                      Alunos
                     </Button>
                     {/* Edição de turma removida para professores nesta página */}
                     {/* Exclusão removida para professores nesta página */}
@@ -463,57 +482,122 @@ export function TurmasProfessor({
 
           {viewingClass && (
             <div className="space-y-6 py-4">
-              {/* Informações Gerais */}
-              <div className="grid gap-4 md:grid-cols-3">
-                <Card className="rounded-xl shadow-sm border-l-4 border-l-violet-500">
-                  <CardContent className="p-4">
-                    <p className="text-xs text-gray-600 mb-1">Turno</p>
-                    <p className="text-lg font-bold text-gray-900">
-                      {getShiftLabel(viewingClass.shift)}
-                    </p>
-                  </CardContent>
-                </Card>
-                <Card className="rounded-xl shadow-sm border-l-4 border-l-blue-500">
-                  <CardContent className="p-4">
-                    <p className="text-xs text-gray-600 mb-1">
-                      Total de Alunos
-                    </p>
-                    <p className="text-lg font-bold text-gray-900">
-                      {viewingClass.totalStudents}
-                    </p>
-                  </CardContent>
-                </Card>
-                <Card className="rounded-xl shadow-sm border-l-4 border-l-green-500">
-                  <CardContent className="p-4">
-                    <p className="text-xs text-gray-600 mb-1">Média da Turma</p>
-                    <p className="text-lg font-bold text-gray-900">
-                      {viewingClass.averageGrade.toFixed(1)}
-                    </p>
-                  </CardContent>
-                </Card>
-              </div>
+              {detailsViewMode === "overview" && (
+                <>
+                  {/* Informações Gerais */}
+                  <div className="grid gap-4 md:grid-cols-3">
+                    <Card className="rounded-xl shadow-sm border-l-4 border-l-violet-500">
+                      <CardContent className="p-4">
+                        <p className="text-xs text-gray-600 mb-1">Turno</p>
+                        <p className="text-lg font-bold text-gray-900">
+                          {getShiftLabel(viewingClass.shift)}
+                        </p>
+                      </CardContent>
+                    </Card>
+                    <Card className="rounded-xl shadow-sm border-l-4 border-l-blue-500">
+                      <CardContent className="p-4">
+                        <p className="text-xs text-gray-600 mb-1">
+                          Total de Alunos
+                        </p>
+                        <p className="text-lg font-bold text-gray-900">
+                          {viewingClass.totalStudents}
+                        </p>
+                      </CardContent>
+                    </Card>
+                    <Card className="rounded-xl shadow-sm border-l-4 border-l-green-500">
+                      <CardContent className="p-4">
+                        <p className="text-xs text-gray-600 mb-1">Média da Turma</p>
+                        <p className="text-lg font-bold text-gray-900">
+                          {viewingClass.averageGrade.toFixed(1)}
+                        </p>
+                      </CardContent>
+                    </Card>
+                  </div>
 
-              {/* Disciplinas */}
-              {viewingClass.disciplines.length > 0 && (
-                <Card className="rounded-xl shadow-sm">
-                  <CardContent className="p-4">
-                    <h3 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                      <BookOpen className="h-4 w-4 text-violet-600" />
-                      Disciplinas ({viewingClass.disciplines.length})
-                    </h3>
-                    <div className="flex flex-wrap gap-2">
-                      {viewingClass.disciplines.map((discipline, index) => (
-                        <span
-                          key={index}
-                          className="px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-700 border border-blue-200"
-                        >
-                          {discipline}
-                        </span>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
+                  {/* Disciplinas */}
+                  {viewingClass.disciplines.length > 0 && (
+                    <Card className="rounded-xl shadow-sm">
+                      <CardContent className="p-4">
+                        <h3 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                          <BookOpen className="h-4 w-4 text-violet-600" />
+                          Disciplinas ({viewingClass.disciplines.length})
+                        </h3>
+                        <div className="flex flex-wrap gap-2">
+                          {viewingClass.disciplines.map((discipline, index) => (
+                            <span
+                              key={index}
+                              className="px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-700 border border-blue-200"
+                            >
+                              {discipline}
+                            </span>
+                          ))}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+                </>
               )}
+
+              {/* Lista Completa de Alunos */}
+              <Card className="rounded-xl shadow-sm">
+                <CardContent className="p-4">
+                  <h3 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                    <Users className="h-4 w-4 text-violet-600" />
+                    Lista Completa de Alunos ({viewingClass.students?.length || 0})
+                  </h3>
+
+                  {viewingClass.students && viewingClass.students.length > 0 ? (
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead className="bg-gray-50 border-b">
+                          <tr>
+                            <th className="text-left px-3 py-2 font-semibold text-gray-700">Aluno</th>
+                            <th className="text-left px-3 py-2 font-semibold text-gray-700">Média</th>
+                            <th className="text-left px-3 py-2 font-semibold text-gray-700">Moedas</th>
+                            <th className="text-left px-3 py-2 font-semibold text-gray-700">Status</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y">
+                          {viewingClass.students.map((student) => (
+                            <tr key={student.id} className="hover:bg-gray-50">
+                              <td className="px-3 py-2">
+                                <div>
+                                  <p className="font-medium text-gray-900">{student.name}</p>
+                                  <p className="text-xs text-gray-500">{student.email}</p>
+                                </div>
+                              </td>
+                              <td className="px-3 py-2 font-semibold text-gray-800">
+                                {typeof student.averageGrade === "number" ? student.averageGrade.toFixed(1) : "-"}
+                              </td>
+                              <td className="px-3 py-2">
+                                <div className="inline-flex items-center gap-1 text-amber-700 font-semibold">
+                                  <Coins className="h-4 w-4" />
+                                  {student.totalCoins ?? 0}
+                                </div>
+                              </td>
+                              <td className="px-3 py-2">
+                                <span
+                                  className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                    student.status === "active"
+                                      ? "bg-green-100 text-green-700"
+                                      : "bg-gray-100 text-gray-700"
+                                  }`}
+                                >
+                                  {student.status === "active" ? "Ativo" : "Inativo"}
+                                </span>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                    <div className="rounded-lg border border-dashed border-gray-200 p-6 text-center">
+                      <p className="text-sm text-gray-600">Sem alunos vinculados para esta turma no momento.</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
             </div>
           )}
 

@@ -61,7 +61,6 @@ interface DesempenhoProfessorProps {
   onFilterChange: (filters: {
     discipline?: string;
     class?: string;
-    period?: string;
   }) => void;
 }
 
@@ -72,7 +71,6 @@ export function DesempenhoProfessor({
 }: DesempenhoProfessorProps) {
   const [selectedDiscipline, setSelectedDiscipline] = useState<string>("todas");
   const [selectedClass, setSelectedClass] = useState<string>("todas");
-  const [selectedPeriod, setSelectedPeriod] = useState<string>("todos");
   const [selectedStudent, setSelectedStudent] = useState<PerformanceData | null>(null);
 
   // Filtrar dados
@@ -199,16 +197,21 @@ export function DesempenhoProfessor({
       </div>
 
       {/* Filtros */}
-      <Card className="rounded-xl shadow-sm">
+      <Card className="rounded-xl shadow-sm border-violet-100">
         <CardContent className="p-6">
-          <div className="mb-4 flex items-center gap-3">
-            <Filter className="h-5 w-5 text-violet-600" />
-            <h2 className="text-lg font-semibold text-gray-900">Filtros</h2>
+          <div className="mb-5 flex items-center gap-3">
+            <div className="h-10 w-10 rounded-xl bg-violet-100 flex items-center justify-center">
+              <Filter className="h-5 w-5 text-violet-600" />
+            </div>
+            <div>
+              <h2 className="text-lg font-semibold text-gray-900">Filtros</h2>
+              <p className="text-sm text-gray-500">Refine os resultados por disciplina e turma</p>
+            </div>
           </div>
 
-          <div className="grid gap-4 md:grid-cols-3">
-            <div>
-              <label className="text-sm font-medium text-gray-700 mb-1 block">Disciplina</label>
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="rounded-xl border border-violet-100 bg-violet-50/40 p-3">
+              <label className="text-xs font-semibold uppercase tracking-wide text-violet-700 mb-2 block">Disciplina</label>
               <Select
                 value={selectedDiscipline}
                 onValueChange={(value) => {
@@ -216,7 +219,7 @@ export function DesempenhoProfessor({
                   onFilterChange({ discipline: value });
                 }}
               >
-                <SelectTrigger className="rounded-xl bg-white">
+                <SelectTrigger className="rounded-xl bg-white border-violet-200">
                   <SelectValue placeholder="Todas as disciplinas" />
                 </SelectTrigger>
                 <SelectContent>
@@ -230,8 +233,8 @@ export function DesempenhoProfessor({
               </Select>
             </div>
 
-            <div>
-              <label className="text-sm font-medium text-gray-700 mb-1 block">Turma</label>
+            <div className="rounded-xl border border-blue-100 bg-blue-50/40 p-3">
+              <label className="text-xs font-semibold uppercase tracking-wide text-blue-700 mb-2 block">Turma</label>
               <Select
                 value={selectedClass}
                 onValueChange={(value) => {
@@ -239,7 +242,7 @@ export function DesempenhoProfessor({
                   onFilterChange({ class: value });
                 }}
               >
-                <SelectTrigger className="rounded-xl bg-white">
+                <SelectTrigger className="rounded-xl bg-white border-blue-200">
                   <SelectValue placeholder="Todas as turmas" />
                 </SelectTrigger>
                 <SelectContent>
@@ -249,28 +252,6 @@ export function DesempenhoProfessor({
                   <SelectItem value="2º A">2º A</SelectItem>
                   <SelectItem value="2º B">2º B</SelectItem>
                   <SelectItem value="3º C">3º C</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <label className="text-sm font-medium text-gray-700 mb-1 block">Período</label>
-              <Select
-                value={selectedPeriod}
-                onValueChange={(value) => {
-                  setSelectedPeriod(value);
-                  onFilterChange({ period: value });
-                }}
-              >
-                <SelectTrigger className="rounded-xl bg-white">
-                  <SelectValue placeholder="Todos os períodos" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="todos">Todos</SelectItem>
-                  <SelectItem value="bimestre1">1º Bimestre</SelectItem>
-                  <SelectItem value="bimestre2">2º Bimestre</SelectItem>
-                  <SelectItem value="bimestre3">3º Bimestre</SelectItem>
-                  <SelectItem value="bimestre4">4º Bimestre</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -290,7 +271,7 @@ export function DesempenhoProfessor({
             <div>
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm font-medium text-gray-700">Excelente (9.0 - 10.0)</span>
-                <span className="text-sm font-semibold text-green-700">{gradeRanges.excellent} alunos</span>
+                <span className="text-sm font-semibold text-gray-700">{gradeRanges.excellent} alunos</span>
               </div>
               <div className="h-8 bg-gray-100 rounded-lg overflow-hidden">
                 <div 
@@ -305,7 +286,7 @@ export function DesempenhoProfessor({
             <div>
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm font-medium text-gray-700">Bom (7.0 - 8.9)</span>
-                <span className="text-sm font-semibold text-blue-700">{gradeRanges.good} alunos</span>
+                <span className="text-sm font-semibold text-gray-700">{gradeRanges.good} alunos</span>
               </div>
               <div className="h-8 bg-gray-100 rounded-lg overflow-hidden">
                 <div 
@@ -320,7 +301,7 @@ export function DesempenhoProfessor({
             <div>
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm font-medium text-gray-700">Regular (5.0 - 6.9)</span>
-                <span className="text-sm font-semibold text-amber-700">{gradeRanges.average} alunos</span>
+                <span className="text-sm font-semibold text-gray-700">{gradeRanges.average} alunos</span>
               </div>
               <div className="h-8 bg-gray-100 rounded-lg overflow-hidden">
                 <div 
@@ -335,7 +316,7 @@ export function DesempenhoProfessor({
             <div>
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm font-medium text-gray-700">Abaixo da Média (&lt; 5.0)</span>
-                <span className="text-sm font-semibold text-red-700">{gradeRanges.belowAvg} alunos</span>
+                <span className="text-sm font-semibold text-gray-700">{gradeRanges.belowAvg} alunos</span>
               </div>
               <div className="h-8 bg-gray-100 rounded-lg overflow-hidden">
                 <div 
@@ -384,7 +365,7 @@ export function DesempenhoProfessor({
                       <div>
                         <div className="flex items-center justify-between mb-1">
                           <span className="text-xs text-gray-600">Média</span>
-                          <span className="text-xs font-bold text-blue-700">{student.averageGrade.toFixed(1)}</span>
+                          <span className="text-xs font-bold text-gray-700">{student.averageGrade.toFixed(1)}</span>
                         </div>
                         <div className="h-4 bg-gray-200 rounded-full overflow-hidden">
                           <div
@@ -396,7 +377,7 @@ export function DesempenhoProfessor({
                       <div>
                         <div className="flex items-center justify-between mb-1">
                           <span className="text-xs text-gray-600">Moedas</span>
-                          <span className="text-xs font-bold text-amber-700">{student.totalCoins}</span>
+                          <span className="text-xs font-bold text-gray-700">{student.totalCoins}</span>
                         </div>
                         <div className="h-4 bg-gray-200 rounded-full overflow-hidden">
                           <div
@@ -448,7 +429,7 @@ export function DesempenhoProfessor({
                         <span className="text-gray-600 ml-1">média</span>
                       </div>
                       <div className="text-right">
-                        <span className="font-bold text-amber-600">{avgCoins}</span>
+                        <span className="font-bold text-gray-700">{avgCoins}</span>
                         <span className="text-gray-600 ml-1">moedas</span>
                       </div>
                     </div>
