@@ -88,9 +88,6 @@ export function DesempenhoProfessor({
     avgGrade: filteredData.length > 0 
       ? (filteredData.reduce((acc, d) => acc + d.averageGrade, 0) / filteredData.length).toFixed(1)
       : "0.0",
-    avgCoins: filteredData.length > 0
-      ? Math.round(filteredData.reduce((acc, d) => acc + d.totalCoins, 0) / filteredData.length)
-      : 0,
     aboveAvg: filteredData.filter(d => d.averageGrade >= 7).length,
     belowAvg: filteredData.filter(d => d.averageGrade < 7).length,
   };
@@ -142,7 +139,7 @@ export function DesempenhoProfessor({
       </div>
 
       {/* Cards de Estatísticas */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card className="rounded-xl shadow-sm border-l-4 border-l-violet-500">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
@@ -199,19 +196,6 @@ export function DesempenhoProfessor({
           </CardContent>
         </Card>
 
-        <Card className="rounded-xl shadow-sm border-l-4 border-l-amber-500">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Média de Moedas</p>
-                <p className="text-2xl font-bold text-gray-900 mt-1">{stats.avgCoins}</p>
-              </div>
-              <div className="h-10 w-10 rounded-lg bg-amber-100 flex items-center justify-center">
-                <Coins className="h-5 w-5 text-amber-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
       </div>
 
       {/* Filtros */}
