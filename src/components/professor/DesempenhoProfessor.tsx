@@ -1,6 +1,5 @@
 import { Button } from "@/components/ui/Button";
 import { Card, CardContent } from "@/components/ui/Card";
-import Link from "next/link";
 import {
   Select,
   SelectContent,
@@ -87,21 +86,14 @@ export function DesempenhoProfessor({
           <h1 className="text-3xl font-bold text-gray-900">Desempenho</h1>
           <p className="text-gray-600 mt-1">Acompanhe o progresso e desempenho dos alunos</p>
         </div>
-        <div className="flex items-center gap-2">
-          <Link href="/professor/ranking-turma">
-            <Button variant="outline" className="rounded-xl">
-              Ranking por Turma
-            </Button>
-          </Link>
-          <Button
-            variant="outline"
-            className="rounded-xl"
-            onClick={onExportReport}
-          >
-            <Download className="h-4 w-4 mr-2" />
-            Exportar
-          </Button>
-        </div>
+        <Button
+          variant="outline"
+          className="rounded-xl"
+          onClick={onExportReport}
+        >
+          <Download className="h-4 w-4 mr-2" />
+          Exportar
+        </Button>
       </div>
 
       {/* Cards de Estatísticas */}
