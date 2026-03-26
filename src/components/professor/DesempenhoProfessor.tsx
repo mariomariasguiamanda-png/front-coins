@@ -92,6 +92,7 @@ export function DesempenhoProfessor({
       ? Math.round(filteredData.reduce((acc, d) => acc + d.totalCoins, 0) / filteredData.length)
       : 0,
     aboveAvg: filteredData.filter(d => d.averageGrade >= 7).length,
+    belowAvg: filteredData.filter(d => d.averageGrade < 7).length,
   };
 
   // Calcular distribuição de notas para gráfico CSS
@@ -141,7 +142,7 @@ export function DesempenhoProfessor({
       </div>
 
       {/* Cards de Estatísticas */}
-      <div className="grid gap-4 md:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
         <Card className="rounded-xl shadow-sm border-l-4 border-l-violet-500">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
@@ -179,6 +180,20 @@ export function DesempenhoProfessor({
               </div>
               <div className="h-10 w-10 rounded-lg bg-green-100 flex items-center justify-center">
                 <Award className="h-5 w-5 text-green-600" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="rounded-xl shadow-sm border-l-4 border-l-red-500">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Abaixo da Média</p>
+                <p className="text-2xl font-bold text-gray-900 mt-1">{stats.belowAvg}</p>
+              </div>
+              <div className="h-10 w-10 rounded-lg bg-red-100 flex items-center justify-center">
+                <AlertCircle className="h-5 w-5 text-red-600" />
               </div>
             </div>
           </CardContent>
