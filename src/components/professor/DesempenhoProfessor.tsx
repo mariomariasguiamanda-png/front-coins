@@ -341,45 +341,6 @@ export function DesempenhoProfessor({
 
           {selectedStudent && (
             <div className="space-y-6 py-4">
-              {/* Cards de Estatísticas do Aluno */}
-              <div className="grid gap-4 md:grid-cols-4">
-                <Card className="rounded-xl shadow-sm border-l-4 border-l-blue-500">
-                  <CardContent className="p-4">
-                    <div className="flex flex-col">
-                      <p className="text-xs font-medium text-gray-600 mb-1">Média Geral</p>
-                      <p className="text-2xl font-bold text-gray-900">{selectedStudent.averageGrade.toFixed(1)}</p>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card className="rounded-xl shadow-sm border-l-4 border-l-amber-500">
-                  <CardContent className="p-4">
-                    <div className="flex flex-col">
-                      <p className="text-xs font-medium text-gray-600 mb-1">Moedas</p>
-                      <p className="text-2xl font-bold text-gray-900">{selectedStudent.totalCoins}</p>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card className="rounded-xl shadow-sm border-l-4 border-l-green-500">
-                  <CardContent className="p-4">
-                    <div className="flex flex-col">
-                      <p className="text-xs font-medium text-gray-600 mb-1">Ranking</p>
-                      <p className="text-2xl font-bold text-gray-900">#{selectedStudent.ranking}</p>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card className="rounded-xl shadow-sm border-l-4 border-l-purple-500">
-                  <CardContent className="p-4">
-                    <div className="flex flex-col">
-                      <p className="text-xs font-medium text-gray-600 mb-1">Frequência</p>
-                      <p className="text-2xl font-bold text-gray-900">{selectedStudent.attendance}%</p>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-
               {/* Informações da Turma */}
               <Card className="rounded-xl shadow-sm">
                 <CardContent className="p-4">
@@ -422,6 +383,45 @@ export function DesempenhoProfessor({
                   </div>
                 </CardContent>
               </Card>
+
+              {/* Cards de Estatísticas do Aluno */}
+              <div className="grid gap-4 md:grid-cols-4">
+                <Card className="rounded-xl shadow-sm border-l-4 border-l-blue-500">
+                  <CardContent className="p-4">
+                    <div className="flex flex-col">
+                      <p className="text-xs font-medium text-gray-600 mb-1">Média Geral</p>
+                      <p className="text-2xl font-bold text-gray-900">{selectedStudent.averageGrade.toFixed(1)}</p>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="rounded-xl shadow-sm border-l-4 border-l-amber-500">
+                  <CardContent className="p-4">
+                    <div className="flex flex-col">
+                      <p className="text-xs font-medium text-gray-600 mb-1">Moedas</p>
+                      <p className="text-2xl font-bold text-gray-900">{selectedStudent.totalCoins}</p>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="rounded-xl shadow-sm border-l-4 border-l-green-500">
+                  <CardContent className="p-4">
+                    <div className="flex flex-col">
+                      <p className="text-xs font-medium text-gray-600 mb-1">Ranking</p>
+                      <p className="text-2xl font-bold text-gray-900">#{selectedStudent.ranking}</p>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="rounded-xl shadow-sm border-l-4 border-l-purple-500">
+                  <CardContent className="p-4">
+                    <div className="flex flex-col">
+                      <p className="text-xs font-medium text-gray-600 mb-1">Frequência</p>
+                      <p className="text-2xl font-bold text-gray-900">{selectedStudent.attendance}%</p>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
 
               {/* Botão de Fechar */}
               <div className="flex justify-end pt-4 border-t">
