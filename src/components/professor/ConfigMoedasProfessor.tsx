@@ -1,10 +1,13 @@
 import { Card, CardContent } from "@/components/ui/Card";
+import { Input } from "@/components/ui/Input";
+import { Button } from "@/components/ui/Button";
 import { 
   Coins,
   DollarSign,
   Zap,
   BookOpen,
 } from "lucide-react";
+import { useState } from "react";
 
 interface ConfigMoedasProps {
   disciplinas: Array<{
@@ -16,11 +19,15 @@ interface ConfigMoedasProps {
     totalAlunos?: number;
     moedasCirculacao?: number;
   }>;
+  onUpdateConfig?: (disciplinaId: string, precoMoedas: number, pontosDisponiveis: number) => void;
 }
 
 export function ConfigMoedasProfessor({ 
-  disciplinas = []
+  disciplinas = [],
+  onUpdateConfig,
 }: ConfigMoedasProps) {
+  const [tempValues, setTempValues] = useState<Record<string, { preco: number; pontos: number }>>({});
+
   // Estatisticas gerais
   const stats = {
     totalDisciplinas: disciplinas.length,
@@ -88,6 +95,11 @@ export function ConfigMoedasProfessor({
       {/* Grid de Disciplinas */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {disciplinas.map((disciplina) => {
+          const values = tempValues[disciplina.id] || {
+            preco: disciplina.precoMoedas,
+            pontos: disciplina.pontosDisponiveis,
+          };
+
           return (
             <Card key={disciplina.id} className="rounded-xl shadow-sm border border-violet-200 bg-white hover:shadow-md transition-shadow">
               <CardContent className="p-6">
@@ -105,16 +117,51 @@ export function ConfigMoedasProfessor({
                 <div className="space-y-3">
                   <div className="rounded-xl border border-violet-100 bg-violet-50 px-4 py-3">
                     <p className="text-xs font-medium text-violet-700 mb-1">Quantidade de pontos</p>
-                    <p className="text-xl font-bold text-gray-900">{disciplina.pontosDisponiveis}</p>
+                    <Input
+                      type="number"
+                      min="0"
+                      value={values.pontos}
+                      onChange={(e) =>
+                        setTempValues((prev) => ({
+                          ...prev,
+                          [disciplina.id]: {
+                            ...values,
+                            pontos: Number(e.target.value),
+                          },
+                        }))
+                      }
+                      className="h-10 rounded-lg bg-white"
+                    />
                   </div>
 
                   <div className="rounded-xl border border-violet-100 bg-white px-4 py-3">
                     <p className="text-xs font-medium text-violet-700 mb-1">Preco</p>
-                    <p className="text-xl font-bold text-gray-900 inline-flex items-center gap-1">
-                      <Coins className="h-4 w-4 text-violet-600" />
-                      {disciplina.precoMoedas}
-                    </p>
+                    <div className="relative">
+                      <Coins className="h-4 w-4 text-violet-600 absolute left-3 top-1/2 -translate-y-1/2" />
+                      <Input
+                        type="number"
+                        min="1"
+                        value={values.preco}
+                        onChange={(e) =>
+                          setTempValues((prev) => ({
+                            ...prev,
+                            [disciplina.id]: {
+                              ...values,
+                              preco: Number(e.target.value),
+                            },
+                          }))
+                        }
+                        className="h-10 rounded-lg pl-9"
+                      />
+                    </div>
                   </div>
+
+                  <Button
+                    className="w-full rounded-xl bg-violet-600 hover:bg-violet-700"
+                    onClick={() => onUpdateConfig?.(disciplina.id, values.preco, values.pontos)}
+                  >
+                    Salvar alteracoes
+                  </Button>
                 </div>
               </CardContent>
             </Card>

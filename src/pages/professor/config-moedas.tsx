@@ -1,9 +1,10 @@
 import { ConfigMoedasProfessor } from "@/components/professor/ConfigMoedasProfessor";
 import { ProfessorLayout } from "@/components/professor/ProfessorLayout";
+import { useState } from "react";
 
 export default function ConfigMoedasPage() {
   // Mock data - replace with API calls later
-  const disciplinas = [
+  const [disciplinas, setDisciplinas] = useState([
     {
       id: "1",
       nome: "Matemática",
@@ -58,11 +59,24 @@ export default function ConfigMoedasPage() {
       totalAlunos: 27,
       moedasCirculacao: 760,
     },
-  ];
+  ]);
+
+  const handleUpdateConfig = (disciplinaId: string, precoMoedas: number, pontosDisponiveis: number) => {
+    setDisciplinas((prev) =>
+      prev.map((disciplina) =>
+        disciplina.id === disciplinaId
+          ? { ...disciplina, precoMoedas, pontosDisponiveis }
+          : disciplina
+      )
+    );
+  };
 
   return (
     <ProfessorLayout>
-      <ConfigMoedasProfessor disciplinas={disciplinas} />
+      <ConfigMoedasProfessor
+        disciplinas={disciplinas}
+        onUpdateConfig={handleUpdateConfig}
+      />
     </ProfessorLayout>
   );
 }
