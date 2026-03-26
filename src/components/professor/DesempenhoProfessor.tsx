@@ -7,15 +7,32 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { 
   BarChart2, 
   Download, 
   Filter, 
+  TrendingUp,
+  TrendingDown,
   Award,
   Users,
   Target,
   Coins,
+  Eye,
+  ChevronRight,
+  Trophy,
+  Medal,
+  Star,
   AlertCircle,
+  Calendar,
+  CheckCircle2,
+  BookOpen,
   PieChart
 } from "lucide-react";
 import { useState } from "react";
@@ -54,6 +71,7 @@ export function DesempenhoProfessor({
 }: DesempenhoProfessorProps) {
   const [selectedDiscipline, setSelectedDiscipline] = useState<string>("todas");
   const [selectedClass, setSelectedClass] = useState<string>("todas");
+  const [selectedStudent, setSelectedStudent] = useState<PerformanceData | null>(null);
 
   // Filtrar dados
   const filteredData = performanceData.filter(data => {
@@ -78,6 +96,26 @@ export function DesempenhoProfessor({
     good: filteredData.filter(d => d.averageGrade >= 7 && d.averageGrade < 9).length,
     average: filteredData.filter(d => d.averageGrade >= 5 && d.averageGrade < 7).length,
     belowAvg: filteredData.filter(d => d.averageGrade < 5).length,
+  };
+
+  const getTrendIcon = (trend?: string) => {
+    if (trend === "up") return <TrendingUp className="h-4 w-4 text-green-600" />;
+    if (trend === "down") return <TrendingDown className="h-4 w-4 text-red-600" />;
+    return <div className="h-4 w-4" />;
+  };
+
+  const getRankingIcon = (ranking: number) => {
+    if (ranking === 1) return <Trophy className="h-5 w-5 text-yellow-500" />;
+    if (ranking === 2) return <Medal className="h-5 w-5 text-gray-400" />;
+    if (ranking === 3) return <Medal className="h-5 w-5 text-amber-600" />;
+    return <Star className="h-5 w-5 text-gray-300" />;
+  };
+
+  const getGradeColor = (grade: number) => {
+    if (grade >= 9) return "text-green-700 bg-green-100 border-green-200";
+    if (grade >= 7) return "text-blue-700 bg-blue-100 border-blue-200";
+    if (grade >= 5) return "text-amber-700 bg-amber-100 border-amber-200";
+    return "text-red-700 bg-red-100 border-red-200";
   };
 
   return (
@@ -293,61 +331,6 @@ export function DesempenhoProfessor({
         </CardContent>
       </Card>
 
-      {/* Comparação por Turma */}
-      <Card className="rounded-xl shadow-sm">
-        <CardContent className="p-6">
-          <div className="mb-6 flex items-center gap-3">
-            <PieChart className="h-5 w-5 text-violet-600" />
-            <h2 className="text-lg font-semibold text-gray-900">Desempenho Médio por Turma</h2>
-          </div>
-          <div className="space-y-4">
-            {Array.from(new Set(filteredData.map(d => d.class))).map((className) => {
-              const classStudents = filteredData.filter(d => d.class === className);
-              const avgGrade = classStudents.reduce((acc, s) => acc + s.averageGrade, 0) / classStudents.length;
-              const avgCoins = Math.round(classStudents.reduce((acc, s) => acc + s.totalCoins, 0) / classStudents.length);
-              const maxAvg = Math.max(
-                ...Array.from(new Set(filteredData.map(d => d.class))).map(c => {
-                  const students = filteredData.filter(d => d.class === c);
-                  return students.reduce((acc, s) => acc + s.averageGrade, 0) / students.length;
-                })
-              );
-              const width = (avgGrade / maxAvg) * 100;
-
-              return (
-                <div key={className} className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <span className="px-3 py-1 rounded-full text-sm font-semibold bg-blue-100 text-blue-700">
-                        {className}
-                      </span>
-                      <span className="text-sm text-gray-600">{classStudents.length} alunos</span>
-                    </div>
-                    <div className="flex items-center gap-4 text-sm">
-                      <div className="text-right">
-                        <span className="font-bold text-gray-900">{avgGrade.toFixed(1)}</span>
-                        <span className="text-gray-600 ml-1">média</span>
-                      </div>
-                      <div className="text-right">
-                        <span className="font-bold text-gray-700">{avgCoins}</span>
-                        <span className="text-gray-600 ml-1">moedas</span>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="h-6 bg-gray-200 rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-gradient-to-r from-violet-500 to-purple-600 rounded-full flex items-center justify-end px-3 transition-all duration-500"
-                      style={{ width: `${width}%` }}
-                    >
-                      <span className="text-xs font-bold text-white">{avgGrade.toFixed(1)}</span>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </CardContent>
-      </Card>
-
       {/* Análise Comparativa */}
       <Card className="rounded-xl shadow-sm">
         <CardContent className="p-6">
@@ -410,6 +393,362 @@ export function DesempenhoProfessor({
           </div>
         </CardContent>
       </Card>
+
+      {/* Comparação por Turma */}
+      <Card className="rounded-xl shadow-sm">
+        <CardContent className="p-6">
+          <div className="mb-6 flex items-center gap-3">
+            <PieChart className="h-5 w-5 text-violet-600" />
+            <h2 className="text-lg font-semibold text-gray-900">Desempenho Médio por Turma</h2>
+          </div>
+          <div className="space-y-4">
+            {Array.from(new Set(filteredData.map(d => d.class))).map((className) => {
+              const classStudents = filteredData.filter(d => d.class === className);
+              const avgGrade = classStudents.reduce((acc, s) => acc + s.averageGrade, 0) / classStudents.length;
+              const avgCoins = Math.round(classStudents.reduce((acc, s) => acc + s.totalCoins, 0) / classStudents.length);
+              const maxAvg = Math.max(
+                ...Array.from(new Set(filteredData.map(d => d.class))).map(c => {
+                  const students = filteredData.filter(d => d.class === c);
+                  return students.reduce((acc, s) => acc + s.averageGrade, 0) / students.length;
+                })
+              );
+              const width = (avgGrade / maxAvg) * 100;
+
+              return (
+                <div key={className} className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <span className="px-3 py-1 rounded-full text-sm font-semibold bg-blue-100 text-blue-700">
+                        {className}
+                      </span>
+                      <span className="text-sm text-gray-600">{classStudents.length} alunos</span>
+                    </div>
+                    <div className="flex items-center gap-4 text-sm">
+                      <div className="text-right">
+                        <span className="font-bold text-gray-900">{avgGrade.toFixed(1)}</span>
+                        <span className="text-gray-600 ml-1">média</span>
+                      </div>
+                      <div className="text-right">
+                        <span className="font-bold text-gray-700">{avgCoins}</span>
+                        <span className="text-gray-600 ml-1">moedas</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="h-6 bg-gray-200 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-gradient-to-r from-violet-500 to-purple-600 rounded-full flex items-center justify-end px-3 transition-all duration-500"
+                      style={{ width: `${width}%` }}
+                    >
+                      <span className="text-xs font-bold text-white">{avgGrade.toFixed(1)}</span>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Análise de Tendências */}
+      <Card className="rounded-xl shadow-sm bg-gradient-to-br from-violet-50 to-blue-50 border-violet-200">
+        <CardContent className="p-6">
+          <div className="mb-6 flex items-center gap-3">
+            <TrendingUp className="h-5 w-5 text-violet-600" />
+            <h2 className="text-lg font-semibold text-gray-900">Análise de Tendências</h2>
+          </div>
+          <div className="grid gap-4 md:grid-cols-3">
+            <div className="bg-white rounded-lg p-4 border border-green-200">
+              <div className="flex items-center gap-2 mb-2">
+                <TrendingUp className="h-5 w-5 text-green-600" />
+                <span className="font-semibold text-gray-900">Em Crescimento</span>
+              </div>
+              <p className="text-3xl font-bold text-green-700 mb-1">
+                {filteredData.filter(d => d.trend === "up").length}
+              </p>
+              <p className="text-xs text-gray-600">alunos melhorando</p>
+            </div>
+            <div className="bg-white rounded-lg p-4 border border-gray-200">
+              <div className="flex items-center gap-2 mb-2">
+                <Target className="h-5 w-5 text-gray-600" />
+                <span className="font-semibold text-gray-900">Estável</span>
+              </div>
+              <p className="text-3xl font-bold text-gray-700 mb-1">
+                {filteredData.filter(d => d.trend === "stable" || !d.trend).length}
+              </p>
+              <p className="text-xs text-gray-600">alunos mantendo</p>
+            </div>
+            <div className="bg-white rounded-lg p-4 border border-red-200">
+              <div className="flex items-center gap-2 mb-2">
+                <TrendingDown className="h-5 w-5 text-red-600" />
+                <span className="font-semibold text-gray-900">Necessitam Atenção</span>
+              </div>
+              <p className="text-3xl font-bold text-red-700 mb-1">
+                {filteredData.filter(d => d.trend === "down").length}
+              </p>
+              <p className="text-xs text-gray-600">alunos em declínio</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Lista de Alunos */}
+      <div id="ranking-individual" className="scroll-mt-20">
+        <Card className="rounded-xl shadow-sm">
+          <CardContent className="p-6">
+            <div className="mb-6 flex items-center gap-3">
+              <TrendingUp className="h-5 w-5 text-violet-600" />
+              <h2 className="text-lg font-semibold text-gray-900">Desempenho Individual</h2>
+              <span className="text-sm text-gray-500 ml-auto">
+                {filteredData.length} {filteredData.length === 1 ? 'aluno' : 'alunos'}
+              </span>
+            </div>
+
+          {filteredData.length === 0 ? (
+            <div className="py-12 text-center">
+              <AlertCircle className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Nenhum aluno encontrado</h3>
+              <p className="text-gray-600">Tente ajustar os filtros de busca</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="border-b-2 text-left bg-gray-50">
+                  <tr>
+                    <th className="pb-3 pt-3 px-4 font-semibold text-gray-700">Ranking</th>
+                    <th className="pb-3 pt-3 px-4 font-semibold text-gray-700">Aluno</th>
+                    <th className="pb-3 pt-3 px-4 font-semibold text-gray-700">Turma</th>
+                    <th className="pb-3 pt-3 px-4 font-semibold text-gray-700">Média</th>
+                    <th className="pb-3 pt-3 px-4 font-semibold text-gray-700">Moedas</th>
+                    <th className="pb-3 pt-3 px-4 font-semibold text-gray-700">Tendência</th>
+                    <th className="pb-3 pt-3 px-4 font-semibold text-gray-700">Ações</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y">
+                  {filteredData.map((data) => {
+                    const gradeColor = getGradeColor(data.averageGrade);
+                    return (
+                      <tr key={data.studentId} className="hover:bg-gray-50 transition-colors">
+                        <td className="py-4 px-4">
+                          <div className="flex items-center gap-2">
+                            {getRankingIcon(data.ranking)}
+                            <span className="font-bold text-gray-900">#{data.ranking}</span>
+                          </div>
+                        </td>
+                        <td className="py-4 px-4">
+                          <div className="flex items-center gap-2">
+                            <div className="h-9 w-9 rounded-full bg-violet-100 flex items-center justify-center">
+                              <span className="text-sm font-semibold text-violet-600">
+                                {data.studentName.split(' ').map(n => n[0]).join('').substring(0, 2)}
+                              </span>
+                            </div>
+                            <div>
+                              <p className="font-medium text-gray-900">{data.studentName}</p>
+                              <p className="text-xs text-gray-500">{data.studentId}</p>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="py-4 px-4">
+                          <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-700">
+                            {data.class}
+                          </span>
+                        </td>
+                        <td className="py-4 px-4">
+                          <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-bold border ${gradeColor}`}>
+                            {data.averageGrade.toFixed(1)}
+                          </span>
+                        </td>
+                        <td className="py-4 px-4">
+                          <div className="flex items-center gap-1.5 text-amber-600">
+                            <Coins className="h-4 w-4" />
+                            <span className="font-semibold">{data.totalCoins}</span>
+                          </div>
+                        </td>
+                        <td className="py-4 px-4">
+                          {getTrendIcon(data.trend)}
+                        </td>
+                        <td className="py-4 px-4">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="rounded-xl"
+                            onClick={() => setSelectedStudent(data)}
+                          >
+                            Ver Detalhes
+                            <ChevronRight className="h-3.5 w-3.5 ml-1" />
+                          </Button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+      </div>
+
+      {/* Dialog de Detalhes do Aluno */}
+      <Dialog open={!!selectedStudent} onOpenChange={(open) => !open && setSelectedStudent(null)}>
+        <DialogContent className="rounded-xl max-w-2xl bg-white max-h-[90vh] overflow-auto">
+          <DialogHeader>
+            <div className="flex items-center gap-3 mb-2">
+              <div className="h-14 w-14 rounded-full bg-violet-100 flex items-center justify-center">
+                <span className="text-xl font-bold text-violet-700">
+                  {selectedStudent?.studentName.split(' ').map(n => n[0]).join('').substring(0, 2)}
+                </span>
+              </div>
+              <div>
+                <DialogTitle className="text-2xl text-gray-900">{selectedStudent?.studentName}</DialogTitle>
+                <p className="text-sm text-gray-600">Matrícula: {selectedStudent?.studentId}</p>
+              </div>
+            </div>
+          </DialogHeader>
+
+          {selectedStudent && (
+            <div className="space-y-6 py-4">
+              {/* Cards de Estatísticas do Aluno */}
+              <div className="grid gap-4 md:grid-cols-4">
+                <Card className="rounded-xl shadow-sm border-l-4 border-l-blue-500">
+                  <CardContent className="p-4">
+                    <div className="flex flex-col">
+                      <p className="text-xs font-medium text-gray-600 mb-1">Média Geral</p>
+                      <p className="text-2xl font-bold text-gray-900">{selectedStudent.averageGrade.toFixed(1)}</p>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="rounded-xl shadow-sm border-l-4 border-l-amber-500">
+                  <CardContent className="p-4">
+                    <div className="flex flex-col">
+                      <p className="text-xs font-medium text-gray-600 mb-1">Moedas</p>
+                      <p className="text-2xl font-bold text-gray-900">{selectedStudent.totalCoins}</p>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="rounded-xl shadow-sm border-l-4 border-l-green-500">
+                  <CardContent className="p-4">
+                    <div className="flex flex-col">
+                      <p className="text-xs font-medium text-gray-600 mb-1">Ranking</p>
+                      <p className="text-2xl font-bold text-gray-900">#{selectedStudent.ranking}</p>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="rounded-xl shadow-sm border-l-4 border-l-purple-500">
+                  <CardContent className="p-4">
+                    <div className="flex flex-col">
+                      <p className="text-xs font-medium text-gray-600 mb-1">Frequência</p>
+                      <p className="text-2xl font-bold text-gray-900">{selectedStudent.attendance}%</p>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Informações da Turma */}
+              <Card className="rounded-xl shadow-sm">
+                <CardContent className="p-4">
+                  <h3 className="text-sm font-semibold text-gray-900 mb-3">Informações Acadêmicas</h3>
+                  <div className="grid gap-3 md:grid-cols-2">
+                    <div className="flex items-center gap-2">
+                      <BookOpen className="h-4 w-4 text-gray-400" />
+                      <span className="text-sm text-gray-600">Disciplina:</span>
+                      <span className="text-sm font-semibold text-gray-900">{selectedStudent.discipline}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Users className="h-4 w-4 text-gray-400" />
+                      <span className="text-sm text-gray-600">Turma:</span>
+                      <span className="text-sm font-semibold text-gray-900">{selectedStudent.class}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {selectedStudent.trend === "up" ? (
+                        <TrendingUp className="h-4 w-4 text-green-600" />
+                      ) : selectedStudent.trend === "down" ? (
+                        <TrendingDown className="h-4 w-4 text-red-600" />
+                      ) : (
+                        <Target className="h-4 w-4 text-gray-600" />
+                      )}
+                      <span className="text-sm text-gray-600">Tendência:</span>
+                      <span className={`text-sm font-semibold ${
+                        selectedStudent.trend === "up" ? "text-green-600" : 
+                        selectedStudent.trend === "down" ? "text-red-600" : 
+                        "text-gray-600"
+                      }`}>
+                        {selectedStudent.trend === "up" ? "Crescente" : 
+                         selectedStudent.trend === "down" ? "Decrescente" : 
+                         "Estável"}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Award className="h-4 w-4 text-gray-400" />
+                      <span className="text-sm text-gray-600">Total de Atividades:</span>
+                      <span className="text-sm font-semibold text-gray-900">{selectedStudent.grades.length}</span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Histórico de Notas */}
+              <Card className="rounded-xl shadow-sm">
+                <CardContent className="p-4">
+                  <h3 className="text-sm font-semibold text-gray-900 mb-4">Histórico de Avaliações</h3>
+                  <div className="space-y-3">
+                    {selectedStudent.grades.map((grade, index) => {
+                      const percentage = (grade.grade / grade.maxGrade) * 100;
+                      const color = percentage >= 90 ? "bg-green-500" :
+                                    percentage >= 70 ? "bg-blue-500" :
+                                    percentage >= 60 ? "bg-amber-500" : "bg-red-500";
+                      
+                      return (
+                        <div key={index} className="border rounded-lg p-3 hover:bg-gray-50 transition-colors">
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center gap-2">
+                              <CheckCircle2 className="h-4 w-4 text-gray-400" />
+                              <span className="font-medium text-gray-900">{grade.activity}</span>
+                            </div>
+                            <div className="flex items-center gap-3">
+                              <span className="text-xs text-gray-500 flex items-center gap-1">
+                                <Calendar className="h-3 w-3" />
+                                {new Date(grade.date).toLocaleDateString('pt-BR')}
+                              </span>
+                              <span className={`px-3 py-1 rounded-full text-sm font-bold ${
+                                percentage >= 70 ? "bg-green-100 text-green-700" :
+                                percentage >= 60 ? "bg-amber-100 text-amber-700" :
+                                "bg-red-100 text-red-700"
+                              }`}>
+                                {grade.grade.toFixed(1)}/{grade.maxGrade}
+                              </span>
+                            </div>
+                          </div>
+                          {/* Barra de Progresso */}
+                          <div className="w-full bg-gray-200 rounded-full h-2">
+                            <div 
+                              className={`${color} h-2 rounded-full transition-all duration-300`}
+                              style={{ width: `${percentage}%` }}
+                            />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Botão de Fechar */}
+              <div className="flex justify-end pt-4 border-t">
+                <Button
+                  variant="outline"
+                  onClick={() => setSelectedStudent(null)}
+                  className="rounded-xl"
+                >
+                  Fechar
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
