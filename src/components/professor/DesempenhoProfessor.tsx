@@ -14,6 +14,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { 
+  BarChart2,
   Download, 
   Filter, 
   TrendingUp,
@@ -86,6 +87,13 @@ export function DesempenhoProfessor({
       : "0.0",
     aboveAvg: filteredData.filter(d => d.averageGrade >= 7).length,
     belowAvg: filteredData.filter(d => d.averageGrade < 7).length,
+  };
+
+  const gradeRanges = {
+    excellent: filteredData.filter(d => d.averageGrade >= 9).length,
+    good: filteredData.filter(d => d.averageGrade >= 7 && d.averageGrade < 9).length,
+    average: filteredData.filter(d => d.averageGrade >= 5 && d.averageGrade < 7).length,
+    belowAvg: filteredData.filter(d => d.averageGrade < 5).length,
   };
 
   return (
@@ -225,6 +233,189 @@ export function DesempenhoProfessor({
                 </SelectContent>
               </Select>
             </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Distribuição de Desempenho */}
+      <Card className="rounded-xl shadow-sm">
+        <CardContent className="p-6">
+          <div className="mb-6 flex items-center gap-3">
+            <BarChart2 className="h-5 w-5 text-violet-600" />
+            <h2 className="text-lg font-semibold text-gray-900">Distribuição de Desempenho</h2>
+          </div>
+
+          <div className="space-y-4">
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-medium text-gray-700">Excelente (9.0 - 10.0)</span>
+                <span className="text-sm font-semibold text-gray-700">{gradeRanges.excellent} alunos</span>
+              </div>
+              <div className="h-8 bg-gray-100 rounded-lg overflow-hidden">
+                <div
+                  className="h-full bg-gradient-to-r from-green-500 to-green-600 flex items-center justify-end px-3 text-white text-xs font-semibold transition-all duration-500"
+                  style={{ width: filteredData.length > 0 ? `${(gradeRanges.excellent / filteredData.length) * 100}%` : "0%" }}
+                >
+                  {filteredData.length > 0 && gradeRanges.excellent > 0 && `${Math.round((gradeRanges.excellent / filteredData.length) * 100)}%`}
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-medium text-gray-700">Bom (7.0 - 8.9)</span>
+                <span className="text-sm font-semibold text-gray-700">{gradeRanges.good} alunos</span>
+              </div>
+              <div className="h-8 bg-gray-100 rounded-lg overflow-hidden">
+                <div
+                  className="h-full bg-gradient-to-r from-blue-500 to-blue-600 flex items-center justify-end px-3 text-white text-xs font-semibold transition-all duration-500"
+                  style={{ width: filteredData.length > 0 ? `${(gradeRanges.good / filteredData.length) * 100}%` : "0%" }}
+                >
+                  {filteredData.length > 0 && gradeRanges.good > 0 && `${Math.round((gradeRanges.good / filteredData.length) * 100)}%`}
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-medium text-gray-700">Regular (5.0 - 6.9)</span>
+                <span className="text-sm font-semibold text-gray-700">{gradeRanges.average} alunos</span>
+              </div>
+              <div className="h-8 bg-gray-100 rounded-lg overflow-hidden">
+                <div
+                  className="h-full bg-gradient-to-r from-amber-500 to-amber-600 flex items-center justify-end px-3 text-white text-xs font-semibold transition-all duration-500"
+                  style={{ width: filteredData.length > 0 ? `${(gradeRanges.average / filteredData.length) * 100}%` : "0%" }}
+                >
+                  {filteredData.length > 0 && gradeRanges.average > 0 && `${Math.round((gradeRanges.average / filteredData.length) * 100)}%`}
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-medium text-gray-700">Abaixo da Média (&lt; 5.0)</span>
+                <span className="text-sm font-semibold text-gray-700">{gradeRanges.belowAvg} alunos</span>
+              </div>
+              <div className="h-8 bg-gray-100 rounded-lg overflow-hidden">
+                <div
+                  className="h-full bg-gradient-to-r from-red-500 to-red-600 flex items-center justify-end px-3 text-white text-xs font-semibold transition-all duration-500"
+                  style={{ width: filteredData.length > 0 ? `${(gradeRanges.belowAvg / filteredData.length) * 100}%` : "0%" }}
+                >
+                  {filteredData.length > 0 && gradeRanges.belowAvg > 0 && `${Math.round((gradeRanges.belowAvg / filteredData.length) * 100)}%`}
+                </div>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Desempenho Médio por Turma */}
+      <Card className="rounded-xl shadow-sm">
+        <CardContent className="p-6">
+          <div className="mb-6 flex items-center gap-3">
+            <PieChart className="h-5 w-5 text-violet-600" />
+            <h2 className="text-lg font-semibold text-gray-900">Desempenho Médio por Turma</h2>
+          </div>
+          <div className="space-y-4">
+            {Array.from(new Set(filteredData.map(d => d.class))).map((className) => {
+              const classStudents = filteredData.filter(d => d.class === className);
+              const avgGrade = classStudents.reduce((acc, s) => acc + s.averageGrade, 0) / classStudents.length;
+              const maxAvg = Math.max(
+                ...Array.from(new Set(filteredData.map(d => d.class))).map(c => {
+                  const students = filteredData.filter(d => d.class === c);
+                  return students.reduce((acc, s) => acc + s.averageGrade, 0) / students.length;
+                })
+              );
+              const width = (avgGrade / maxAvg) * 100;
+
+              return (
+                <div key={className} className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <span className="px-3 py-1 rounded-full text-sm font-semibold bg-violet-100 text-violet-700">
+                        {className}
+                      </span>
+                      <span className="text-sm text-gray-600">{classStudents.length} alunos</span>
+                    </div>
+                    <div className="text-right text-sm">
+                      <span className="font-bold text-gray-900">{avgGrade.toFixed(1)}</span>
+                      <span className="text-gray-600 ml-1">média</span>
+                    </div>
+                  </div>
+                  <div className="h-6 bg-gray-200 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-gradient-to-r from-violet-500 to-purple-600 rounded-full flex items-center justify-end px-3 transition-all duration-500"
+                      style={{ width: `${width}%` }}
+                    >
+                      <span className="text-xs font-bold text-white">{avgGrade.toFixed(1)}</span>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Desempenho vs Moedas - Top 10 */}
+      <Card className="rounded-xl shadow-sm">
+        <CardContent className="p-6">
+          <div className="mb-6 flex items-center gap-3">
+            <BarChart2 className="h-5 w-5 text-violet-600" />
+            <h2 className="text-lg font-semibold text-gray-900">Desempenho vs Moedas - Top 10</h2>
+          </div>
+          <div className="space-y-3">
+            {[...filteredData]
+              .sort((a, b) => b.averageGrade - a.averageGrade)
+              .slice(0, 10)
+              .map((student) => {
+                const maxGrade = Math.max(...filteredData.map((d) => d.averageGrade));
+                const maxCoins = Math.max(...filteredData.map((d) => d.totalCoins));
+                const gradeWidth = (student.averageGrade / maxGrade) * 100;
+                const coinsWidth = (student.totalCoins / maxCoins) * 100;
+
+                return (
+                  <div key={student.studentId} className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="h-8 w-8 rounded-full bg-violet-100 flex items-center justify-center">
+                          <span className="text-xs font-bold text-violet-600">
+                            {student.studentName.split(" ").map((n) => n[0]).join("").substring(0, 2)}
+                          </span>
+                        </div>
+                        <span className="text-sm font-medium text-gray-900">{student.studentName}</span>
+                      </div>
+                      <span className="text-xs text-gray-500">{student.class}</span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-xs text-gray-600">Média</span>
+                          <span className="text-xs font-bold text-gray-700">{student.averageGrade.toFixed(1)}</span>
+                        </div>
+                        <div className="h-4 bg-gray-200 rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-gradient-to-r from-blue-500 to-blue-600 rounded-full transition-all duration-500"
+                            style={{ width: `${gradeWidth}%` }}
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-xs text-gray-600">Moedas</span>
+                          <span className="text-xs font-bold text-gray-700">{student.totalCoins}</span>
+                        </div>
+                        <div className="h-4 bg-gray-200 rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-gradient-to-r from-amber-500 to-amber-600 rounded-full transition-all duration-500"
+                            style={{ width: `${coinsWidth}%` }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
           </div>
         </CardContent>
       </Card>
