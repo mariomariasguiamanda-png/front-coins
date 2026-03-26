@@ -248,7 +248,7 @@ export function DashboardProfessor({ teacherName, activities = [] }: DashboardPr
             </div>
             
             <div className="space-y-3 mb-6">
-              <Link href="/professor/desempenho#ranking-individual" className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors group">
+              <Link href="/professor/ranking-turma" className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors group">
                 <span className="text-2xl">🥇</span>
                 <div className="flex-1 min-w-0">
                   <p className="font-medium text-gray-900 group-hover:text-violet-600 transition-colors">João Silva</p>
@@ -257,7 +257,7 @@ export function DashboardProfessor({ teacherName, activities = [] }: DashboardPr
                 <ArrowRight className="h-4 w-4 text-gray-400 group-hover:text-violet-600 transition-colors" />
               </Link>
               
-              <Link href="/professor/desempenho#ranking-individual" className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors group">
+              <Link href="/professor/ranking-turma" className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors group">
                 <span className="text-2xl">🥈</span>
                 <div className="flex-1 min-w-0">
                   <p className="font-medium text-gray-900 group-hover:text-violet-600 transition-colors">Maria Santos</p>
@@ -266,7 +266,7 @@ export function DashboardProfessor({ teacherName, activities = [] }: DashboardPr
                 <ArrowRight className="h-4 w-4 text-gray-400 group-hover:text-violet-600 transition-colors" />
               </Link>
               
-              <Link href="/professor/desempenho#ranking-individual" className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors group">
+              <Link href="/professor/ranking-turma" className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors group">
                 <span className="text-2xl">🥉</span>
                 <div className="flex-1 min-w-0">
                   <p className="font-medium text-gray-900 group-hover:text-violet-600 transition-colors">Pedro Oliveira</p>
