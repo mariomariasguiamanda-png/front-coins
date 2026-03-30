@@ -38,6 +38,7 @@ export function ProfessorLayout({ children }: ProfessorLayoutProps) {
     if (path.includes("/disciplinas")) return "disciplinas";
     if (path.includes("/desempenho")) return "desempenho";
     if (path.includes("/notas")) return "notas";
+    if (path.includes("/ranking-turma")) return "ranking";
     if (path.includes("/config-moedas")) return "moedas";
     if (path.includes("/pontos-precos")) return "pontos";
     if (path.includes("/resumos")) return "resumos";
@@ -81,7 +82,7 @@ export function ProfessorLayout({ children }: ProfessorLayoutProps) {
     },
     {
       key: "videoaulas",
-      label: "Videoaulas",
+      label: "Vídeoaulas",
       icon: Medal,
       href: "/professor/videoaulas",
     },
@@ -90,6 +91,12 @@ export function ProfessorLayout({ children }: ProfessorLayoutProps) {
       label: "Notas",
       icon: BarChart3,
       href: "/professor/notas",
+    },
+    {
+      key: "ranking",
+      label: "Ranking",
+      icon: Trophy,
+      href: "/professor/ranking-turma",
     },
     {
       key: "desempenho",

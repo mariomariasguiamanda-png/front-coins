@@ -15,8 +15,26 @@ type GradeRow = {
   class: string;
 };
 
+type DisciplinaOption = {
+  id_disciplina: number;
+  nome: string;
+};
+
+type TurmaOption = {
+  id_turma: number;
+  nome: string;
+};
+
 interface NotasProfessorProps {
   grades: GradeRow[];
+  disciplinas: DisciplinaOption[];
+  turmas: TurmaOption[];
+  disciplinaSelecionada: number | null;
+  turmaSelecionada: number | null;
+  onChangeDisciplina: (value: number | null) => void;
+  onChangeTurma: (value: number | null) => void;
+  loading?: boolean;
+  erro?: string | null;
   onAddGrade: () => void; // não vamos usar de verdade no modelo 2, mas mantemos a assinatura
   onEditGrade: (id: string, updated: Partial<GradeRow>) => void | Promise<void>;
   onDeleteGrade: (id: string) => void;
@@ -26,6 +44,14 @@ interface NotasProfessorProps {
 
 export function NotasProfessor({
   grades,
+  disciplinas,
+  turmas,
+  disciplinaSelecionada,
+  turmaSelecionada,
+  onChangeDisciplina,
+  onChangeTurma,
+  loading = false,
+  erro = null,
   onAddGrade,
   onEditGrade,
   onDeleteGrade,
@@ -36,15 +62,6 @@ export function NotasProfessor({
   const [selectedGradeId, setSelectedGradeId] = useState<string>("");
   const [notaInput, setNotaInput] = useState<string>("");
   const [dataInput, setDataInput] = useState<string>("");
-
-  // Disciplina e Turma atuais (todas as linhas da tela são da mesma combinação)
-  const contextoAtual = useMemo(() => {
-    if (!grades.length) return { disciplina: "", turma: "" };
-    return {
-      disciplina: grades[0].discipline,
-      turma: grades[0].class,
-    };
-  }, [grades]);
 
   // Lista de alunos da turma+disciplina atual
   const alunosOptions = useMemo(() => {
@@ -104,114 +121,117 @@ export function NotasProfessor({
 
   return (
     <div className="px-6 pb-8 space-y-6">
-      {/* Card: Adicionar Nota Final */}
-      <Card className="shadow-sm border border-gray-100">
-        <CardContent className="p-6 space-y-4">
-          <div className="flex items-center justify-between gap-4">
+      {/* Banner: Lançamento de Nota Final */}
+      <div className="rounded-2xl border border-violet-200 bg-gradient-to-r from-violet-50 to-blue-50 p-4 md:p-5">
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-2xl bg-violet-100 flex items-center justify-center">
+              <Plus className="w-5 h-5 text-violet-600" />
+            </div>
             <div>
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-2xl bg-violet-100 flex items-center justify-center">
-                  <Plus className="w-5 h-5 text-violet-600" />
-                </div>
-                <div>
-                  <h2 className="text-lg font-semibold text-gray-900">
-                    Adicionar Nota Final
-                  </h2>
-                  <p className="text-sm text-gray-500">
-                    Registre a nota final de um aluno na disciplina selecionada.
-                  </p>
-                </div>
-              </div>
+              <h2 className="text-lg font-semibold text-gray-900">Lançar Nota Final</h2>
             </div>
           </div>
+          <div className="flex gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setNotaInput("");
+                setDataInput("");
+              }}
+            >
+              Limpar
+            </Button>
+            <Button type="button" onClick={handleSalvarNotaFinal}>
+              <span className="mr-1.5">Salvar Nota</span>
+            </Button>
+          </div>
+        </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-4">
-            {/* Disciplina (somente leitura, vem do contexto) */}
-            <div className="flex flex-col gap-1">
-              <label className="text-sm text-gray-600">Disciplina *</label>
-              <input
-                type="text"
-                className="border rounded-lg px-3 py-2 text-sm bg-gray-50 cursor-not-allowed"
-                value={contextoAtual.disciplina || "Selecione disciplina e turma acima"}
-                disabled
-              />
-            </div>
-
-            {/* Turma (somente leitura) */}
-            <div className="flex flex-col gap-1">
-              <label className="text-sm text-gray-600">Turma *</label>
-              <input
-                type="text"
-                className="border rounded-lg px-3 py-2 text-sm bg-gray-50 cursor-not-allowed"
-                value={contextoAtual.turma || "Selecione disciplina e turma acima"}
-                disabled
-              />
-            </div>
-
-            {/* Aluno */}
-            <div className="flex flex-col gap-1">
-              <label className="text-sm text-gray-600">Aluno *</label>
-              <select
-                className="border rounded-lg px-3 py-2 text-sm"
-                value={selectedGradeId}
-                onChange={(e) => setSelectedGradeId(e.target.value)}
-                disabled={!alunosOptions.length}
-              >
-                {alunosOptions.length === 0 && (
-                  <option value="">Nenhum aluno encontrado</option>
-                )}
-                {alunosOptions.map((aluno) => (
-                  <option key={aluno.id} value={aluno.id}>
-                    {aluno.studentName} ({aluno.studentId})
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Nota Final */}
-            <div className="flex flex-col gap-1">
-              <label className="text-sm text-gray-600">Nota *</label>
-              <input
-                type="text"
-                className="border rounded-lg px-3 py-2 text-sm"
-                placeholder="Ex: 8.5"
-                value={notaInput}
-                onChange={(e) => setNotaInput(e.target.value)}
-              />
-            </div>
-
-            {/* Data (opcional) */}
-            <div className="flex flex-col gap-1 md:col-span-2 lg:col-span-1">
-              <label className="text-sm text-gray-600">Data</label>
-              <input
-                type="date"
-                className="border rounded-lg px-3 py-2 text-sm"
-                value={dataInput}
-                onChange={(e) => setDataInput(e.target.value)}
-              />
-            </div>
+        <div className="grid grid-cols-1 gap-3 mt-4 md:grid-cols-2 xl:grid-cols-5">
+          <div className="flex flex-col gap-1">
+            <label className="text-xs font-semibold uppercase tracking-wide text-gray-600">Disciplina</label>
+            <select
+              className="border border-gray-200 rounded-xl px-3 py-2 text-sm bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-200"
+              value={disciplinaSelecionada ?? ""}
+              onChange={(e) => onChangeDisciplina(e.target.value ? Number(e.target.value) : null)}
+            >
+              <option value="">Selecione...</option>
+              {disciplinas.map((d) => (
+                <option key={d.id_disciplina} value={d.id_disciplina}>
+                  {d.nome}
+                </option>
+              ))}
+            </select>
           </div>
 
-          <div className="flex justify-between items-center mt-4">
-            <div />
-            <div className="flex gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => {
-                  setNotaInput("");
-                  setDataInput("");
-                }}
-              >
-                Cancelar
-              </Button>
-              <Button type="button" onClick={handleSalvarNotaFinal}>
-                <span className="mr-1.5">Salvar Nota</span>
-              </Button>
-            </div>
+          <div className="flex flex-col gap-1">
+            <label className="text-xs font-semibold uppercase tracking-wide text-gray-600">Turma</label>
+            <select
+              className="border border-gray-200 rounded-xl px-3 py-2 text-sm bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-200"
+              value={turmaSelecionada ?? ""}
+              onChange={(e) => onChangeTurma(e.target.value ? Number(e.target.value) : null)}
+            >
+              <option value="">Selecione...</option>
+              {turmas.map((t) => (
+                <option key={t.id_turma} value={t.id_turma}>
+                  {t.nome}
+                </option>
+              ))}
+            </select>
           </div>
-        </CardContent>
-      </Card>
+
+          <div className="flex flex-col gap-1">
+            <label className="text-xs font-semibold uppercase tracking-wide text-violet-700">Aluno *</label>
+            <select
+              className="border border-violet-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-violet-200"
+              value={selectedGradeId}
+              onChange={(e) => setSelectedGradeId(e.target.value)}
+              disabled={!alunosOptions.length || !disciplinaSelecionada || !turmaSelecionada}
+            >
+              {alunosOptions.length === 0 && (
+                <option value="">Nenhum aluno encontrado</option>
+              )}
+              {alunosOptions.map((aluno) => (
+                <option key={aluno.id} value={aluno.id}>
+                  {aluno.studentName} ({aluno.studentId})
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="flex flex-col gap-1">
+            <label className="text-xs font-semibold uppercase tracking-wide text-violet-700">Nota final *</label>
+            <input
+              type="text"
+              className="border border-violet-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-violet-200"
+              placeholder="Ex: 8,5"
+              value={notaInput}
+              onChange={(e) => setNotaInput(e.target.value)}
+              disabled={!disciplinaSelecionada || !turmaSelecionada}
+            />
+          </div>
+
+          <div className="flex flex-col gap-1">
+            <label className="text-xs font-semibold uppercase tracking-wide text-gray-600">Data (opcional)</label>
+            <input
+              type="date"
+              className="border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-gray-200"
+              value={dataInput}
+              onChange={(e) => setDataInput(e.target.value)}
+              disabled={!disciplinaSelecionada || !turmaSelecionada}
+            />
+          </div>
+        </div>
+
+        {(loading || erro) && (
+          <div className="mt-3 flex gap-4 text-sm">
+            {loading && <span className="text-gray-500">Carregando...</span>}
+            {erro && <span className="text-red-600">{erro}</span>}
+          </div>
+        )}
+      </div>
 
       {/* Barra de ações em cima da tabela */}
       <div className="flex items-center justify-between">

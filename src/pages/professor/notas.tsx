@@ -214,51 +214,16 @@ export default function NotasPage() {
 
   return (
     <ProfessorLayout>
-      {/* Filtros */}
-      <div className="px-6 pt-6 pb-4 flex flex-wrap gap-6">
-        <div>
-          <label className="text-sm text-gray-600">Disciplina</label>
-          <select
-            className="border rounded px-3 py-2 block min-w-[220px]"
-            value={disciplinaSelecionada ?? ""}
-            onChange={(e) =>
-              setDisciplinaSelecionada(e.target.value ? Number(e.target.value) : null)
-            }
-          >
-            <option value="">Selecione...</option>
-            {disciplinas.map((d) => (
-              <option key={d.id_disciplina} value={d.id_disciplina}>
-                {d.nome}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div>
-          <label className="text-sm text-gray-600">Turma</label>
-          <select
-            className="border rounded px-3 py-2 block min-w-[180px]"
-            value={turmaSelecionada ?? ""}
-            onChange={(e) =>
-              setTurmaSelecionada(e.target.value ? Number(e.target.value) : null)
-            }
-          >
-            <option value="">Selecione...</option>
-            {turmas.map((t) => (
-              <option key={t.id_turma} value={t.id_turma}>
-                {t.nome}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {loading && <span className="text-gray-500">Carregando...</span>}
-        {erro && <span className="text-red-600">{erro}</span>}
-      </div>
-
-      {/* Tabela */}
       <NotasProfessor
         grades={grades}
+        disciplinas={disciplinas}
+        turmas={turmas}
+        disciplinaSelecionada={disciplinaSelecionada}
+        turmaSelecionada={turmaSelecionada}
+        onChangeDisciplina={setDisciplinaSelecionada}
+        onChangeTurma={setTurmaSelecionada}
+        loading={loading}
+        erro={erro}
         onAddGrade={handleAddGrade}
         onEditGrade={handleEditGrade}
         onDeleteGrade={handleDeleteGrade}

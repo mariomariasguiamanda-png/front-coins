@@ -637,7 +637,6 @@ export function AtividadesProfessor({
                           {statusConfig.label}
                         </span>
                       </div>
-                      <p className="text-sm text-gray-600">{activity.description}</p>
                     </div>
                     <div className="flex gap-2 ml-4">
                       <Button 
@@ -660,31 +659,27 @@ export function AtividadesProfessor({
                   </div>
 
                   <div className="flex flex-wrap items-center gap-6 text-sm">
-                    <div className="flex items-center gap-2">
-                      <Calendar className="h-4 w-4 text-gray-400" />
-                      <span className="text-gray-600">Entrega:</span>
-                      <span className="font-semibold text-gray-900">{activity.dueDate}</span>
+                    <div className="flex items-center gap-1.5">
+                      <Coins className="h-4 w-4 text-amber-500" />
+                      <span className="font-semibold text-amber-600">{activity.coins}</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <Coins className="h-4 w-4 text-amber-500" />
-                      <span className="text-gray-600">Recompensa:</span>
-                      <span className="font-semibold text-amber-600">{activity.coins} moedas</span>
+                      <Calendar className="h-4 w-4 text-gray-400" />
+                      <span className="font-semibold text-gray-900">{activity.dueDate}</span>
                     </div>
                     {activity.totalStudents && (
                       <div className="flex items-center gap-2">
                         <Users className="h-4 w-4 text-gray-400" />
-                        <span className="text-gray-600">Entregas:</span>
                         <span className="font-semibold text-gray-900">
                           {activity.submissions || 0}/{activity.totalStudents}
                         </span>
-                        <span className="text-gray-500">({submissionRate}%)</span>
                       </div>
                     )}
                   </div>
 
                   {/* Barra de progresso de entregas */}
                   {activity.totalStudents && (
-                    <div className="mt-4 pt-4 border-t">
+                    <div className="mt-4 pt-4">
                       <div className="flex items-center justify-between mb-2">
                         <span className="text-xs text-gray-600">Progresso de entregas</span>
                         <span className="text-xs font-semibold text-gray-900">{submissionRate}%</span>
@@ -697,25 +692,15 @@ export function AtividadesProfessor({
                       </div>
                       <div className="flex gap-2">
                         {activity.submissions && activity.submissions > 0 ? (
-                          <>
-                            <Button 
-                              onClick={() => setViewingSubmissions(activity)}
-                              variant="outline"
-                              className="flex-1 rounded-xl"
-                              size="sm"
-                            >
-                              <Eye className="h-4 w-4 mr-2" />
-                              Ver Submissões ({activity.submissions})
-                            </Button>
-                            <Button 
-                              onClick={() => router.push(`/professor/atividades/${activity.id}/corrigir`)}
-                              className="flex-1 rounded-xl bg-violet-600 hover:bg-violet-700"
-                              size="sm"
-                            >
-                              <ClipboardCheck className="h-4 w-4 mr-2" />
-                              Corrigir
-                            </Button>
-                          </>
+                          <Button 
+                            onClick={() => setViewingSubmissions(activity)}
+                            variant="outline"
+                            className="w-full rounded-xl"
+                            size="sm"
+                          >
+                            <Eye className="h-4 w-4 mr-2" />
+                            Ver Submissões
+                          </Button>
                         ) : (
                           <Button 
                             disabled

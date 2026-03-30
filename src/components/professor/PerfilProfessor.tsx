@@ -4,22 +4,16 @@ import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
 import { 
   User, 
-  Mail, 
   Phone, 
-  Building, 
   School,
   Camera,
   Save,
   Lock,
-  Shield,
   MapPin,
   Calendar,
   BookOpen,
-  Users,
-  Award,
   Eye,
   EyeOff,
-  Upload
 } from "lucide-react";
 import { useState, useRef } from "react";
 
@@ -97,27 +91,25 @@ export function PerfilProfessor({ data }: { data: ProfileData }) {
         <CardContent className="p-6">
           <div className="flex flex-col md:flex-row items-start md:items-end gap-6 -mt-20">
             <div className="relative">
-              <div className="h-32 w-32 rounded-2xl border-4 border-white bg-white shadow-xl overflow-hidden">
+              <div
+                className={`h-32 w-32 rounded-2xl border-4 border-white bg-white shadow-xl overflow-hidden ${
+                  isEditing ? "cursor-pointer ring-2 ring-violet-300" : ""
+                }`}
+                onClick={() => {
+                  if (isEditing) triggerFileInput();
+                }}
+                title={isEditing ? "Clique para alterar a foto" : ""}
+              >
                 <img
                   src={editableData.foto || "/placeholder-avatar.png"}
                   alt="Foto de perfil"
                   className="h-full w-full object-cover"
                 />
               </div>
-              <button 
-                type="button"
-                onClick={triggerFileInput}
-                className={`absolute bottom-0 right-0 h-10 w-10 rounded-full bg-violet-600 hover:bg-violet-700 text-white flex items-center justify-center shadow-lg transition-all ${
-                  isEditing ? "opacity-100" : "opacity-0 pointer-events-none"
-                }`}
-              >
-                <Camera className="h-5 w-5" />
-              </button>
             </div>
 
             <div className="flex-1 md:mb-2">
               <h1 className="text-2xl md:text-3xl font-bold text-white">{data.readonly.nomeCompleto}</h1>
-              <p className="text-gray-900 mt-1">Professor(a) • Matrícula {data.readonly.matricula}</p>
               <div className="flex flex-wrap gap-2 mt-3">
                 {data.readonly.disciplinas.slice(0, 3).map((disciplina, idx) => (
                   <span
@@ -133,6 +125,12 @@ export function PerfilProfessor({ data }: { data: ProfileData }) {
                   </span>
                 )}
               </div>
+              {isEditing && (
+                <p className="text-xs text-gray-900 mt-3 inline-flex items-center gap-1">
+                  <Camera className="h-3.5 w-3.5" />
+                  Clique na foto para alterar
+                </p>
+              )}
             </div>
 
             <div className="flex gap-2">
@@ -167,53 +165,6 @@ export function PerfilProfessor({ data }: { data: ProfileData }) {
         </CardContent>
       </Card>
 
-      {/* Cards de Estatísticas */}
-      {data.stats && (
-        <div className="grid gap-4 md:grid-cols-3">
-          <Card className="rounded-xl shadow-sm border-l-4 border-l-violet-500">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Total de Aulas</p>
-                  <p className="text-2xl font-bold text-gray-900 mt-1">{data.stats.totalAulas}</p>
-                </div>
-                <div className="h-10 w-10 rounded-lg bg-violet-100 flex items-center justify-center">
-                  <BookOpen className="h-5 w-5 text-violet-600" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="rounded-xl shadow-sm border-l-4 border-l-blue-500">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Total de Alunos</p>
-                  <p className="text-2xl font-bold text-gray-900 mt-1">{data.stats.totalAlunos}</p>
-                </div>
-                <div className="h-10 w-10 rounded-lg bg-blue-100 flex items-center justify-center">
-                  <Users className="h-5 w-5 text-blue-600" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="rounded-xl shadow-sm border-l-4 border-l-amber-500">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Avaliação Média</p>
-                  <p className="text-2xl font-bold text-gray-900 mt-1">{data.stats.mediaAvaliacoes.toFixed(1)}</p>
-                </div>
-                <div className="h-10 w-10 rounded-lg bg-amber-100 flex items-center justify-center">
-                  <Award className="h-5 w-5 text-amber-600" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
-
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Dados Institucionais */}
         <Card className="rounded-xl shadow-sm">
@@ -224,7 +175,6 @@ export function PerfilProfessor({ data }: { data: ProfileData }) {
               </div>
               <div>
                 <h2 className="text-lg font-semibold text-gray-900">Dados Institucionais</h2>
-                <p className="text-sm text-gray-500">Informações não editáveis</p>
               </div>
             </div>
 
@@ -232,85 +182,10 @@ export function PerfilProfessor({ data }: { data: ProfileData }) {
               <div>
                 <Label className="text-sm font-medium text-gray-700 flex items-center gap-2">
                   <User className="h-4 w-4 text-gray-500" />
-                  Nome Completo
+                  Nome
                 </Label>
                 <Input 
                   value={data.readonly.nomeCompleto} 
-                  disabled 
-                  className="rounded-xl mt-1 bg-gray-50" 
-                />
-              </div>
-
-              <div className="grid gap-4 md:grid-cols-2">
-                <div>
-                  <Label className="text-sm font-medium text-gray-700 flex items-center gap-2">
-                    <Shield className="h-4 w-4 text-gray-500" />
-                    Matrícula
-                  </Label>
-                  <Input 
-                    value={data.readonly.matricula} 
-                    disabled 
-                    className="rounded-xl mt-1 bg-gray-50" 
-                  />
-                </div>
-                <div>
-                  <Label className="text-sm font-medium text-gray-700 flex items-center gap-2">
-                    <Shield className="h-4 w-4 text-gray-500" />
-                    CPF
-                  </Label>
-                  <Input 
-                    value={data.readonly.cpf} 
-                    disabled 
-                    className="rounded-xl mt-1 bg-gray-50" 
-                  />
-                </div>
-              </div>
-
-              {data.readonly.departamento && (
-                <div>
-                  <Label className="text-sm font-medium text-gray-700 flex items-center gap-2">
-                    <Building className="h-4 w-4 text-gray-500" />
-                    Departamento
-                  </Label>
-                  <Input 
-                    value={data.readonly.departamento} 
-                    disabled 
-                    className="rounded-xl mt-1 bg-gray-50" 
-                  />
-                </div>
-              )}
-
-              <div>
-                <Label className="text-sm font-medium text-gray-700 flex items-center gap-2">
-                  <BookOpen className="h-4 w-4 text-gray-500" />
-                  Disciplinas
-                </Label>
-                <Input 
-                  value={data.readonly.disciplinas.join(", ")} 
-                  disabled 
-                  className="rounded-xl mt-1 bg-gray-50" 
-                />
-              </div>
-
-              <div>
-                <Label className="text-sm font-medium text-gray-700 flex items-center gap-2">
-                  <Users className="h-4 w-4 text-gray-500" />
-                  Turmas
-                </Label>
-                <Input 
-                  value={data.readonly.turmas.join(", ")} 
-                  disabled 
-                  className="rounded-xl mt-1 bg-gray-50" 
-                />
-              </div>
-
-              <div>
-                <Label className="text-sm font-medium text-gray-700 flex items-center gap-2">
-                  <Mail className="h-4 w-4 text-gray-500" />
-                  E-mail Institucional
-                </Label>
-                <Input 
-                  value={data.readonly.emailInstitucional} 
                   disabled 
                   className="rounded-xl mt-1 bg-gray-50" 
                 />
@@ -342,29 +217,14 @@ export function PerfilProfessor({ data }: { data: ProfileData }) {
               </div>
               <div>
                 <h2 className="text-lg font-semibold text-gray-900">Dados Pessoais</h2>
-                <p className="text-sm text-gray-500">Informações editáveis</p>
               </div>
             </div>
 
             <div className="space-y-4">
               <div>
                 <Label className="text-sm font-medium text-gray-700 flex items-center gap-2">
-                  <Mail className="h-4 w-4 text-gray-500" />
-                  E-mail Alternativo
-                </Label>
-                <Input 
-                  value={editableData.emailAlternativo}
-                  onChange={(e) => setEditableData({ ...editableData, emailAlternativo: e.target.value })}
-                  disabled={!isEditing}
-                  className={`rounded-xl mt-1 ${!isEditing ? 'bg-gray-50' : ''}`}
-                  placeholder="seu.email@gmail.com"
-                />
-              </div>
-
-              <div>
-                <Label className="text-sm font-medium text-gray-700 flex items-center gap-2">
                   <Phone className="h-4 w-4 text-gray-500" />
-                  Telefone/WhatsApp
+                  Telefone
                 </Label>
                 <Input 
                   value={editableData.telefone}
@@ -372,6 +232,18 @@ export function PerfilProfessor({ data }: { data: ProfileData }) {
                   disabled={!isEditing}
                   className={`rounded-xl mt-1 ${!isEditing ? 'bg-gray-50' : ''}`}
                   placeholder="(11) 98765-4321"
+                />
+              </div>
+
+              <div>
+                <Label className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                  <User className="h-4 w-4 text-gray-500" />
+                  CPF
+                </Label>
+                <Input
+                  value={data.readonly.cpf}
+                  disabled
+                  className="rounded-xl mt-1 bg-gray-50"
                 />
               </div>
 
@@ -443,32 +315,6 @@ export function PerfilProfessor({ data }: { data: ProfileData }) {
                         className="rounded-xl"
                       />
                     </>
-                  )}
-                </div>
-              </div>
-
-              <div>
-                <Label className="text-sm font-medium text-gray-700 flex items-center gap-2">
-                  <Camera className="h-4 w-4 text-gray-500" />
-                  Foto de Perfil
-                </Label>
-                <div className="mt-2 flex items-center gap-4">
-                  <div className="h-16 w-16 rounded-xl bg-violet-100 overflow-hidden">
-                    <img
-                      src={editableData.foto || "/placeholder-avatar.png"}
-                      alt="Foto de perfil"
-                      className="h-full w-full object-cover"
-                    />
-                  </div>
-                  {isEditing && (
-                    <Button 
-                      variant="outline" 
-                      className="rounded-xl"
-                      onClick={triggerFileInput}
-                    >
-                      <Upload className="h-4 w-4 mr-2" />
-                      Alterar foto
-                    </Button>
                   )}
                 </div>
               </div>
