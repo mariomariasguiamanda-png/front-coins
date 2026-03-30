@@ -82,7 +82,7 @@ export function ProfessorLayout({ children }: ProfessorLayoutProps) {
     },
     {
       key: "videoaulas",
-      label: "Videoaulas",
+      label: "Vídeoaulas",
       icon: Medal,
       href: "/professor/videoaulas",
     },

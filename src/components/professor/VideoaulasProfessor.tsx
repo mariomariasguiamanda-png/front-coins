@@ -167,15 +167,15 @@ export function VideoaulasProfessor({
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Videoaulas</h1>
-          <p className="text-gray-600 mt-1">Gerencie as videoaulas das suas disciplinas</p>
+          <h1 className="text-3xl font-bold text-gray-900">Vídeoaulas</h1>
+          <p className="text-gray-600 mt-1">Gerencie as vídeoaulas das suas disciplinas</p>
         </div>
         <Button 
           onClick={() => setShowCreateForm(!showCreateForm)}
           className="rounded-xl bg-violet-600 hover:bg-violet-700"
         >
           <Plus className="h-4 w-4 mr-2" />
-          Nova Videoaula
+          Nova Vídeoaula
         </Button>
       </div>
 
@@ -222,7 +222,7 @@ export function VideoaulasProfessor({
                   <Plus className="h-5 w-5 text-violet-600" />
                 </div>
                 <div>
-                  <h2 className="text-lg font-semibold text-gray-900">Nova Videoaula</h2>
+                  <h2 className="text-lg font-semibold text-gray-900">Nova Vídeoaula</h2>
                   <p className="text-sm text-gray-500">Adicione um novo vídeo educativo</p>
                 </div>
               </div>

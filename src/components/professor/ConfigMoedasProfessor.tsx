@@ -28,7 +28,7 @@ export function ConfigMoedasProfessor({
 }: ConfigMoedasProps) {
   const [tempValues, setTempValues] = useState<Record<string, { preco: number; pontos: number }>>({});
 
-  // Estatisticas gerais
+  // Estatísticas gerais
   const stats = {
     totalDisciplinas: disciplinas.length,
     precoMedio: disciplinas.length > 0 
@@ -135,7 +135,7 @@ export function ConfigMoedasProfessor({
                   </div>
 
                   <div className="rounded-xl border border-violet-100 bg-white px-4 py-3">
-                    <p className="text-xs font-medium text-violet-700 mb-1">Preco</p>
+                    <p className="text-xs font-medium text-violet-700 mb-1">Preço</p>
                     <div className="relative">
                       <Coins className="h-4 w-4 text-violet-600 absolute left-3 top-1/2 -translate-y-1/2" />
                       <Input
@@ -160,7 +160,7 @@ export function ConfigMoedasProfessor({
                     className="w-full rounded-xl bg-violet-600 hover:bg-violet-700"
                     onClick={() => onUpdateConfig?.(disciplina.id, values.preco, values.pontos)}
                   >
-                    Salvar alteracoes
+                    Salvar alterações
                   </Button>
                 </div>
               </CardContent>
