@@ -35,6 +35,7 @@ import {
   ChevronRight,
   X,
   GraduationCap,
+  Target,
   BarChart2
 } from "lucide-react";
 import { useState, useEffect } from "react";
@@ -103,6 +104,29 @@ export function DisciplinasProfessor({
     totalDisciplines: disciplines.length,
     activeDisciplines: disciplines.filter(d => d.status === "active").length,
     totalStudents: disciplines.reduce((acc, disc) => acc + disc.totalStudents, 0),
+    avgGrade: disciplines.length > 0 
+      ? (disciplines.reduce((acc, disc) => acc + disc.averageGrade, 0) / disciplines.length).toFixed(1)
+      : "0.0",
+    avgCompletion: disciplines.length > 0
+      ? Math.round(disciplines.reduce((acc, disc) => acc + disc.completionRate, 0) / disciplines.length)
+      : 0,
+  };
+
+  const getCategoryColor = (category: string) => {
+    const colors: Record<string, string> = {
+      "Exatas": "bg-blue-100 text-blue-700 border-blue-200",
+      "Humanas": "bg-purple-100 text-purple-700 border-purple-200",
+      "Biológicas": "bg-green-100 text-green-700 border-green-200",
+      "Linguagens": "bg-amber-100 text-amber-700 border-amber-200",
+      "Tecnologia": "bg-violet-100 text-violet-700 border-violet-200",
+    };
+    return colors[category] || "bg-gray-100 text-gray-700 border-gray-200";
+  };
+
+  const getStatusConfig = (status: string) => {
+    return status === "active"
+      ? { label: "Ativa", color: "bg-green-100 text-green-700 border-green-200" }
+      : { label: "Inativa", color: "bg-gray-100 text-gray-700 border-gray-200" };
   };
 
   const handleCreateSubmit = (e: React.FormEvent<HTMLFormElement>) => {
@@ -159,13 +183,22 @@ export function DisciplinasProfessor({
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold text-gray-900">Disciplinas</h1>
-        <p className="text-gray-600 mt-1">Gerencie as disciplinas e acompanhe o desempenho</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Disciplinas</h1>
+          <p className="text-gray-600 mt-1">Gerencie as disciplinas e acompanhe o desempenho</p>
+        </div>
+        <Button
+          onClick={() => setShowCreateForm(true)}
+          className="bg-violet-600 hover:bg-violet-700 text-white rounded-xl"
+        >
+          <Plus className="h-4 w-4 mr-2" />
+          Nova Disciplina
+        </Button>
       </div>
 
       {/* Cards de Estatísticas */}
-      <div className="grid gap-6 md:grid-cols-2">
+      <div className="grid gap-6 md:grid-cols-5">
         <Card className="rounded-xl shadow-sm border-l-4 border-l-violet-500">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
@@ -180,7 +213,20 @@ export function DisciplinasProfessor({
           </CardContent>
         </Card>
 
-        
+        <Card className="rounded-xl shadow-sm border-l-4 border-l-green-500">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Ativas</p>
+                <p className="text-2xl font-bold text-gray-900 mt-1">{stats.activeDisciplines}</p>
+              </div>
+              <div className="h-10 w-10 rounded-lg bg-green-100 flex items-center justify-center">
+                <Target className="h-5 w-5 text-green-600" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
         <Card className="rounded-xl shadow-sm border-l-4 border-l-blue-500">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
@@ -190,6 +236,34 @@ export function DisciplinasProfessor({
               </div>
               <div className="h-10 w-10 rounded-lg bg-blue-100 flex items-center justify-center">
                 <Users className="h-5 w-5 text-blue-600" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="rounded-xl shadow-sm border-l-4 border-l-amber-500">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Média</p>
+                <p className="text-2xl font-bold text-gray-900 mt-1">{stats.avgGrade}</p>
+              </div>
+              <div className="h-10 w-10 rounded-lg bg-amber-100 flex items-center justify-center">
+                <Award className="h-5 w-5 text-amber-600" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="rounded-xl shadow-sm border-l-4 border-l-purple-500">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Conclusão</p>
+                <p className="text-2xl font-bold text-gray-900 mt-1">{stats.avgCompletion}%</p>
+              </div>
+              <div className="h-10 w-10 rounded-lg bg-purple-100 flex items-center justify-center">
+                <TrendingUp className="h-5 w-5 text-purple-600" />
               </div>
             </div>
           </CardContent>
@@ -264,15 +338,23 @@ export function DisciplinasProfessor({
                       <h3 className="text-lg font-bold text-gray-900">{disc.name}</h3>
                       <p className="text-sm text-gray-600 mt-1">{disc.code}</p>
                     </div>
+                    <span className={`px-2.5 py-1 rounded-full text-xs font-semibold border ${getStatusConfig(disc.status).color}`}>
+                      {getStatusConfig(disc.status).label}
+                    </span>
                   </div>
 
                   <div className="flex items-center gap-2">
+                    <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${getCategoryColor(disc.category)}`}>
+                      {disc.category}
+                    </span>
                     <span className="px-3 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-700 border border-gray-200">
                       {disc.semester}
                     </span>
                   </div>
 
-                  <div className="grid grid-cols-3 gap-3 pt-3">
+                  <p className="text-sm text-gray-600 line-clamp-2">{disc.description}</p>
+
+                  <div className="grid grid-cols-3 gap-3 pt-3 border-t">
                     <div>
                       <p className="text-xs text-gray-600">Alunos</p>
                       <p className="text-lg font-bold text-gray-900">{disc.totalStudents}</p>
@@ -292,7 +374,7 @@ export function DisciplinasProfessor({
                     <span>{disc.workload}h • {disc.credits} créditos</span>
                   </div>
 
-                  <div className="flex items-center gap-2 pt-3">
+                  <div className="flex items-center gap-2 pt-3 border-t">
                     <Button
                       variant="outline"
                       size="sm"
@@ -301,6 +383,22 @@ export function DisciplinasProfessor({
                     >
                       <ChevronRight className="h-4 w-4 mr-1" />
                       Detalhes
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setEditingDiscipline(disc)}
+                      className="rounded-xl"
+                    >
+                      <Edit2 className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setDeletingDisciplineId(disc.id)}
+                      className="rounded-xl text-red-600 hover:text-red-700 hover:bg-red-50"
+                    >
+                      <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>
                 </div>
@@ -607,17 +705,48 @@ export function DisciplinasProfessor({
             <div className="space-y-6 py-4">
               {/* Badges */}
               <div className="flex items-center gap-2">
+                <span className={`px-3 py-1 rounded-full text-sm font-semibold border ${getCategoryColor(viewingDiscipline.category)}`}>
+                  {viewingDiscipline.category}
+                </span>
+                <span className={`px-3 py-1 rounded-full text-sm font-semibold border ${getStatusConfig(viewingDiscipline.status).color}`}>
+                  {getStatusConfig(viewingDiscipline.status).label}
+                </span>
                 <span className="px-3 py-1 rounded-full text-sm font-semibold bg-gray-100 text-gray-700 border border-gray-200">
                   {viewingDiscipline.semester}
                 </span>
               </div>
 
+              {/* Descrição */}
+              {viewingDiscipline.description && (
+                <Card className="rounded-xl shadow-sm">
+                  <CardContent className="p-4">
+                    <h3 className="text-sm font-semibold text-gray-900 mb-2 flex items-center gap-2">
+                      <FileText className="h-4 w-4 text-violet-600" />
+                      Descrição
+                    </h3>
+                    <p className="text-sm text-gray-700">{viewingDiscipline.description}</p>
+                  </CardContent>
+                </Card>
+              )}
+
               {/* Estatísticas */}
-              <div className="grid gap-4 md:grid-cols-2">
+              <div className="grid gap-4 md:grid-cols-4">
                 <Card className="rounded-xl shadow-sm border-l-4 border-l-blue-500">
                   <CardContent className="p-4">
                     <p className="text-xs text-gray-600 mb-1">Total de Alunos</p>
                     <p className="text-2xl font-bold text-gray-900">{viewingDiscipline.totalStudents}</p>
+                  </CardContent>
+                </Card>
+                <Card className="rounded-xl shadow-sm border-l-4 border-l-amber-500">
+                  <CardContent className="p-4">
+                    <p className="text-xs text-gray-600 mb-1">Média Geral</p>
+                    <p className="text-2xl font-bold text-gray-900">{viewingDiscipline.averageGrade.toFixed(1)}</p>
+                  </CardContent>
+                </Card>
+                <Card className="rounded-xl shadow-sm border-l-4 border-l-green-500">
+                  <CardContent className="p-4">
+                    <p className="text-xs text-gray-600 mb-1">Taxa de Conclusão</p>
+                    <p className="text-2xl font-bold text-gray-900">{viewingDiscipline.completionRate}%</p>
                   </CardContent>
                 </Card>
                 <Card className="rounded-xl shadow-sm border-l-4 border-l-purple-500">
