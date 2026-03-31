@@ -52,12 +52,12 @@ export function HeaderAdm({ onToggleSidebar, sidebarOpen }: HeaderAdmProps) {
 
           <Link
             href="/adm/perfil"
-            className="flex items-center gap-2 rounded-lg bg-white/10 hover:bg-white/20 px-2 py-1 transition"
+            className="flex items-center gap-2 rounded-lg bg-white/10 hover:bg-white/20 px-2 py-1 transition text-white"
           >
             <div className="h-7 w-7 rounded-full bg-gradient-to-br from-purple-400 to-purple-700 grid place-items-center text-xs font-bold text-[#fff]">
               {admin.nome.split(" ")[0][0]}
             </div>
-            <span className="text-sm hidden sm:block max-w-[140px] truncate">
+            <span className="text-sm text-white hidden sm:block max-w-[140px] truncate">
               {admin.nome}
             </span>
           </Link>

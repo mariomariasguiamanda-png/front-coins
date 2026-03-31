@@ -28,9 +28,9 @@ export function ConfigurarRegrasDialog({ open, onClose, regrasAtuais, onSave }: 
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="sm:max-w-[560px]">
+      <DialogContent className="sm:max-w-[560px] admin-form-light bg-white text-slate-900 border-slate-200">
         <DialogHeader>
-          <DialogTitle>Configurar Regras de Moedas</DialogTitle>
+          <DialogTitle className="text-slate-900">Configurar Regras de Moedas</DialogTitle>
         </DialogHeader>
         <div className="grid gap-3 sm:grid-cols-2">
           {([
@@ -42,10 +42,10 @@ export function ConfigurarRegrasDialog({ open, onClose, regrasAtuais, onSave }: 
             ["periodoDias", "Período (dias)"],
           ] as Array<[keyof Regras, string]>).map(([key, label]) => (
             <div key={key}>
-              <label className="text-sm font-medium">{label}</label>
+              <label className="text-sm font-medium text-slate-700">{label}</label>
               <Input
                 type="number"
-                className="rounded-lg"
+                className="rounded-lg bg-white text-slate-900 border-slate-300"
                 value={(draft as any)[key]}
                 onChange={(e) => update(key, Number(e.target.value))}
               />

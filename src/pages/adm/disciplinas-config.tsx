@@ -1,11 +1,12 @@
 import { useState } from "react";
 import Link from "next/link";
 import { AdminLayout } from "@/components/adm/AdminLayout";
+import { AdmBackButton } from "@/components/adm/AdmBackButton";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
-import { ArrowLeft, Save } from "lucide-react";
+import { Save } from "lucide-react";
 
 export default function DisciplinasConfigPage() {
   const [defaultMaxPoints, setDefaultMaxPoints] = useState(50);
@@ -20,18 +21,14 @@ export default function DisciplinasConfigPage() {
 
   return (
     <AdminLayout>
-      <div className="space-y-6">
+      <div className="space-y-6 pb-8">
         <header className="flex items-center justify-between">
           <div className="space-y-1">
             <h1 className="text-2xl font-bold">Configurações de Disciplinas</h1>
             <p className="text-muted-foreground">Defina regras padrão e preferências</p>
           </div>
           <div className="flex gap-2">
-            <Link href="/adm/disciplinas">
-              <Button variant="outline" className="rounded-lg">
-                <ArrowLeft className="h-4 w-4" /> Voltar ao hub
-              </Button>
-            </Link>
+            <AdmBackButton href="/adm/disciplinas" />
             <Button className="rounded-lg bg-violet-600 hover:bg-violet-700" onClick={handleSave}>
               <Save className="h-4 w-4" /> Salvar
             </Button>

@@ -1,19 +1,15 @@
 import Link from "next/link";
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState } from "react";
 import { AdminLayout } from "@/components/adm/AdminLayout";
+import { AdmBackButton } from "@/components/adm/AdmBackButton";
+import { AdmFiltersCard } from "@/components/adm/AdmFiltersCard";
 import { Button } from "@/components/ui/Button";
 import { Card, CardContent } from "@/components/ui/Card";
 import {
   HelpCircle,
   PlusCircle,
-  ChevronLeft,
   Trash2,
   Edit2,
-  Filter,
-  FolderOpen,
-  MessageSquare,
-  BookOpen,
-  TrendingUp,
 } from "lucide-react";
 import { useToast } from "@/components/ui/Toast";
 import { getFaqCategories, createFaqCategory, updateFaqCategory, deleteFaqCategory, addFaqItem, updateFaqItem, deleteFaqItem, type FaqCategory, type FaqItem } from "@/services/api/support";
@@ -30,7 +26,7 @@ export default function SuporteFaqsPage() {
   // Pagination & sorting state
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(5);
-  const [sortBy, setSortBy] = useState<"nome-asc" | "nome-desc" | "qtd-asc" | "qtd-desc">("nome-asc");
+  const [sortBy, setSortBy] = useState<"nome-asc" | "nome-desc">("nome-asc");
 
   // Dialog states
   const [openCreateCat, setOpenCreateCat] = useState(false);
@@ -56,13 +52,6 @@ export default function SuporteFaqsPage() {
     if (page > totalPages) setPage(1);
   }, [cats, pageSize, page]);
 
-  const stats = useMemo(() => {
-    if (!cats) return { categorias: 0, perguntas: 0, media: 0 };
-    const totalPerguntas = cats.reduce((sum, cat) => sum + cat.perguntas.length, 0);
-    const media = cats.length > 0 ? Math.round((totalPerguntas / cats.length) * 10) / 10 : 0;
-    return { categorias: cats.length, perguntas: totalPerguntas, media };
-  }, [cats]);
-
   return (
     <AdminLayout>
       <div className="space-y-6 pb-8">
@@ -78,78 +67,13 @@ export default function SuporteFaqsPage() {
                 <p className="text-gray-600 mt-1">FAQs e perguntas frequentes organizadas</p>
               </div>
             </div>
-            <Link href="/adm/suporte" className="no-underline">
-              <Button variant="outline" className="rounded-lg inline-flex items-center gap-2">
-                <ChevronLeft className="h-4 w-4" />
-                Voltar ao hub
-              </Button>
-            </Link>
+            <AdmBackButton href="/adm/suporte" className="no-underline" />
           </div>
 
-          {/* Stats Cards */}
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <Card className="rounded-xl border-l-4 border-l-green-500 bg-gradient-to-br from-green-50 to-white">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600">Categorias</p>
-                    <p className="text-2xl font-bold text-gray-900 mt-1">{stats.categorias}</p>
-                  </div>
-                  <div className="h-10 w-10 rounded-lg bg-green-100 flex items-center justify-center">
-                    <FolderOpen className="h-5 w-5 text-green-600" />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="rounded-xl border-l-4 border-l-blue-500 bg-gradient-to-br from-blue-50 to-white">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600">Total de Perguntas</p>
-                    <p className="text-2xl font-bold text-gray-900 mt-1">{stats.perguntas}</p>
-                  </div>
-                  <div className="h-10 w-10 rounded-lg bg-blue-100 flex items-center justify-center">
-                    <MessageSquare className="h-5 w-5 text-blue-600" />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="rounded-xl border-l-4 border-l-purple-500 bg-gradient-to-br from-purple-50 to-white">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600">Média por Categoria</p>
-                    <p className="text-2xl font-bold text-gray-900 mt-1">{stats.media}</p>
-                  </div>
-                  <div className="h-10 w-10 rounded-lg bg-purple-100 flex items-center justify-center">
-                    <TrendingUp className="h-5 w-5 text-purple-600" />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="rounded-xl border-l-4 border-l-amber-500 bg-gradient-to-br from-amber-50 to-white">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600">Artigos Ativos</p>
-                    <p className="text-2xl font-bold text-gray-900 mt-1">{stats.perguntas}</p>
-                  </div>
-                  <div className="h-10 w-10 rounded-lg bg-amber-100 flex items-center justify-center">
-                    <BookOpen className="h-5 w-5 text-amber-600" />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
         </header>
 
         {/* Controls */}
-        <Card className="rounded-xl shadow-sm">
-          <div className="h-2 bg-gradient-to-r from-green-500 to-green-600 rounded-t-xl"></div>
-          <CardContent className="p-6">
+        <AdmFiltersCard title="Controles" accentClassName="from-green-500 to-green-600">
             <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
               <Button
                 className="rounded-lg bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 inline-flex items-center gap-2"
@@ -158,7 +82,6 @@ export default function SuporteFaqsPage() {
                 <PlusCircle className="h-4 w-4" /> Nova Categoria
               </Button>
               <div className="flex items-center gap-2">
-                <Filter className="h-4 w-4 text-muted-foreground" />
                 <Select value={sortBy} onValueChange={(v) => setSortBy(v as any)}>
                   <SelectTrigger className="w-[220px] rounded-lg">
                     <SelectValue placeholder="Ordenar por" />
@@ -166,8 +89,6 @@ export default function SuporteFaqsPage() {
                   <SelectContent>
                     <SelectItem value="nome-asc">Nome (A-Z)</SelectItem>
                     <SelectItem value="nome-desc">Nome (Z-A)</SelectItem>
-                    <SelectItem value="qtd-asc">Qtd. Perguntas (Asc)</SelectItem>
-                    <SelectItem value="qtd-desc">Qtd. Perguntas (Desc)</SelectItem>
                   </SelectContent>
                 </Select>
                 <Select value={String(pageSize)} onValueChange={(v) => { setPageSize(Number(v)); setPage(1); }}>
@@ -182,8 +103,7 @@ export default function SuporteFaqsPage() {
                 </Select>
               </div>
             </div>
-          </CardContent>
-        </Card>
+        </AdmFiltersCard>
 
         {/* Listagem */}
         <div className="grid gap-6">
@@ -194,11 +114,8 @@ export default function SuporteFaqsPage() {
           ) : (
             (() => {
               const sorted = [...cats].sort((a, b) => {
-                const qa = a.perguntas.length; const qb = b.perguntas.length;
                 if (sortBy === "nome-asc") return a.nome.localeCompare(b.nome);
-                if (sortBy === "nome-desc") return b.nome.localeCompare(a.nome);
-                if (sortBy === "qtd-asc") return qa - qb;
-                return qb - qa;
+                return b.nome.localeCompare(a.nome);
               });
               const start = (page - 1) * pageSize;
               const pageItems = sorted.slice(start, start + pageSize);
@@ -209,16 +126,8 @@ export default function SuporteFaqsPage() {
             <Card key={category.id} className="rounded-xl">
               <CardContent className="p-6">
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center">
                     <h3 className="text-lg font-semibold">{category.nome}</h3>
-                    <div className="flex gap-2">
-                      <Button variant="outline" size="sm" className="rounded-lg" onClick={() => { setOpenEditCat(category); setCatName(category.nome); }} title="Renomear">
-                        <Edit2 className="h-4 w-4" />
-                      </Button>
-                      <Button variant="outline" size="sm" className="rounded-lg text-red-600 hover:text-red-700" onClick={() => setOpenDeleteCat(category)} title="Excluir">
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
                   </div>
                   <div className="space-y-4">
                     {category.perguntas.map((faq) => (
@@ -263,7 +172,7 @@ export default function SuporteFaqsPage() {
 
         {/* Dialogs */}
         <Dialog open={openCreateCat} onOpenChange={setOpenCreateCat}>
-          <DialogContent className="rounded-xl">
+          <DialogContent className="rounded-xl admin-form-light bg-white text-slate-900 border-slate-200">
             <DialogHeader>
               <DialogTitle>Nova Categoria</DialogTitle>
               <DialogDescription>Crie uma categoria para organizar suas FAQs.</DialogDescription>
@@ -282,7 +191,7 @@ export default function SuporteFaqsPage() {
         </Dialog>
 
         <Dialog open={!!openEditCat} onOpenChange={(o) => !o && setOpenEditCat(null)}>
-          <DialogContent className="rounded-xl">
+          <DialogContent className="rounded-xl admin-form-light bg-white text-slate-900 border-slate-200">
             <DialogHeader>
               <DialogTitle>Renomear Categoria</DialogTitle>
               <DialogDescription>Atualize o nome da categoria selecionada.</DialogDescription>
@@ -301,7 +210,7 @@ export default function SuporteFaqsPage() {
         </Dialog>
 
         <Dialog open={!!openDeleteCat} onOpenChange={(o) => !o && setOpenDeleteCat(null)}>
-          <DialogContent className="rounded-xl">
+          <DialogContent className="rounded-xl admin-form-light bg-white text-slate-900 border-slate-200">
             <DialogHeader>
               <DialogTitle>Excluir Categoria</DialogTitle>
               <DialogDescription>Esta ação removerá a categoria e todas as perguntas associadas.</DialogDescription>
@@ -316,7 +225,7 @@ export default function SuporteFaqsPage() {
         </Dialog>
 
         <Dialog open={!!openAddFaq} onOpenChange={(o) => !o && setOpenAddFaq(null)}>
-          <DialogContent className="rounded-xl">
+          <DialogContent className="rounded-xl admin-form-light bg-white text-slate-900 border-slate-200">
             <DialogHeader>
               <DialogTitle>Adicionar Pergunta</DialogTitle>
               <DialogDescription>Inclua uma nova pergunta e resposta.</DialogDescription>
@@ -341,7 +250,7 @@ export default function SuporteFaqsPage() {
         </Dialog>
 
         <Dialog open={!!openEditFaq} onOpenChange={(o) => !o && setOpenEditFaq(null)}>
-          <DialogContent className="rounded-xl">
+          <DialogContent className="rounded-xl admin-form-light bg-white text-slate-900 border-slate-200">
             <DialogHeader>
               <DialogTitle>Editar Pergunta</DialogTitle>
               <DialogDescription>Atualize a pergunta e a resposta.</DialogDescription>
@@ -366,7 +275,7 @@ export default function SuporteFaqsPage() {
         </Dialog>
 
         <Dialog open={!!openDeleteFaq} onOpenChange={(o) => !o && setOpenDeleteFaq(null)}>
-          <DialogContent className="rounded-xl">
+          <DialogContent className="rounded-xl admin-form-light bg-white text-slate-900 border-slate-200">
             <DialogHeader>
               <DialogTitle>Excluir Pergunta</DialogTitle>
               <DialogDescription>Confirme a exclusão da pergunta selecionada.</DialogDescription>
