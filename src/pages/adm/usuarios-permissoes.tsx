@@ -1,5 +1,4 @@
-import { useMemo, useState } from "react";
-import Link from "next/link";
+import { useEffect, useMemo, useState } from "react";
 import { AdminLayout } from "@/components/adm/AdminLayout";
 import { AdmBackButton } from "@/components/adm/AdmBackButton";
 import { Card, CardContent } from "@/components/ui/Card";
@@ -7,6 +6,7 @@ import { Button } from "@/components/ui/Button";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/components/ui/Toast";
 import { Save } from "lucide-react";
+import { getSystemSettings, updateSystemSettings, type SystemSettings } from "@/services/api/system-settings";
 
 type Perm = {
   key: string;
@@ -73,25 +73,85 @@ const roleMeta: Record<string, { chipClass: string; subtitle: string }> = {
   },
 };
 
+type RolesState = Record<string, Record<string, boolean>>;
+
+const roleKeys = Object.keys(initialRoles);
+
+const createDefaultRolesState = (): RolesState =>
+  roleKeys.reduce<RolesState>((acc, role) => {
+    acc[role] = { ...initialRoles[role] };
+    return acc;
+  }, {});
+
+const permissionsToRoleState = (permissions?: SystemSettings["permissions"]): RolesState => {
+  const next = createDefaultRolesState();
+
+  permissions?.forEach((permissionGroup) => {
+    if (!next[permissionGroup.perfil]) return;
+
+    next[permissionGroup.perfil] = {
+      ...next[permissionGroup.perfil],
+      view_reports: Boolean(permissionGroup.modulos?.view_reports),
+      manage_users: Boolean(permissionGroup.modulos?.manage_users),
+      manage_disciplines: Boolean(permissionGroup.modulos?.manage_disciplines),
+      manage_coins: Boolean(permissionGroup.modulos?.manage_coins),
+    };
+  });
+
+  return next;
+};
+
+const roleStateToPermissions = (
+  roles: RolesState,
+  currentPermissions?: SystemSettings["permissions"]
+): NonNullable<SystemSettings["permissions"]> => {
+  const byRole = new Map((currentPermissions ?? []).map((item) => [item.perfil, item]));
+
+  return roleKeys.map((role) => {
+    const existing = byRole.get(role);
+    const rolePermissions = roles[role] ?? initialRoles[role];
+
+    return {
+      perfil: role,
+      ...(existing?.recursos ? { recursos: existing.recursos } : {}),
+      modulos: {
+        ...existing?.modulos,
+        view_reports: Boolean(rolePermissions.view_reports),
+        manage_users: Boolean(rolePermissions.manage_users),
+        manage_disciplines: Boolean(rolePermissions.manage_disciplines),
+        manage_coins: Boolean(rolePermissions.manage_coins),
+      },
+    };
+  });
+};
+
 export default function UsuariosPermissoesPage() {
   const { show } = useToast();
-  const [roles, setRoles] = useState<Record<string, Record<string, boolean>>>(
-    initialRoles
-  );
+  const [data, setData] = useState<SystemSettings | null>(null);
+  const [roles, setRoles] = useState<RolesState | null>(null);
+  const [saving, setSaving] = useState(false);
+  const currentRoles = roles ?? createDefaultRolesState();
+
+  useEffect(() => {
+    getSystemSettings().then((settings) => {
+      setData(settings);
+      setRoles(permissionsToRoleState(settings.permissions));
+    });
+  }, []);
 
   const toggle = (role: string, perm: string) => {
     setRoles((prev) => ({
-      ...prev,
+      ...(prev ?? createDefaultRolesState()),
       [role]: {
-        ...prev[role],
-        [perm]: !prev[role][perm],
+        ...((prev ?? createDefaultRolesState())[role]),
+        [perm]: !((prev ?? createDefaultRolesState())[role][perm]),
       },
     }));
   };
 
   const setAllPermissions = (role: string, value: boolean) => {
     setRoles((prev) => ({
-      ...prev,
+      ...(prev ?? createDefaultRolesState()),
       [role]: permissions.reduce<Record<string, boolean>>((acc, perm) => {
         acc[perm.key] = value;
         return acc;
@@ -99,24 +159,39 @@ export default function UsuariosPermissoesPage() {
     }));
   };
 
-  const pendingChanges = useMemo(
-    () => JSON.stringify(roles) !== JSON.stringify(initialRoles),
-    [roles]
-  );
+  const pendingChanges = useMemo(() => {
+    if (!data || !roles) return false;
+
+    return JSON.stringify(roles) !== JSON.stringify(permissionsToRoleState(data.permissions));
+  }, [data, roles]);
 
   const totalEnabled = useMemo(() => {
-    return Object.values(roles).reduce((sum, rolePerms) => {
+    return Object.values(currentRoles).reduce((sum, rolePerms) => {
       return sum + Object.values(rolePerms).filter(Boolean).length;
     }, 0);
-  }, [roles]);
+  }, [currentRoles]);
 
-  const save = () => {
-    console.log("Salvar permissões", roles);
-    show({
-      variant: "success",
-      title: "Permissões salvas com sucesso",
-      description: "Os perfis foram atualizados.",
-    });
+  const save = async () => {
+    if (!data || !roles) return;
+
+    try {
+      setSaving(true);
+      const saved = await updateSystemSettings({
+        ...data,
+        permissions: roleStateToPermissions(roles, data.permissions),
+      });
+
+      setData(saved);
+      setRoles(permissionsToRoleState(saved.permissions));
+
+      show({
+        variant: "success",
+        title: "Permissões salvas com sucesso",
+        description: "Os perfis foram atualizados.",
+      });
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -130,8 +205,10 @@ export default function UsuariosPermissoesPage() {
           <div className="flex gap-2">
             <AdmBackButton href="/adm/usuarios" />
             <Button
+              type="button"
               onClick={save}
-              disabled={!pendingChanges}
+              disabled={!pendingChanges || saving || !roles}
+              isLoading={saving}
               className="rounded-lg bg-violet-600 hover:bg-violet-700 disabled:opacity-60"
             >
               <Save className="h-4 w-4" /> Salvar alterações
@@ -144,7 +221,7 @@ export default function UsuariosPermissoesPage() {
             <div>
               <p className="text-sm text-gray-600">Resumo de acesso</p>
               <p className="text-xl font-semibold text-gray-900">
-                {totalEnabled} permissões ativas de {Object.keys(roles).length * permissions.length}
+                {totalEnabled} permissões ativas de {roleKeys.length * permissions.length}
               </p>
             </div>
             <span
@@ -160,9 +237,10 @@ export default function UsuariosPermissoesPage() {
         </Card>
 
         <div className="grid gap-4 xl:grid-cols-3">
-          {Object.keys(roles).map((role) => {
+          {roleKeys.map((role) => {
+            const rolePermissions = roles?.[role] ?? initialRoles[role];
             const enabledCount = permissions.filter(
-              (perm) => roles[role][perm.key]
+              (perm) => rolePermissions[perm.key]
             ).length;
 
             return (
@@ -215,7 +293,7 @@ export default function UsuariosPermissoesPage() {
                         </div>
                         <Switch
                           className="data-[state=checked]:bg-violet-400 data-[state=unchecked]:bg-slate-200"
-                          checked={!!roles[role][perm.key]}
+                          checked={!!rolePermissions[perm.key]}
                           onCheckedChange={() => toggle(role, perm.key)}
                           aria-label={`${perm.label} para ${role}`}
                         />
