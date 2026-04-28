@@ -79,7 +79,7 @@ const roleKeys = Object.keys(initialRoles);
 
 const createDefaultRolesState = (): RolesState =>
   roleKeys.reduce<RolesState>((acc, role) => {
-    acc[role] = { ...initialRoles[role] };
+    acc[role] = { ...initialRoles[role as keyof typeof initialRoles] };
     return acc;
   }, {});
 
@@ -109,7 +109,7 @@ const roleStateToPermissions = (
 
   return roleKeys.map((role) => {
     const existing = byRole.get(role);
-    const rolePermissions = roles[role] ?? initialRoles[role];
+    const rolePermissions = roles[role] ?? initialRoles[role as keyof typeof initialRoles];
 
     return {
       perfil: role,
@@ -238,9 +238,9 @@ export default function UsuariosPermissoesPage() {
 
         <div className="grid gap-4 xl:grid-cols-3">
           {roleKeys.map((role) => {
-            const rolePermissions = roles?.[role] ?? initialRoles[role];
+            const rolePermissions = roles?.[role] ?? initialRoles[role as keyof typeof initialRoles];
             const enabledCount = permissions.filter(
-              (perm) => rolePermissions[perm.key]
+              (perm) => (rolePermissions as Record<string, boolean>)[perm.key]
             ).length;
 
             return (
@@ -293,7 +293,7 @@ export default function UsuariosPermissoesPage() {
                         </div>
                         <Switch
                           className="data-[state=checked]:bg-violet-400 data-[state=unchecked]:bg-slate-200"
-                          checked={!!rolePermissions[perm.key]}
+                          checked={!!(rolePermissions as Record<string, boolean>)[perm.key]}
                           onCheckedChange={() => toggle(role, perm.key)}
                           aria-label={`${perm.label} para ${role}`}
                         />

@@ -280,9 +280,7 @@ export default function RelatoriosPage() {
 			setSelectedAlunoId(null);
 			return;
 		}
-					<div className="space-y-6 pb-8">
-			setSelectedAlunoId(alunosFiltrados[0].id);
-		}
+		setSelectedAlunoId(alunosFiltrados[0].id);
 	}, [alunosFiltrados, selectedAlunoId]);
 
 	const alunoAtivo = useMemo(() => {
