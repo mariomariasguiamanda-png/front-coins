@@ -2,10 +2,31 @@
 
 ## Comandos Úteis
 
+Este projeto utiliza **pnpm** como gerenciador de pacotes.
+
+### Instalar dependências
+
+```bash
+pnpm install
+```
+
 ### Executar o projeto
 
 ```bash
-npm run dev  # Agora funciona no WSL!
+pnpm dev
+```
+
+### Build de produção
+
+```bash
+pnpm build
+pnpm start
+```
+
+### Linting
+
+```bash
+pnpm lint
 ```
 
 ### Scripts alternativos:
