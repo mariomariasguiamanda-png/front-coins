@@ -235,7 +235,7 @@ export default function ConfigCalendarioPage() {
 
                         <div className="flex items-center gap-2">
                           <Button
-                            variant={isOpen ? "default" : "outline"}
+                            variant={isOpen ? "primary" : "outline"}
                             className="rounded-lg"
                             onClick={() => setSelectedPeriodId(isOpen ? null : p.id)}
                           >
