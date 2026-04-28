@@ -1,11 +1,11 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { AdminLayout } from "@/components/adm/AdminLayout";
+import { AdmBackButton } from "@/components/adm/AdmBackButton";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { 
-  ArrowLeft, 
   Download,
   TrendingUp,
   TrendingDown,
@@ -166,20 +166,13 @@ ${evolucaoMensal.map(m => `${m.month}: Recebido ${m.received.toLocaleString()}, 
         {/* Header */}
         <header className="flex items-start justify-between gap-4">
           <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <Link 
-                href="/adm/moedas-relatorio-saldos"
-                className="text-gray-400 hover:text-gray-600 transition-colors"
-              >
-                <ArrowLeft className="h-5 w-5" />
-              </Link>
-              <h1 className="text-3xl font-bold text-gray-900">Gráficos Detalhados</h1>
-            </div>
-            <p className="text-gray-600">
+            <h1 className="text-3xl font-bold text-gray-900">Gráficos Detalhados</h1>
+            <p className="text-muted-foreground">
               Análise visual completa de saldos, distribuição e evolução temporal
             </p>
           </div>
           <div className="flex gap-2 no-print">
+            <AdmBackButton href="/adm/moedas-relatorio-saldos" />
             <Select value={periodo} onValueChange={setPeriodo}>
               <SelectTrigger className="rounded-lg bg-white min-w-[160px]">
                 <SelectValue placeholder="Período" />

@@ -1,28 +1,24 @@
 import { useEffect, useMemo, useState } from "react";
-import Link from "next/link";
 import { AdminLayout } from "@/components/adm/AdminLayout";
+import { AdmBackButton } from "@/components/adm/AdmBackButton";
 import { Button } from "@/components/ui/Button";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Upload, Save, ArrowLeft } from "lucide-react";
+import { Upload, Save } from "lucide-react";
 import { useToast } from "@/components/ui/Toast";
 import { getSystemSettings, updateSystemSettings, diffSystemSettings, type SystemSettings } from "@/services/api/system-settings";
 import { createLog } from "@/services/api/logs";
-import { createNotification } from "@/services/api/notifications";
 
 export default function ConfigVisualPage() {
   const { show } = useToast();
   const [data, setData] = useState<SystemSettings | null>(null);
   const [draft, setDraft] = useState<SystemSettings | null>(null);
   const [saving, setSaving] = useState(false);
+  const [logoPreviewUrl, setLogoPreviewUrl] = useState<string | null>(null);
 
   useEffect(() => { getSystemSettings().then((s) => { setData(s); setDraft(s); }); }, []);
-  const changesPending = useMemo(() => {
-    const hasChanges = JSON.stringify(data) !== JSON.stringify(draft);
-    console.log('Changes pending:', hasChanges, { data, draft });
-    return hasChanges;
-  }, [data, draft]);
+  const changesPending = useMemo(() => JSON.stringify(data) !== JSON.stringify(draft), [data, draft]);
 
   // Aplicar cores em tempo real
   useEffect(() => {
@@ -33,39 +29,41 @@ export default function ConfigVisualPage() {
     }
   }, [draft]);
 
+  useEffect(() => {
+    return () => {
+      if (logoPreviewUrl) {
+        URL.revokeObjectURL(logoPreviewUrl);
+      }
+    };
+  }, [logoPreviewUrl]);
+
   return (
     <AdminLayout>
-      <div className="space-y-6">
+      <div className="space-y-6 pb-8">
         <header className="flex items-center justify-between">
           <div className="space-y-1">
             <h1 className="text-2xl font-bold">Identidade Visual</h1>
             <p className="text-muted-foreground">Logo, cores e tipografia</p>
           </div>
           <div className="flex items-center gap-2">
-            <Link href="/adm/configuracoes" className="hidden md:block">
-              <Button variant="outline" className="rounded-xl"><ArrowLeft className="mr-2 h-4 w-4"/>Voltar ao Hub</Button>
-            </Link>
+            <AdmBackButton href="/adm/configuracoes" className="hidden md:block" />
             {changesPending && (
               <span className="text-xs text-amber-600 font-medium">✓ Alterações pendentes</span>
             )}
             <Button 
-              className="rounded-xl" 
+              className="rounded-lg" 
               disabled={!changesPending || !draft || saving} 
               isLoading={saving}
               onClick={async () => {
-                console.log('Botão clicado!', { data, draft });
-                
                 if (!data || !draft) {
-                  alert('Dados não carregados');
+                  show({ variant: "error", title: "Dados não carregados" });
                   return;
                 }
                 
                 try {
                   setSaving(true);
-                  console.log('Salvando...');
                   
                   const saved = await updateSystemSettings(draft);
-                  console.log('Salvo com sucesso:', saved);
                   
                   setData(saved); 
                   setDraft(saved);
@@ -85,7 +83,6 @@ export default function ConfigVisualPage() {
                   show({ variant: "error", title: "Erro ao salvar" });
                 } finally { 
                   setSaving(false); 
-                  console.log('Salvamento finalizado');
                 }
               }}
             >
@@ -103,12 +100,19 @@ export default function ConfigVisualPage() {
               <div className="flex items-center gap-4">
                 <img src={draft.branding.logoUrl} alt="Logo" className="h-16 w-auto rounded-lg border bg-white p-2" />
                 <div className="flex items-center gap-2">
-                  <Button variant="outline" className="rounded-xl">
+                  <Button variant="outline" className="rounded-lg">
                     <label className="cursor-pointer">
                       <Upload className="mr-2 inline h-4 w-4" /> Selecionar arquivo
-                      <input type="file" accept="image/*" className="sr-only" onChange={async (e) => {
+                      <input type="file" accept="image/*" className="sr-only" onChange={(e) => {
                         const f = e.currentTarget.files?.[0]; if (!f) return;
+                        if (!draft) return;
+
+                        if (logoPreviewUrl) {
+                          URL.revokeObjectURL(logoPreviewUrl);
+                        }
+
                         const url = URL.createObjectURL(f);
+                        setLogoPreviewUrl(url);
                         setDraft({ ...draft, branding: { ...draft.branding, logoUrl: url } });
                         show({ variant: "success", title: "Logo atualizada (pré-visualização)", description: "Salve para aplicar permanentemente." });
                       }} />

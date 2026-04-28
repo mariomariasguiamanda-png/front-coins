@@ -164,15 +164,6 @@ export default function Usuarios() {
     );
   };
 
-  const estatisticas = {
-    total: usuarios.length,
-    alunos: usuarios.filter((u) => u.tipo === "aluno").length,
-    professores: usuarios.filter((u) => u.tipo === "professor").length,
-    administradores: usuarios.filter((u) => u.tipo === "administrador").length,
-    ativos: usuarios.filter((u) => u.status === "ativo").length,
-    pendentes: usuarios.filter((u) => u.status === "pendente").length,
-  };
-
   return (
     <div className="space-y-6">
       {/* Cabeçalho da seção */}
@@ -199,58 +190,6 @@ export default function Usuarios() {
             Novo usuário
           </Button>
         </div>
-      </div>
-
-      {/* Estatísticas rápidas */}
-      <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
-        <Card className="rounded-2xl bg-white/5 backdrop-blur-sm border border-white/10">
-          <CardContent className="p-3 text-center">
-            <div className="text-lg font-bold text-white">
-              {estatisticas.total}
-            </div>
-            <div className="text-xs text-white/70">Total</div>
-          </CardContent>
-        </Card>
-        <Card className="rounded-2xl bg-blue-500/10 border border-blue-300/20">
-          <CardContent className="p-3 text-center">
-            <div className="text-lg font-bold text-blue-400">
-              {estatisticas.alunos}
-            </div>
-            <div className="text-xs text-blue-300">Alunos</div>
-          </CardContent>
-        </Card>
-        <Card className="rounded-2xl bg-green-500/10 border border-green-300/20">
-          <CardContent className="p-3 text-center">
-            <div className="text-lg font-bold text-green-400">
-              {estatisticas.professores}
-            </div>
-            <div className="text-xs text-green-300">Professores</div>
-          </CardContent>
-        </Card>
-        <Card className="rounded-2xl bg-purple-500/10 border border-purple-300/20">
-          <CardContent className="p-3 text-center">
-            <div className="text-lg font-bold text-purple-400">
-              {estatisticas.administradores}
-            </div>
-            <div className="text-xs text-purple-300">Admins</div>
-          </CardContent>
-        </Card>
-        <Card className="rounded-2xl bg-emerald-500/10 border border-emerald-300/20">
-          <CardContent className="p-3 text-center">
-            <div className="text-lg font-bold text-emerald-400">
-              {estatisticas.ativos}
-            </div>
-            <div className="text-xs text-emerald-300">Ativos</div>
-          </CardContent>
-        </Card>
-        <Card className="rounded-2xl bg-yellow-500/10 border border-yellow-300/20">
-          <CardContent className="p-3 text-center">
-            <div className="text-lg font-bold text-yellow-400">
-              {estatisticas.pendentes}
-            </div>
-            <div className="text-xs text-yellow-300">Pendentes</div>
-          </CardContent>
-        </Card>
       </div>
 
       {/* Filtros e busca */}

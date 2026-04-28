@@ -1,14 +1,14 @@
 import { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
 import { AdminLayout } from "@/components/adm/AdminLayout";
+import { AdmBackButton } from "@/components/adm/AdmBackButton";
+import { AdmFiltersCard } from "@/components/adm/AdmFiltersCard";
 import { Button } from "@/components/ui/Button";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import {
   MessageCircle,
   Search,
-  ChevronLeft,
-  Filter,
   Clock,
   CheckCircle,
   AlertCircle,
@@ -25,7 +25,6 @@ export default function SuporteChamadosPage() {
   const { show } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("todos");
-  const [tipoFilter, setTipoFilter] = useState<string>("todos");
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
   const [ticketDialogOpen, setTicketDialogOpen] = useState(false);
   const [tickets, setTickets] = useState<Ticket[]>([]);
@@ -35,7 +34,6 @@ export default function SuporteChamadosPage() {
   const [pageSize, setPageSize] = useState(5);
   const [sortBy, setSortBy] = useState<"data-desc" | "data-asc" | "status" | "solicitante">("data-desc");
   const [editStatus, setEditStatus] = useState<TicketStatus | "">("");
-  const [editResponsavel, setEditResponsavel] = useState("");
   const [savingDetails, setSavingDetails] = useState(false);
 
   useEffect(() => { getTickets().then(setTickets); }, []);
@@ -44,8 +42,7 @@ export default function SuporteChamadosPage() {
     const s = searchTerm.toLowerCase();
     const matchesSearch = t.solicitante.toLowerCase().includes(s) || t.descricao.toLowerCase().includes(s);
     const matchesStatus = statusFilter === "todos" || t.status === statusFilter;
-    const matchesTipo = tipoFilter === "todos" || t.tipo === tipoFilter;
-    return matchesSearch && matchesStatus && matchesTipo;
+    return matchesSearch && matchesStatus;
   });
   const sortedTickets = [...filteredTickets].sort((a, b) => {
     if (sortBy === "status") return a.status.localeCompare(b.status);
@@ -85,12 +82,7 @@ export default function SuporteChamadosPage() {
                 <p className="text-gray-600 mt-1">Atendimento e resolução de solicitações</p>
               </div>
             </div>
-            <Link href="/adm/suporte" className="no-underline">
-              <Button variant="outline" className="rounded-lg inline-flex items-center gap-2">
-                <ChevronLeft className="h-4 w-4" />
-                Voltar ao hub
-              </Button>
-            </Link>
+            <AdmBackButton href="/adm/suporte" className="no-underline" />
           </div>
 
           {/* Stats Cards */}
@@ -154,16 +146,13 @@ export default function SuporteChamadosPage() {
         </header>
 
         {/* Filters */}
-        <Card className="rounded-xl shadow-sm">
-          <div className="h-2 bg-gradient-to-r from-blue-500 to-blue-600 rounded-t-xl"></div>
-          <CardContent className="p-6">
+        <AdmFiltersCard accentClassName="from-blue-500 to-blue-600">
             <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
               <div className="flex max-w-[320px] items-center gap-2">
                 <Search className="h-4 w-4 text-muted-foreground" />
                 <Input placeholder="Buscar chamados..." className="rounded-lg" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
               </div>
               <div className="flex flex-wrap gap-2 items-center">
-                <Filter className="h-4 w-4 text-muted-foreground" />
                 <Select value={statusFilter} onValueChange={setStatusFilter}>
                   <SelectTrigger className="w-[180px] rounded-lg"><SelectValue placeholder="Status" /></SelectTrigger>
                   <SelectContent>
@@ -171,15 +160,6 @@ export default function SuporteChamadosPage() {
                     <SelectItem value="aberto">Aberto</SelectItem>
                     <SelectItem value="em_andamento">Em andamento</SelectItem>
                     <SelectItem value="resolvido">Resolvido</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Select value={tipoFilter} onValueChange={setTipoFilter}>
-                  <SelectTrigger className="w-[180px] rounded-lg"><SelectValue placeholder="Tipo" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="todos">Todos os tipos</SelectItem>
-                    <SelectItem value="tecnico">Técnico</SelectItem>
-                    <SelectItem value="pedagogico">Pedagógico</SelectItem>
-                    <SelectItem value="administrativo">Administrativo</SelectItem>
                   </SelectContent>
                 </Select>
                 <Select value={sortBy} onValueChange={(v) => { setSortBy(v as any); setPage(1); }}>
@@ -201,29 +181,35 @@ export default function SuporteChamadosPage() {
                 </Select>
               </div>
             </div>
-          </CardContent>
-        </Card>
+        </AdmFiltersCard>
 
         <div className="grid gap-6">
           {pageItems.map((ticket) => (
             <Card key={ticket.id} className="rounded-xl">
               <CardContent className="p-6">
-                <div className="-m-2 p-2 rounded-lg hover:bg-gray-50 cursor-pointer" role="button" tabIndex={0} onClick={() => { setSelectedTicket(ticket); setTicketDialogOpen(true); }} onKeyDown={(e) => { if (e.key === 'Enter') { setSelectedTicket(ticket); setTicketDialogOpen(true); } }}>
-                <div className="flex items-start justify-between">
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium">{ticket.solicitante}</span>
-                      <span className={`px-2 py-1 text-xs rounded-full ${ticket.status === "aberto" ? "bg-yellow-100 text-yellow-700" : ticket.status === "em_andamento" ? "bg-blue-100 text-blue-700" : "bg-green-100 text-green-700"}`}>{ticket.status.replace("_", " ")}</span>
+                <button
+                  type="button"
+                  className="-m-2 w-full rounded-lg p-2 text-left transition-colors hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+                  onClick={() => {
+                    setSelectedTicket(ticket);
+                    setTicketDialogOpen(true);
+                  }}
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium">{ticket.solicitante}</span>
+                        <span className={`px-2 py-1 text-xs rounded-full ${ticket.status === "aberto" ? "bg-yellow-100 text-yellow-700" : ticket.status === "em_andamento" ? "bg-blue-100 text-blue-700" : "bg-green-100 text-green-700"}`}>{ticket.status.replace("_", " ")}</span>
+                      </div>
+                      <p className="text-sm text-muted-foreground">{ticket.descricao}</p>
                     </div>
-                    <p className="text-sm text-muted-foreground">{ticket.descricao}</p>
+                    <div className="text-right text-sm text-muted-foreground">
+                      <p>Aberto em: {new Date(ticket.dataAbertura).toLocaleDateString("pt-BR")}</p>
+                      <p>Prazo: {new Date(ticket.prazoEstimado).toLocaleDateString("pt-BR")}</p>
+                      {ticket.responsavel && <p>Responsável: {ticket.responsavel}</p>}
+                    </div>
                   </div>
-                  <div className="text-right text-sm text-muted-foreground">
-                    <p>Aberto em: {new Date(ticket.dataAbertura).toLocaleDateString("pt-BR")}</p>
-                    <p>Prazo: {new Date(ticket.prazoEstimado).toLocaleDateString("pt-BR")}</p>
-                    {ticket.responsavel && <p>Responsável: {ticket.responsavel}</p>}
-                  </div>
-                </div>
-                </div>
+                </button>
               </CardContent>
             </Card>
           ))}
@@ -282,30 +268,6 @@ export default function SuporteChamadosPage() {
                         <SelectItem value="resolvido">Resolvido</SelectItem>
                       </SelectContent>
                     </Select>
-                  </div>
-                  <div className="col-span-2">
-                    <p className="text-xs text-gray-500 mb-1">Responsável</p>
-                    <Input 
-                      placeholder="Atribuir atendente" 
-                      className="rounded-lg bg-white border-gray-300" 
-                      value={editResponsavel} 
-                      onChange={(e) => setEditResponsavel(e.target.value)} 
-                      onBlur={async () => {
-                        if (!selectedTicket || editResponsavel === selectedTicket.responsavel) return;
-                        try {
-                          const next: Ticket = {
-                            ...selectedTicket,
-                            responsavel: editResponsavel.trim() || null,
-                          };
-                          const updated = await updateTicket(next);
-                          setTickets(tickets.map((t) => (t.id === updated.id ? updated : t)));
-                          setSelectedTicket(updated);
-                          show({ variant: "success", title: "Responsável atualizado" });
-                        } catch (error) {
-                          console.error(error);
-                        }
-                      }}
-                    />
                   </div>
                 </div>
 

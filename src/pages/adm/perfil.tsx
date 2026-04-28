@@ -88,8 +88,8 @@ export default function PerfilAdministrador() {
       <div className="p-6 max-w-5xl mx-auto">
         {/* Header */}
         <div className="mb-6">
-          <h1 className="text-2xl font-bold text-gray-900 mb-1">Meu Perfil</h1>
-          <p className="text-gray-600">
+          <h1 className="text-3xl font-bold text-gray-900 mb-1">Meu Perfil</h1>
+          <p className="text-muted-foreground">
             Gerencie suas informações pessoais e preferências
           </p>
         </div>
@@ -112,11 +112,8 @@ export default function PerfilAdministrador() {
               </div>
               <div className="flex-1 pb-2">
 
-                <h2 className="text-2xl font-bold text-gray-900">
-                  {admin.nome}
-                </h2>
-
-                <p className="text-gray-600">{cargo}</p>
+                <h1 className="text-white">Admin Sistema</h1>
+                <p className="!text-gray-800">Administrador do Sistema</p>
                 <div className="flex items-center gap-4 mt-2 text-sm text-gray-500">
                   <span className="flex items-center gap-1">
                     <Mail className="h-4 w-4" />
@@ -135,8 +132,12 @@ export default function PerfilAdministrador() {
         {/* Tabs */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
           <div className="border-b border-gray-200">
-            <div className="flex gap-1 p-1">
+            <div className="flex gap-1 p-1" role="tablist" aria-label="Seções do perfil">
               <button
+                type="button"
+                role="tab"
+                aria-selected={activeTab === "dados"}
+                aria-pressed={activeTab === "dados"}
                 onClick={() => setActiveTab("dados")}
                 className={`flex-1 px-4 py-2.5 rounded-lg text-sm font-medium transition ${
                   activeTab === "dados"
@@ -148,6 +149,10 @@ export default function PerfilAdministrador() {
                 Dados Pessoais
               </button>
               <button
+                type="button"
+                role="tab"
+                aria-selected={activeTab === "senha"}
+                aria-pressed={activeTab === "senha"}
                 onClick={() => setActiveTab("senha")}
                 className={`flex-1 px-4 py-2.5 rounded-lg text-sm font-medium transition ${
                   activeTab === "senha"
@@ -159,6 +164,10 @@ export default function PerfilAdministrador() {
                 Segurança
               </button>
               <button
+                type="button"
+                role="tab"
+                aria-selected={activeTab === "preferencias"}
+                aria-pressed={activeTab === "preferencias"}
                 onClick={() => setActiveTab("preferencias")}
                 className={`flex-1 px-4 py-2.5 rounded-lg text-sm font-medium transition ${
                   activeTab === "preferencias"

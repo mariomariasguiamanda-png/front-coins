@@ -1,4 +1,5 @@
 import { AdminLayout } from "@/components/adm/AdminLayout";
+import { AdmBackButton } from "@/components/adm/AdmBackButton";
 import { Card, CardContent } from "@/components/ui/Card";
 import {
   MessageCircle,
@@ -6,7 +7,6 @@ import {
   CheckCircle2,
   AlertCircle,
   BarChart2,
-  ChevronLeft,
   TrendingUp,
   Users,
   ThumbsUp,
@@ -31,12 +31,7 @@ export default function SuporteAnalyticsPage() {
                 <p className="text-gray-600 mt-1">Indicadores de desempenho do suporte</p>
               </div>
             </div>
-            <Link href="/adm/suporte" className="no-underline">
-              <Button variant="outline" className="rounded-lg inline-flex items-center gap-2">
-                <ChevronLeft className="h-4 w-4" />
-                Voltar ao hub
-              </Button>
-            </Link>
+            <AdmBackButton href="/adm/suporte" className="no-underline" />
           </div>
 
           {/* Primary Stats */}

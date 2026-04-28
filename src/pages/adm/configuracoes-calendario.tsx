@@ -1,15 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { AdminLayout } from "@/components/adm/AdminLayout";
+import { AdmBackButton } from "@/components/adm/AdmBackButton";
 import { Button } from "@/components/ui/Button";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
-import { PlusCircle, Save, ArrowLeft } from "lucide-react";
+import { PlusCircle, Save, Trash2 } from "lucide-react";
 import { useToast } from "@/components/ui/Toast";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Popover, PopoverItem } from "@/components/ui/Popover";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { getSystemSettings, updateSystemSettings, diffSystemSettings, type SystemSettings, type AcademicEvent, type AcademicPeriod } from "@/services/api/system-settings";
 import { createLog } from "@/services/api/logs";
 import { createNotification, composeMessages } from "@/services/api/notifications";
@@ -22,12 +21,18 @@ export default function ConfigCalendarioPage() {
   const [eventDialogOpen, setEventDialogOpen] = useState(false);
   const [eventDraft, setEventDraft] = useState<Partial<AcademicEvent>>({ tipo: "prova", notificar: true });
   const [selectedPeriodId, setSelectedPeriodId] = useState<string | null>(null);
-  const [eventDialogTab, setEventDialogTab] = useState<"adicionar" | "editar">("adicionar");
   const [eventEditId, setEventEditId] = useState<string | null>(null);
 
-  useEffect(() => { getSystemSettings().then((s) => { setData(s); setDraft(s); }); }, []);
+  useEffect(() => {
+    getSystemSettings().then((s) => {
+      setData(s);
+      setDraft(s);
+      setSelectedPeriodId(s.periods[0]?.id ?? null);
+    });
+  }, []);
   const selectedPeriod = useMemo(() => draft?.periods.find(p => p.id === selectedPeriodId) || null, [draft, selectedPeriodId]);
   const changesPending = useMemo(() => JSON.stringify(data) !== JSON.stringify(draft), [data, draft]);
+  const totalEventos = useMemo(() => (draft ? draft.periods.reduce((acc, p) => acc + p.eventos.length, 0) : 0), [draft]);
 
   const addEventToSelectedPeriod = async () => {
     if (!draft || !selectedPeriod) return;
@@ -48,7 +53,6 @@ export default function ConfigCalendarioPage() {
     setEventDialogOpen(false);
     setEventDraft({ tipo: "prova", notificar: true });
     setEventEditId(null);
-    setEventDialogTab("adicionar");
     if (newEvent.notificar) {
       await createNotification(
         composeMessages.academicEventCreated({
@@ -91,23 +95,37 @@ export default function ConfigCalendarioPage() {
     setDraft(next);
     setEventDialogOpen(false);
     setEventEditId(null);
-    setEventDialogTab("adicionar");
     show({ variant: "success", title: "Evento atualizado" });
+  };
+
+  const removePeriod = (periodId: string) => {
+    if (!draft) return;
+    if (!confirm("Excluir este período e todos os eventos vinculados?")) return;
+    const remaining = draft.periods.filter((p) => p.id !== periodId);
+    setDraft({ ...draft, periods: remaining });
+    if (selectedPeriodId === periodId) setSelectedPeriodId(remaining[0]?.id ?? null);
+    show({ variant: "success", title: "Período removido" });
+  };
+
+  const formatDateBR = (value: string) => {
+    try {
+      return new Date(value).toLocaleDateString("pt-BR");
+    } catch {
+      return value;
+    }
   };
 
   return (
     <AdminLayout>
-      <div className="space-y-6">
+      <div className="space-y-6 pb-8">
         <header className="flex items-center justify-between">
           <div className="space-y-1">
             <h1 className="text-2xl font-bold">Calendário</h1>
             <p className="text-muted-foreground">Períodos letivos e eventos</p>
           </div>
           <div className="flex items-center gap-2">
-            <Link href="/adm/configuracoes" className="hidden md:block">
-              <Button variant="outline" className="rounded-xl"><ArrowLeft className="mr-2 h-4 w-4"/>Voltar ao Hub</Button>
-            </Link>
-            <Button className="rounded-xl" disabled={!changesPending || !draft} isLoading={saving} onClick={async () => {
+            <AdmBackButton href="/adm/configuracoes" className="hidden md:block" />
+            <Button className="rounded-lg" disabled={!changesPending || !draft} isLoading={saving} onClick={async () => {
               if (!data || !draft) return;
               const diffs = diffSystemSettings(data, draft);
               if (!diffs.length) return;
@@ -126,152 +144,250 @@ export default function ConfigCalendarioPage() {
         {!draft ? (
           <Card className="rounded-xl"><CardContent className="p-6 text-sm text-muted-foreground">Carregando…</CardContent></Card>
         ) : (
-          <Card className="rounded-xl"><CardContent className="p-6 space-y-6">
-            <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold">Períodos Letivos</h3>
-              <Button className="rounded-xl" onClick={() => {
-                const novo: AcademicPeriod = { id: `p_${Date.now()}`, nome: `Novo período`, tipo: "semestre", dataInicio: new Date().toISOString().slice(0,10), dataFim: new Date().toISOString().slice(0,10), eventos: [], } as AcademicPeriod;
-                setDraft({ ...draft, periods: [...draft.periods, novo] });
-              }}>
-                <PlusCircle className="mr-2 h-4 w-4" /> Novo Período
-              </Button>
-            </div>
-
-            <div className="space-y-3">
-              {draft.periods.map((p) => (
-                <div key={p.id} className="rounded-lg border p-4 hover:bg-gray-50">
-                  <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                    <div className="grid gap-2 md:grid-cols-2 md:items-center">
-                      <Input className="rounded-lg" value={p.nome} onChange={(e) => setDraft({ ...draft, periods: draft.periods.map(px => px.id === p.id ? { ...px, nome: e.target.value } : px) })} />
-                      <div className="flex items-center gap-2">
-                        <Select
-                          value={p.tipo as any}
-                          onValueChange={(v) => setDraft({
-                            ...draft,
-                            periods: draft.periods.map(px => px.id === p.id ? { ...px, tipo: v as any } : px)
-                          })}
-                        >
-                          <SelectTrigger className="min-w-[140px] bg-white text-slate-900 border border-slate-300">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent side="bottom">
-                            <SelectItem value="semestre">Semestre</SelectItem>
-                            <SelectItem value="trimestre">Trimestre</SelectItem>
-                            <SelectItem value="bimestre">Bimestre</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <Input type="date" className="rounded-lg" value={p.dataInicio} onChange={(e) => setDraft({ ...draft, periods: draft.periods.map(px => px.id === p.id ? { ...px, dataInicio: e.target.value } : px) })} />
-                        <Input type="date" className="rounded-lg" value={p.dataFim} onChange={(e) => setDraft({ ...draft, periods: draft.periods.map(px => px.id === p.id ? { ...px, dataFim: e.target.value } : px) })} />
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Button variant="outline" className="rounded-xl whitespace-nowrap" onClick={() => setSelectedPeriodId(p.id)}>
-                        Gerenciar eventos
-                      </Button>
-                    </div>
-                  </div>
-
-                  {selectedPeriodId === p.id && (
-                    <div className="mt-4 space-y-3">
-                      <div className="flex items-center justify-between">
-                        <h4 className="font-medium">Eventos</h4>
-                        <Button
-                          variant="outline"
-                          className="rounded-xl"
-                          onClick={() => {
-                            setEventDraft({ tipo: "prova", notificar: true });
-                            setEventEditId(null);
-                            setEventDialogTab("adicionar");
-                            setEventDialogOpen(true);
-                          }}
-                        >
-                          <PlusCircle className="mr-2 h-4 w-4" /> Adicionar Evento
-                        </Button>
-                      </div>
-                      <div className="space-y-2">
-                        {p.eventos.map(ev => (
-                          <div key={ev.id} className="flex items-center justify-between rounded-md bg-gray-50 p-2 text-sm">
-                            <div className="flex items-center gap-3">
-                              <span className="font-medium">{ev.titulo}</span>
-                              <span className="rounded-full bg-violet-50 px-2 py-0.5 text-xs text-violet-700">{ev.tipo}</span>
-                            </div>
-                            <div className="flex items-center gap-2 text-muted-foreground">
-                              <span>
-                                {new Date(ev.dataInicio).toLocaleDateString("pt-BR")} - {new Date(ev.dataFim).toLocaleDateString("pt-BR")}
-                              </span>
-                              <Popover
-                                trigger={<Button variant="outline" className="h-7 px-3 rounded-lg text-xs">Mais ações ▾</Button>}
-                              >
-                                <PopoverItem
-                                  onClick={() => {
-                                    setSelectedPeriodId(p.id);
-                                    setEventDraft({ ...ev });
-                                    setEventEditId(ev.id);
-                                    setEventDialogTab("editar");
-                                    setEventDialogOpen(true);
-                                  }}
-                                >
-                                  Editar
-                                </PopoverItem>
-                                <PopoverItem
-                                  onClick={() => {
-                                    setSelectedPeriodId(p.id);
-                                    const { id, ...rest } = ev;
-                                    setEventDraft({ ...rest });
-                                    setEventEditId(null);
-                                    setEventDialogTab("adicionar");
-                                    setEventDialogOpen(true);
-                                  }}
-                                >
-                                  Duplicar
-                                </PopoverItem>
-                                <PopoverItem
-                                  className="text-red-600"
-                                  onClick={() => {
-                                    if (!confirm("Excluir este evento?")) return;
-                                    if (!draft) return;
-                                    const next = {
-                                      ...draft,
-                                      periods: draft.periods.map(px =>
-                                        px.id === p.id
-                                          ? { ...px, eventos: px.eventos.filter(e => e.id !== ev.id) }
-                                          : px
-                                      ),
-                                    } as SystemSettings;
-                                    setDraft(next);
-                                    show({ variant: "success", title: "Evento excluído" });
-                                  }}
-                                >
-                                  Excluir
-                                </PopoverItem>
-                              </Popover>
-                            </div>
-                          </div>
-                        ))}
-                        {p.eventos.length === 0 && (
-                          <div className="text-sm text-muted-foreground">Sem eventos cadastrados.</div>
-                        )}
-                      </div>
-                    </div>
-                  )}
+          <Card className="rounded-xl">
+            <CardContent className="p-6 space-y-6">
+              <div className="grid gap-3 sm:grid-cols-3">
+                <div className="rounded-lg border bg-slate-50 p-3">
+                  <p className="text-xs text-slate-500">Períodos</p>
+                  <p className="text-2xl font-semibold text-slate-900">{draft.periods.length}</p>
                 </div>
-              ))}
-            </div>
-          </CardContent></Card>
+                <div className="rounded-lg border bg-slate-50 p-3">
+                  <p className="text-xs text-slate-500">Eventos</p>
+                  <p className="text-2xl font-semibold text-slate-900">{totalEventos}</p>
+                </div>
+                <div className="rounded-lg border bg-slate-50 p-3">
+                  <p className="text-xs text-slate-500">Status</p>
+                  <p className="text-sm font-medium text-slate-900">{changesPending ? "Alterações pendentes" : "Sem alterações"}</p>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <h3 className="text-lg font-semibold">Períodos Letivos</h3>
+                <Button
+                  className="rounded-xl"
+                  onClick={() => {
+                    const novo: AcademicPeriod = {
+                      id: `p_${Date.now()}`,
+                      nome: "Novo período",
+                      tipo: "semestre",
+                      dataInicio: new Date().toISOString().slice(0, 10),
+                      dataFim: new Date().toISOString().slice(0, 10),
+                      eventos: [],
+                    } as AcademicPeriod;
+                    const next = { ...draft, periods: [...draft.periods, novo] };
+                    setDraft(next);
+                    setSelectedPeriodId(novo.id);
+                  }}
+                >
+                  <PlusCircle className="mr-2 h-4 w-4" /> Novo Período
+                </Button>
+              </div>
+
+              <div className="space-y-4">
+                {draft.periods.length === 0 && (
+                  <div className="rounded-lg border border-dashed p-6 text-sm text-muted-foreground">
+                    Nenhum período cadastrado. Clique em "Novo Período" para começar.
+                  </div>
+                )}
+
+                {draft.periods.map((p) => {
+                  const isOpen = selectedPeriodId === p.id;
+                  const invalidRange = p.dataFim < p.dataInicio;
+
+                  return (
+                    <div key={p.id} className="rounded-xl border bg-white p-4">
+                      <div className="grid gap-3 lg:grid-cols-[1.5fr_1fr_auto] lg:items-end">
+                        <div className="space-y-1">
+                          <label className="text-xs font-medium text-slate-500">Nome do período</label>
+                          <Input
+                            className="rounded-lg"
+                            value={p.nome}
+                            onChange={(e) =>
+                              setDraft({
+                                ...draft,
+                                periods: draft.periods.map((px) => (px.id === p.id ? { ...px, nome: e.target.value } : px)),
+                              })
+                            }
+                          />
+                        </div>
+
+                        <div className="space-y-1">
+                          <label className="text-xs font-medium text-slate-500">Tipo</label>
+                          <Select
+                            value={p.tipo as any}
+                            onValueChange={(v) =>
+                              setDraft({
+                                ...draft,
+                                periods: draft.periods.map((px) => (px.id === p.id ? { ...px, tipo: v as any } : px)),
+                              })
+                            }
+                          >
+                            <SelectTrigger className="bg-white text-slate-900 border border-slate-300 rounded-lg">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent side="bottom">
+                              <SelectItem value="semestre">Semestre</SelectItem>
+                              <SelectItem value="trimestre">Trimestre</SelectItem>
+                              <SelectItem value="bimestre">Bimestre</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant={isOpen ? "default" : "outline"}
+                            className="rounded-lg"
+                            onClick={() => setSelectedPeriodId(isOpen ? null : p.id)}
+                          >
+                            {isOpen ? "Fechar eventos" : "Gerenciar eventos"}
+                          </Button>
+                          <Button variant="outline" className="rounded-lg text-red-600" onClick={() => removePeriod(p.id)}>
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+
+                      <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                        <div className="space-y-1">
+                          <label className="text-xs font-medium text-slate-500">Data de início</label>
+                          <Input
+                            type="date"
+                            className="rounded-lg"
+                            value={p.dataInicio}
+                            onChange={(e) =>
+                              setDraft({
+                                ...draft,
+                                periods: draft.periods.map((px) => (px.id === p.id ? { ...px, dataInicio: e.target.value } : px)),
+                              })
+                            }
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-xs font-medium text-slate-500">Data de fim</label>
+                          <Input
+                            type="date"
+                            className="rounded-lg"
+                            value={p.dataFim}
+                            onChange={(e) =>
+                              setDraft({
+                                ...draft,
+                                periods: draft.periods.map((px) => (px.id === p.id ? { ...px, dataFim: e.target.value } : px)),
+                              })
+                            }
+                          />
+                        </div>
+                      </div>
+
+                      {invalidRange && (
+                        <p className="mt-2 text-xs text-red-600">A data final precisa ser igual ou posterior a data inicial.</p>
+                      )}
+
+                      <div className="mt-2 text-xs text-muted-foreground">
+                        {p.eventos.length} evento(s) neste período
+                      </div>
+
+                      {isOpen && (
+                        <div className="mt-4 rounded-lg border bg-slate-50 p-3">
+                          <div className="mb-3 flex items-center justify-between">
+                            <h4 className="font-medium">Eventos do período</h4>
+                            <Button
+                              variant="outline"
+                              className="rounded-lg"
+                              onClick={() => {
+                                setSelectedPeriodId(p.id);
+                                setEventDraft({ tipo: "prova", notificar: true });
+                                setEventEditId(null);
+                                setEventDialogOpen(true);
+                              }}
+                            >
+                              <PlusCircle className="mr-2 h-4 w-4" /> Adicionar Evento
+                            </Button>
+                          </div>
+
+                          <div className="space-y-2">
+                            {p.eventos.map((ev) => (
+                              <div key={ev.id} className="rounded-md border bg-white p-3">
+                                <div className="flex flex-wrap items-start justify-between gap-3">
+                                  <div>
+                                    <div className="flex items-center gap-2">
+                                      <p className="font-medium text-slate-900">{ev.titulo}</p>
+                                      <span className="rounded-full bg-violet-50 px-2 py-0.5 text-xs text-violet-700">{ev.tipo}</span>
+                                    </div>
+                                    <p className="text-xs text-muted-foreground mt-1">
+                                      {formatDateBR(ev.dataInicio)} ate {formatDateBR(ev.dataFim)}
+                                    </p>
+                                  </div>
+
+                                  <div className="flex flex-wrap items-center gap-2">
+                                    <Button
+                                      variant="outline"
+                                      className="h-8 rounded-lg px-3 text-xs"
+                                      onClick={() => {
+                                        setSelectedPeriodId(p.id);
+                                        setEventDraft({ ...ev });
+                                        setEventEditId(ev.id);
+                                        setEventDialogOpen(true);
+                                      }}
+                                    >
+                                      Editar
+                                    </Button>
+                                    <Button
+                                      variant="outline"
+                                      className="h-8 rounded-lg px-3 text-xs"
+                                      onClick={() => {
+                                        setSelectedPeriodId(p.id);
+                                        const { id, ...rest } = ev;
+                                        setEventDraft({ ...rest });
+                                        setEventEditId(null);
+                                        setEventDialogOpen(true);
+                                      }}
+                                    >
+                                      Duplicar
+                                    </Button>
+                                    <Button
+                                      variant="outline"
+                                      className="h-8 rounded-lg px-3 text-xs text-red-600"
+                                      onClick={() => {
+                                        if (!confirm("Excluir este evento?")) return;
+                                        const next = {
+                                          ...draft,
+                                          periods: draft.periods.map((px) =>
+                                            px.id === p.id ? { ...px, eventos: px.eventos.filter((e) => e.id !== ev.id) } : px
+                                          ),
+                                        } as SystemSettings;
+                                        setDraft(next);
+                                        show({ variant: "success", title: "Evento excluido" });
+                                      }}
+                                    >
+                                      Excluir
+                                    </Button>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+
+                            {p.eventos.length === 0 && (
+                              <div className="text-sm text-muted-foreground">Sem eventos cadastrados para este período.</div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
         )}
 
         <Dialog open={eventDialogOpen} onOpenChange={setEventDialogOpen}>
-          <DialogContent className="sm:max-w-[520px] admin-form-light">
+          <DialogContent className="sm:max-w-[520px] admin-form-light bg-white text-slate-900 border-slate-200">
             <DialogHeader>
-              <DialogTitle>Novo Evento Acadêmico</DialogTitle>
-              <DialogDescription>Insira as informações do evento</DialogDescription>
+              <DialogTitle>{eventEditId ? "Editar evento" : "Novo evento academico"}</DialogTitle>
+              <DialogDescription>
+                {eventEditId ? "Atualize os dados do evento selecionado" : "Preencha os dados para cadastrar o evento no período"}
+              </DialogDescription>
             </DialogHeader>
-            <Tabs value={eventDialogTab} onValueChange={(v) => setEventDialogTab(v as any)} className="mb-2">
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="adicionar">Adicionar</TabsTrigger>
-                <TabsTrigger value="editar" disabled={!eventEditId}>Editar</TabsTrigger>
-              </TabsList>
-            </Tabs>
             <div className="space-y-3">
               <div>
                 <label className="text-sm font-medium">Título</label>
@@ -322,12 +438,19 @@ export default function ConfigCalendarioPage() {
                 <span>Notificar alunos e professores</span>
               </label>
               <div className="flex justify-end gap-2 pt-2">
-                <Button variant="outline" className="rounded-xl" onClick={() => setEventDialogOpen(false)}>Cancelar</Button>
-                {eventDialogTab === "editar" ? (
-                  <Button className="rounded-xl" onClick={updateEventInSelectedPeriod}>Salvar alterações</Button>
-                ) : (
-                  <Button className="rounded-xl" onClick={addEventToSelectedPeriod}>Adicionar</Button>
-                )}
+                <Button
+                  variant="outline"
+                  className="rounded-xl"
+                  onClick={() => {
+                    setEventDialogOpen(false);
+                    setEventEditId(null);
+                  }}
+                >
+                  Cancelar
+                </Button>
+                <Button className="rounded-xl" onClick={eventEditId ? updateEventInSelectedPeriod : addEventToSelectedPeriod}>
+                  {eventEditId ? "Salvar alterações" : "Adicionar"}
+                </Button>
               </div>
             </div>
           </DialogContent>

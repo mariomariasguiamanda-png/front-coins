@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { AdminLayout } from "@/components/adm/AdminLayout";
+import { AdmBackButton } from "@/components/adm/AdmBackButton";
 import { Button } from "@/components/ui/Button";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
@@ -8,7 +9,6 @@ import {
   Settings, 
   Save, 
   Info, 
-  ChevronLeft, 
   Award,
   BookOpen,
   ListChecks,
@@ -70,12 +70,7 @@ export default function MoedasConfiguracoesPage() {
                 </p>
               </div>
             </div>
-            <a href="/adm/moedas" className="no-underline">
-              <Button variant="outline" className="rounded-lg inline-flex items-center gap-2">
-                <ChevronLeft className="h-4 w-4" />
-                Voltar ao hub
-              </Button>
-            </a>
+            <AdmBackButton href="/adm/moedas" className="no-underline" />
           </div>
 
           {/* Stats Cards */}
