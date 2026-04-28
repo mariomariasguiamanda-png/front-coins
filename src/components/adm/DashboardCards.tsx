@@ -36,21 +36,6 @@ interface DashboardStats {
 export function DashboardCards({ stats }: { stats: DashboardStats }) {
   const cards = [
     {
-      title: "Alunos",
-      icon: Users,
-      color: "text-blue-600",
-      bgColor: "bg-blue-100",
-      gradient: "from-blue-500 to-blue-600",
-      link: "/adm/usuarios-lista",
-      mainValue: stats.students.total,
-      mainLabel: "Total de alunos",
-      change: +12,
-      stats: [
-        { label: "Ativos", value: stats.students.active, highlight: true },
-        { label: "Inativos", value: stats.students.inactive, highlight: false },
-      ],
-    },
-    {
       title: "Professores",
       icon: GraduationCap,
       color: "text-green-600",
@@ -63,25 +48,6 @@ export function DashboardCards({ stats }: { stats: DashboardStats }) {
       stats: [
         { label: "Ativos", value: stats.teachers.active, highlight: true },
         { label: "Pendentes", value: stats.teachers.pending, highlight: false },
-      ],
-    },
-    {
-      title: "Disciplinas",
-      icon: BookOpen,
-      color: "text-purple-600",
-      bgColor: "bg-purple-100",
-      gradient: "from-purple-500 to-purple-600",
-      link: "/adm/disciplinas-lista",
-      mainValue: stats.disciplines.total,
-      mainLabel: "Total de disciplinas",
-      change: +2,
-      stats: [
-        { label: "Ativas", value: stats.disciplines.active, highlight: true },
-        {
-          label: "Inativas",
-          value: stats.disciplines.inactive,
-          highlight: false,
-        },
       ],
     },
     {
@@ -110,7 +76,7 @@ export function DashboardCards({ stats }: { stats: DashboardStats }) {
   ];
 
   return (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-2">
       {cards.map((card, index) => {
         const Icon = card.icon;
         const isPositiveChange = card.change > 0;

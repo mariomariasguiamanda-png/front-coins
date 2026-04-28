@@ -7,7 +7,6 @@ import {
   BarChart2, 
   PieChart, 
   TrendingUp, 
-  Clock,
   ArrowRight,
   CheckCircle2,
   XCircle,
@@ -61,37 +60,6 @@ const activityData = [
 ];
 
 const COLORS = ["#8b5cf6", "#3b82f6", "#22c55e", "#eab308"];
-
-const recentActivities = [
-  {
-    id: 1,
-    type: "user",
-    message: "Novo professor cadastrado: Maria Silva",
-    time: "5 min atrás",
-    status: "success",
-  },
-  {
-    id: 2,
-    type: "coin",
-    message: "150 moedas distribuídas em Matemática",
-    time: "12 min atrás",
-    status: "info",
-  },
-  {
-    id: 3,
-    type: "alert",
-    message: "Sistema de backup concluído",
-    time: "1 hora atrás",
-    status: "success",
-  },
-  {
-    id: 4,
-    type: "purchase",
-    message: "Compra realizada: João - Certificado",
-    time: "2 horas atrás",
-    status: "info",
-  },
-];
 
 export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
@@ -149,13 +117,9 @@ export default function DashboardPage() {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-              <p className="text-gray-600 mt-1">
+              <p className="text-muted-foreground mt-1">
                 Bem-vindo de volta! Aqui está o resumo do sistema hoje.
               </p>
-            </div>
-            <div className="hidden lg:flex items-center gap-2 text-sm text-gray-600">
-              <Clock className="h-4 w-4" />
-              <span>Última atualização: Agora</span>
             </div>
           </div>
         </header>
@@ -183,54 +147,7 @@ export default function DashboardPage() {
               </div>
             ))}
           </div>
-        ) : (
-        <div className="grid gap-4 md:grid-cols-3">
-          <Card className="rounded-xl border-l-4 border-l-green-500 bg-gradient-to-br from-green-50 to-white">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Crescimento Mensal</p>
-                  <p className="text-2xl font-bold text-gray-900 mt-1">+{metrics.studentGrowth}%</p>
-                  <p className="text-xs text-gray-500 mt-1">Alunos ativos</p>
-                </div>
-                <div className="h-12 w-12 rounded-full bg-green-100 flex items-center justify-center">
-                  <TrendingUp className="h-6 w-6 text-green-600" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="rounded-xl border-l-4 border-l-violet-500 bg-gradient-to-br from-violet-50 to-white">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Taxa de Distribuição</p>
-                  <p className="text-2xl font-bold text-gray-900 mt-1">{metrics.coinDistributionRate}%</p>
-                  <p className="text-xs text-gray-500 mt-1">Moedas em circulação</p>
-                </div>
-                <div className="h-12 w-12 rounded-full bg-violet-100 flex items-center justify-center">
-                  <Activity className="h-6 w-6 text-violet-600" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="rounded-xl border-l-4 border-l-blue-500 bg-gradient-to-br from-blue-50 to-white">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Taxa de Atividade</p>
-                  <p className="text-2xl font-bold text-gray-900 mt-1">{metrics.activeRate}%</p>
-                  <p className="text-xs text-gray-500 mt-1">Alunos engajados</p>
-                </div>
-                <div className="h-12 w-12 rounded-full bg-blue-100 flex items-center justify-center">
-                  <CheckCircle2 className="h-6 w-6 text-blue-600" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-        )}
+        ) : null}
 
         {/* Gráficos Principais */}
         {loading ? (
@@ -272,7 +189,7 @@ export default function DashboardPage() {
                   </div>
                 </div>
                 <Link 
-                  href="/adm/relatorios-alunos"
+                  href="/adm/relatorios-hub"
                   className="text-sm text-violet-600 hover:text-violet-700 font-medium flex items-center gap-1"
                 >
                   Ver mais
@@ -347,7 +264,7 @@ export default function DashboardPage() {
                     <h2 className="text-lg font-semibold text-gray-900">
                       Atividade Semanal
                     </h2>
-                    <p className="text-sm text-gray-500">Compras e moedas distribuídas</p>
+                    <p className="text-sm text-gray-500">Moedas distribuídas</p>
                   </div>
                 </div>
                 <Link 
@@ -381,10 +298,10 @@ export default function DashboardPage() {
                     />
                     <Legend />
                     <Bar 
-                      dataKey="purchases" 
+                      dataKey="coins" 
                       fill="#22c55e" 
                       radius={[8, 8, 0, 0]}
-                      name="Compras"
+                      name="Moedas distribuídas"
                     />
                   </BarChart>
                 </ResponsiveContainer>
@@ -446,77 +363,46 @@ export default function DashboardPage() {
             </CardContent>
           </Card>
 
-          {/* Atividades Recentes e Alertas */}
+          {/* Alertas Importantes */}
           <Card className="rounded-xl shadow-sm lg:col-span-3">
             <CardContent className="p-6">
               <div className="mb-6 flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-lg bg-blue-100 flex items-center justify-center">
-                    <Clock className="h-5 w-5 text-blue-600" />
-                  </div>
-                  <h2 className="text-lg font-semibold text-gray-900">
-                    Atividades Recentes
-                  </h2>
-                </div>
-              </div>
-
-              <div className="space-y-3">
-                {recentActivities.map((activity) => (
-                  <div 
-                    key={activity.id}
-                    className="flex items-start gap-4 p-3 rounded-lg hover:bg-gray-50 transition-colors"
-                  >
-                    <div className={`h-2 w-2 rounded-full mt-2 ${
-                      activity.status === 'success' ? 'bg-green-500' : 'bg-blue-500'
-                    }`} />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-gray-900">{activity.message}</p>
-                      <p className="text-xs text-gray-500 mt-0.5">{activity.time}</p>
-                    </div>
-                    {activity.status === 'success' && (
-                      <CheckCircle2 className="h-4 w-4 text-green-500 flex-shrink-0" />
-                    )}
-                  </div>
-                ))}
-              </div>
-
-              <div className="mt-6 pt-6 border-t border-gray-200">
-                <div className="flex items-center gap-3 mb-4">
                   <AlertTriangle className="h-5 w-5 text-amber-600" />
-                  <h3 className="font-semibold text-gray-900">Alertas Importantes</h3>
+                  <h2 className="text-lg font-semibold text-gray-900">Alertas Importantes</h2>
                 </div>
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between p-3 rounded-lg bg-amber-50 border border-amber-200">
-                    <div className="flex items-center gap-3">
-                      <div className="h-2 w-2 rounded-full bg-amber-500" />
-                      <div>
-                        <p className="text-sm font-medium text-gray-900">5 solicitações de suporte abertas</p>
-                        <p className="text-xs text-gray-600">2 com prioridade alta</p>
-                      </div>
+              </div>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between p-3 rounded-lg bg-amber-50 border border-amber-200">
+                  <div className="flex items-center gap-3">
+                    <div className="h-2 w-2 rounded-full bg-amber-500" />
+                    <div>
+                      <p className="text-sm font-medium text-gray-900">5 solicitações de suporte abertas</p>
+                      <p className="text-xs text-gray-600">2 com prioridade alta</p>
                     </div>
-                    <Link 
-                      href="/adm/suporte-chamados"
-                      className="text-xs text-amber-700 hover:text-amber-800 font-medium"
-                    >
-                      Ver →
-                    </Link>
                   </div>
+                  <Link 
+                    href="/adm/suporte-chamados"
+                    className="text-xs text-amber-700 hover:text-amber-800 font-medium"
+                  >
+                    Ver →
+                  </Link>
+                </div>
 
-                  <div className="flex items-center justify-between p-3 rounded-lg bg-blue-50 border border-blue-200">
-                    <div className="flex items-center gap-3">
-                      <div className="h-2 w-2 rounded-full bg-blue-500" />
-                      <div>
-                        <p className="text-sm font-medium text-gray-900">3 professores aguardando aprovação</p>
-                        <p className="text-xs text-gray-600">Pendentes há 2 dias</p>
-                      </div>
+                <div className="flex items-center justify-between p-3 rounded-lg bg-blue-50 border border-blue-200">
+                  <div className="flex items-center gap-3">
+                    <div className="h-2 w-2 rounded-full bg-blue-500" />
+                    <div>
+                      <p className="text-sm font-medium text-gray-900">3 professores aguardando aprovação</p>
+                      <p className="text-xs text-gray-600">Pendentes há 2 dias</p>
                     </div>
-                    <Link 
-                      href="/adm/usuarios-lista"
-                      className="text-xs text-blue-700 hover:text-blue-800 font-medium"
-                    >
-                      Ver →
-                    </Link>
                   </div>
+                  <Link 
+                    href="/adm/usuarios-lista"
+                    className="text-xs text-blue-700 hover:text-blue-800 font-medium"
+                  >
+                    Ver →
+                  </Link>
                 </div>
               </div>
             </CardContent>

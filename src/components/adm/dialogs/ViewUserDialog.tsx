@@ -25,28 +25,28 @@ export function ViewUserDialog({ open, onClose, user }: ViewUserDialogProps) {
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-[425px] admin-form-light bg-white text-slate-900 border-slate-200">
         <DialogHeader>
-          <DialogTitle>Detalhes do Usuário</DialogTitle>
+          <DialogTitle className="text-slate-900">Detalhes do Usuário</DialogTitle>
         </DialogHeader>
         <div className="grid gap-4 py-4">
           <div className="grid gap-2">
-            <Label>Nome</Label>
-            <div className="rounded-lg border p-2">{user.name}</div>
+            <Label className="text-slate-700">Nome</Label>
+            <div className="rounded-lg border border-slate-300 bg-white p-2 text-slate-900">{user.name}</div>
           </div>
           <div className="grid gap-2">
-            <Label>E-mail</Label>
-            <div className="rounded-lg border p-2">{user.email}</div>
+            <Label className="text-slate-700">E-mail</Label>
+            <div className="rounded-lg border border-slate-300 bg-white p-2 text-slate-900">{user.email}</div>
           </div>
           <div className="grid gap-2">
-            <Label>Tipo</Label>
-            <div className="rounded-lg border p-2">
+            <Label className="text-slate-700">Tipo</Label>
+            <div className="rounded-lg border border-slate-300 bg-white p-2 text-slate-900">
               {user.type === "student" ? "Aluno" : "Professor"}
             </div>
           </div>
           <div className="grid gap-2">
-            <Label>Status</Label>
-            <div className="rounded-lg border p-2">
+            <Label className="text-slate-700">Status</Label>
+            <div className="rounded-lg border border-slate-300 bg-white p-2">
               <span
                 className={`inline-block rounded-full px-2 py-1 text-xs font-medium ${
                   user.status === "active"
@@ -65,8 +65,8 @@ export function ViewUserDialog({ open, onClose, user }: ViewUserDialogProps) {
             </div>
           </div>
           <div className="grid gap-2">
-            <Label>Data de Cadastro</Label>
-            <div className="rounded-lg border p-2">
+            <Label className="text-slate-700">Data de Cadastro</Label>
+            <div className="rounded-lg border border-slate-300 bg-white p-2 text-slate-900">
               {new Date(user.createdAt).toLocaleDateString()}
             </div>
           </div>

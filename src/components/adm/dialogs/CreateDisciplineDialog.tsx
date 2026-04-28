@@ -15,19 +15,19 @@ export function CreateDisciplineDialog({ open, onClose, onSave }: Props) {
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="sm:max-w-[520px]">
+      <DialogContent className="sm:max-w-[520px] admin-form-light bg-white text-slate-900 border-slate-200">
         <DialogHeader>
-          <DialogTitle>Nova Disciplina</DialogTitle>
-          <DialogDescription>Preencha as informações básicas da disciplina</DialogDescription>
+          <DialogTitle className="text-slate-900">Nova Disciplina</DialogTitle>
+          <DialogDescription className="text-slate-600">Preencha as informações básicas da disciplina</DialogDescription>
         </DialogHeader>
         <div className="space-y-3">
           <div>
-            <label className="text-sm font-medium">Nome</label>
-            <Input className="rounded-lg" value={name} onChange={(e) => setName(e.target.value)} />
+            <label className="text-sm font-medium text-slate-700">Nome</label>
+            <Input className="rounded-lg bg-white text-slate-900 border-slate-300" value={name} onChange={(e) => setName(e.target.value)} />
           </div>
           <div>
-            <label className="text-sm font-medium">Código</label>
-            <Input className="rounded-lg" value={code} onChange={(e) => setCode(e.target.value)} />
+            <label className="text-sm font-medium text-slate-700">Código</label>
+            <Input className="rounded-lg bg-white text-slate-900 border-slate-300" value={code} onChange={(e) => setCode(e.target.value)} />
           </div>
         </div>
         <DialogFooter>

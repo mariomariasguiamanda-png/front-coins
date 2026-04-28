@@ -19,18 +19,18 @@ export function CancelarCompraDialog({ open, onClose, transacao, onConfirm }: Pr
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="sm:max-w-[520px]">
+      <DialogContent className="sm:max-w-[520px] admin-form-light bg-white text-slate-900 border-slate-200">
         <DialogHeader>
-          <DialogTitle>Cancelar Transação</DialogTitle>
+          <DialogTitle className="text-slate-900">Cancelar Transação</DialogTitle>
         </DialogHeader>
-        <div className="space-y-3 text-sm">
-          <div className="text-muted-foreground">
+        <div className="space-y-3 text-sm text-slate-700">
+          <div className="text-slate-600">
             Confirme o cancelamento da compra de pontos do aluno
             {transacao ? ` ${transacao.alunoNome}` : ""}.
           </div>
           <div>
-            <label className="text-sm font-medium">Motivo</label>
-            <Input className="rounded-lg" value={motivo} onChange={(e) => setMotivo(e.target.value)} />
+            <label className="text-sm font-medium text-slate-700">Motivo</label>
+            <Input className="rounded-lg bg-white text-slate-900 border-slate-300" value={motivo} onChange={(e) => setMotivo(e.target.value)} />
           </div>
         </div>
         <DialogFooter>

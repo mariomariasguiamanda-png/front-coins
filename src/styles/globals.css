@@ -117,6 +117,16 @@ a {
   * {
     @apply border-border;
   }
+
+  button:focus-visible,
+  a:focus-visible,
+  [role="button"]:focus-visible,
+  [role="tab"]:focus-visible,
+  [tabindex]:focus-visible {
+    outline: 2px solid #2563eb;
+    outline-offset: 2px;
+  }
+
   body {
     @apply bg-background text-foreground;
   }
@@ -573,6 +583,12 @@ select {
   background-color: #ffffff !important;
   color: #0f172a !important;
   border-color: #cbd5e1 !important;
+}
+
+/* Keep admin profile name white on purple topbar, even with global/link overrides */
+.admin-body header a[href="/adm/perfil"],
+.admin-body header a[href="/adm/perfil"] span {
+  color: #ffffff !important;
 }
 
 input[type="text"]:focus,

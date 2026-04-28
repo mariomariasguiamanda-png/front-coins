@@ -7,7 +7,6 @@ import {
   BookOpen,
   Coins,
   FileText,
-  Lock,
   Settings,
   ShoppingCart,
   Users,
@@ -30,7 +29,6 @@ const items = [
   { key: "compras", label: "Compras", icon: ShoppingCart, href: "/adm/compras" },
   { key: "suporte", label: "Suporte", icon: HelpCircle, href: "/adm/suporte" },
   { key: "configuracoes", label: "Configurações", icon: Settings, href: "/adm/configuracoes" },
-  { key: "seguranca", label: "Segurança", icon: Lock, href: "/adm/seguranca" },
 ] as const;
 
 export function SidebarAdm({ open, active, onChange }: SidebarAdmProps) {
