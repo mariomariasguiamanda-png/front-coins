@@ -182,7 +182,7 @@ const DisciplinaDetalhePage = () => {
 
       if (!usuario) {
         console.warn(
-          "Nenhum registro encontrado em `usuarios` para esse email."
+          "Nenhum registro encontrado em `usuarios` para esse email.",
         );
         return null;
       }
@@ -218,12 +218,6 @@ const DisciplinaDetalhePage = () => {
     try {
       setLoading(true);
       setError(null);
-
-      // Acumuladores locais para cálculo de moedas
-      let totalMoedasAtividades = 0;
-      let moedasAtividadesConcluidas = 0;
-      let totalMoedasVideos = 0;
-      let moedasVideosAssistidos = 0;
 
       const codigoStr = String(codigo); // ex: "mat"
 
@@ -282,16 +276,10 @@ const DisciplinaDetalhePage = () => {
 
       setAtividades(atividadesData || []);
 
-      // ===== META DE MOEDAS (soma das recompensas das atividades) =====
-      totalMoedasAtividades = (atividadesData || []).reduce(
-        (total: number, a: any) => total + (a.recompensa_moedas || 0),
-        0
-      );
-
       // 2.1 Progresso das atividades para o aluno logado
       if (alunoIdLocal && (atividadesData || []).length > 0) {
         const idsAtividades = (atividadesData || []).map(
-          (a: any) => a.id_atividade
+          (a: any) => a.id_atividade,
         );
 
         const { data: progressoData, error: progressoError } = await supabase
@@ -304,34 +292,12 @@ const DisciplinaDetalhePage = () => {
           throw new Error(progressoError.message);
         }
 
-        const concluidas = (progressoData || []).filter(
-          (p: any) => p.status === "concluida"
-        ).length;
-
-        setAtividadesConcluidas(concluidas);
-
         const map: Record<number, string> = {};
         (progressoData || []).forEach((p: any) => {
           map[p.id_atividade] = p.status;
         });
         setMapProgressoAtividades(map);
-
-        // moedas conquistadas em ATIVIDADES concluídas
-        const idsAtividadesConcluidas = new Set(
-          (progressoData || [])
-            .filter((p: any) => p.status === "concluida")
-            .map((p: any) => p.id_atividade)
-        );
-
-        moedasAtividadesConcluidas = (atividadesData || []).reduce(
-          (total: number, a: any) =>
-            idsAtividadesConcluidas.has(a.id_atividade)
-              ? total + (a.recompensa_moedas || 0)
-              : total,
-          0
-        );
       } else {
-        setAtividadesConcluidas(0);
         setMapProgressoAtividades({});
       }
 
@@ -363,7 +329,7 @@ const DisciplinaDetalhePage = () => {
         }
 
         const lidos = (progressoResumos || []).filter(
-          (pr: any) => pr.status === "lido"
+          (pr: any) => pr.status === "lido",
         ).length;
 
         setResumosLidos(lidos);
@@ -390,17 +356,10 @@ const DisciplinaDetalhePage = () => {
 
       setVideoaulas(videoaulasData || []);
 
-      // ===== META DE MOEDAS (acrescenta as recompensas de videoaulas) =====
-      totalMoedasVideos = (videoaulasData || []).reduce(
-        (total: number, v: any) => total + (v.recompensa_moedas || 0),
-        0
-      );
-      setMetaMoedas(totalMoedasAtividades + totalMoedasVideos);
-
       // 4.1 Progresso das videoaulas para o aluno logado
       if (alunoIdLocal && (videoaulasData || []).length > 0) {
         const idsVideoaulas = (videoaulasData || []).map(
-          (v: any) => v.id_videoaula
+          (v: any) => v.id_videoaula,
         );
 
         const { data: progressoVideos, error: progressoVideosError } =
@@ -414,16 +373,6 @@ const DisciplinaDetalhePage = () => {
           throw new Error(progressoVideosError.message);
         }
 
-        const assistidos = (progressoVideos || []).filter((pv: any) => {
-          const statusOk = pv.status === "assistida";
-          const percentualOk =
-            typeof pv.percentual_assistido === "number" &&
-            pv.percentual_assistido >= 90;
-          return statusOk || percentualOk;
-        }).length;
-
-        setVideosAssistidos(assistidos);
-
         const map: Record<
           number,
           { status: string | null; percentual: number | null }
@@ -435,41 +384,26 @@ const DisciplinaDetalhePage = () => {
           };
         });
         setMapProgressoVideoaulas(map);
-
-        // moedas conquistadas em VIDEOAULAS assistidas (status assistida OU >=90%)
-        const idsVideosAssistidos = new Set(
-          (progressoVideos || [])
-            .filter((pv: any) => {
-              const statusOk = pv.status === "assistida";
-              const percentualOk =
-                typeof pv.percentual_assistido === "number" &&
-                pv.percentual_assistido >= 90;
-              return statusOk || percentualOk;
-            })
-            .map((pv: any) => pv.id_videoaula)
-        );
-
-        moedasVideosAssistidos = (videoaulasData || []).reduce(
-          (total: number, v: any) =>
-            idsVideosAssistidos.has(v.id_videoaula)
-              ? total + (v.recompensa_moedas || 0)
-              : total,
-          0
-        );
       } else {
-        setVideosAssistidos(0);
         setMapProgressoVideoaulas({});
       }
 
-      // ===== MOEDAS CONQUISTADAS (atividades concluídas + videoaulas assistidas) =====
-      setMoedasConquistadas(
-        moedasAtividadesConcluidas + moedasVideosAssistidos
-      );
-      // console.log("Moedas conquistadas:", {
-      //   moedasAtividadesConcluidas,
-      //   moedasVideosAssistidos,
-      //   total: moedasAtividadesConcluidas + moedasVideosAssistidos,
-      // });
+      // ===== Lógica simplificada de moedas/progresso via view agregada =====
+      if (alunoIdLocal) {
+        const { data: stats, error: statsError } = await supabase
+          .from("vw_detalhe_disciplina_aluno")
+          .select("*")
+          .eq("id_disciplina", disciplinaData.id_disciplina)
+          .eq("id_aluno", alunoIdLocal)
+          .single();
+
+        if (!statsError && stats) {
+          setMetaMoedas(stats.meta_moedas ?? 0);
+          setMoedasConquistadas(stats.moedas_conquistadas ?? 0);
+          setAtividadesConcluidas(stats.atividades_concluidas ?? 0);
+          setVideosAssistidos(stats.videos_assistidos ?? 0);
+        }
+      }
     } catch (err: any) {
       setError(err.message || "Erro ao carregar os dados da disciplina");
     } finally {
@@ -540,7 +474,7 @@ const DisciplinaDetalhePage = () => {
   // ====== Helpers para modal ======
   const getStatusInfo = (
     tipo: ModalTipo,
-    item: any
+    item: any,
   ): { label: string; isConcluido: boolean; className: string } => {
     if (!tipo) {
       return {
