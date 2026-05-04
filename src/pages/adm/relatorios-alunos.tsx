@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { AdminLayout } from "@/components/adm/AdminLayout";
+import { AdmBackButton } from "@/components/adm/AdmBackButton";
+import { AdmFiltersCard } from "@/components/adm/AdmFiltersCard";
 import { Button } from "@/components/ui/Button";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
@@ -12,7 +14,6 @@ import {
   Coins,
   TrendingUp,
   Medal,
-  ChevronLeft,
   Award,
   BookOpen,
   Calendar,
@@ -274,12 +275,7 @@ export default function RelatoriosAlunosPage() {
                 </p>
               </div>
             </div>
-            <Link href="/adm/relatorios-hub" className="no-underline">
-              <Button variant="outline" className="rounded-lg inline-flex items-center gap-2">
-                <ChevronLeft className="h-4 w-4" />
-                Voltar ao hub
-              </Button>
-            </Link>
+            <AdmBackButton href="/adm/relatorios-hub" className="no-underline" />
           </div>
 
           {/* Stats Summary */}
@@ -345,8 +341,7 @@ export default function RelatoriosAlunosPage() {
         </header>
 
         {/* Filters */}
-        <Card className="rounded-xl shadow-sm">
-          <CardContent className="p-6">
+        <AdmFiltersCard accentClassName="from-blue-500 to-blue-600">
             <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
               <div className="relative max-w-[320px] flex-1">
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
@@ -389,8 +384,7 @@ export default function RelatoriosAlunosPage() {
                 </Select>
               </div>
             </div>
-          </CardContent>
-        </Card>
+        </AdmFiltersCard>
 
         {alunoAtivo ? (
           <>

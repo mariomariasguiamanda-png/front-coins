@@ -2,12 +2,13 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/router";
 import { AdminLayout } from "@/components/adm/AdminLayout";
+import { AdmBackButton } from "@/components/adm/AdmBackButton";
+import { AdmFiltersCard } from "@/components/adm/AdmFiltersCard";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import {
-  ChevronLeft,
   BookOpen,
   Calendar,
   TrendingUp,
@@ -15,7 +16,6 @@ import {
   ShoppingCart,
   Users,
   Download,
-  Filter,
 } from "lucide-react";
 import { mockTransacoes } from "@/lib/mock/compras";
 
@@ -92,12 +92,7 @@ export default function ComprasRelatoriosPage() {
                 <p className="text-gray-600 mt-1">Histórico detalhado por disciplina e período</p>
               </div>
             </div>
-            <Link href="/adm/compras" className="no-underline">
-              <Button variant="outline" className="rounded-lg inline-flex items-center gap-2">
-                <ChevronLeft className="h-4 w-4" />
-                Voltar ao hub
-              </Button>
-            </Link>
+            <AdmBackButton href="/adm/compras" className="no-underline" />
           </div>
 
           {/* Stats Cards */}
@@ -160,15 +155,7 @@ export default function ComprasRelatoriosPage() {
           </div>
         </header>
 
-        {/* Filters */}
-        <Card className="rounded-xl shadow-sm">
-          <div className="h-2 bg-gradient-to-r from-green-500 to-green-600 rounded-t-xl"></div>
-          <CardContent className="p-6">
-            <div className="flex items-center gap-2 mb-4">
-              <Filter className="h-5 w-5 text-green-600" />
-              <h3 className="text-lg font-semibold text-gray-900">Filtros</h3>
-            </div>
-
+        <AdmFiltersCard accentClassName="from-green-500 to-green-600">
             <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
               <div className="flex flex-wrap gap-3 flex-1">
                 <div className="flex-1 min-w-[200px]">
@@ -230,8 +217,7 @@ export default function ComprasRelatoriosPage() {
                 </Button>
               </div>
             </div>
-          </CardContent>
-        </Card>
+        </AdmFiltersCard>
 
         {/* Table */}
         <Card className="rounded-xl shadow-sm">

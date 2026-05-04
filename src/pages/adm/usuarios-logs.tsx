@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { AdminLayout } from "@/components/adm/AdminLayout";
+import { AdmBackButton } from "@/components/adm/AdmBackButton";
+import { AdmFiltersCard } from "@/components/adm/AdmFiltersCard";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
-import { ArrowLeft, Download, Search } from "lucide-react";
+import { Download, Search } from "lucide-react";
 import { AdminLog, exportLogsCsv, listLogs, createLog } from "@/services/api/logs";
 
 export default function UsuariosLogsPage() {
@@ -36,24 +38,22 @@ export default function UsuariosLogsPage() {
 
   return (
     <AdminLayout>
-      <div className="space-y-6">
+      <div className="space-y-6 pb-8">
         <header className="flex items-center justify-between">
           <div className="space-y-1">
             <h1 className="text-2xl font-bold">Logs e Auditoria</h1>
             <p className="text-muted-foreground">Consulte e exporte eventos administrativos</p>
           </div>
           <div className="flex gap-2">
-            <Link href="/adm/usuarios">
-              <Button variant="outline" className="rounded-lg"><ArrowLeft className="h-4 w-4" /> Voltar ao hub</Button>
-            </Link>
+            <AdmBackButton href="/adm/usuarios" />
             <Button variant="outline" className="rounded-lg" onClick={() => exportLogsCsv(filtered)}>
               <Download className="h-4 w-4" /> Exportar CSV
             </Button>
           </div>
         </header>
 
-        <Card className="rounded-xl">
-          <CardContent className="p-6 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+        <AdmFiltersCard accentClassName="from-slate-500 to-slate-600">
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
             <div className="flex items-center gap-2 max-w-[360px]">
               <Search className="h-4 w-4 text-muted-foreground" />
               <Input className="input-field rounded-lg" placeholder="Buscar por usuário, ação ou IP..." value={q} onChange={(e) => setQ(e.target.value)} />
@@ -82,8 +82,8 @@ export default function UsuariosLogsPage() {
                 <option value="Aluno" style={{ backgroundColor: '#ffffff', color: '#111827' }}>Aluno</option>
               </select>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </AdmFiltersCard>
 
         <div className="grid gap-3">
           {filtered.map((l) => (

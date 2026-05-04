@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { AdminLayout } from "@/components/adm/AdminLayout";
+import { AdmBackButton } from "@/components/adm/AdmBackButton";
 import { Button } from "@/components/ui/Button";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
@@ -12,7 +13,6 @@ import {
   Plus,
   Minus,
   History,
-  ChevronLeft,
   Save,
   TrendingUp,
   TrendingDown,
@@ -140,12 +140,7 @@ export default function MoedasAjustesPage() {
                 <p className="text-gray-600 mt-1">Credite ou debite moedas com justificativa</p>
               </div>
             </div>
-            <a href="/adm/moedas" className="no-underline">
-              <Button variant="outline" className="rounded-lg inline-flex items-center gap-2">
-                <ChevronLeft className="h-4 w-4" />
-                Voltar ao hub
-              </Button>
-            </a>
+            <AdmBackButton href="/adm/moedas" className="no-underline" />
           </div>
 
           {/* Stats Cards */}

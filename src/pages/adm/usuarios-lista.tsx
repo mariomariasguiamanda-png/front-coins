@@ -1,6 +1,8 @@
 import { useMemo, useState, useEffect } from "react";
 import Link from "next/link";
 import { AdminLayout } from "@/components/adm/AdminLayout";
+import { AdmBackButton } from "@/components/adm/AdmBackButton";
+import { AdmFiltersCard } from "@/components/adm/AdmFiltersCard";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -22,7 +24,14 @@ import { EditUserDialog } from "@/components/adm/dialogs/EditUserDialog";
 import { CreateUserDialog } from "@/components/adm/dialogs/CreateUserDialog";
 import { ImportUsersDialog } from "@/components/adm/dialogs/ImportUsersDialog";
 import {
-  ArrowLeft,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
   Eye,
   Search,
   UserPlus,
@@ -338,6 +347,7 @@ export default function UsuariosListaPage() {
   const [importOpen, setImportOpen] = useState(false);
   const [viewMode, setViewMode] = useState<"table" | "grid">("table");
   const [loading, setLoading] = useState(true);
+  const [statusConfirmUser, setStatusConfirmUser] = useState<User | null>(null);
 
   const [users, setUsers] = useState<User[]>(() => {
     if (typeof window !== "undefined") {
@@ -543,19 +553,17 @@ export default function UsuariosListaPage() {
   };
 
   const handleToggleStatus = (user: User) => {
-    const newStatus = user.status === "active" ? "inactive" : "active";
-    const action = newStatus === "active" ? "ativar" : "desativar";
+    setStatusConfirmUser(user);
+  };
 
-    const confirmed = confirm(
-      `Deseja realmente ${action} o usuário ${user.name}?`
-    );
-
-    if (!confirmed) return;
+  const confirmToggleStatus = () => {
+    if (!statusConfirmUser) return;
+    const newStatus = statusConfirmUser.status === "active" ? "inactive" : "active";
 
     try {
       setUsers((prevUsers) =>
         prevUsers.map((u) =>
-          u.id === user.id ? { ...u, status: newStatus } : u
+          u.id === statusConfirmUser.id ? { ...u, status: newStatus } : u
         )
       );
 
@@ -564,6 +572,7 @@ export default function UsuariosListaPage() {
           newStatus === "active" ? "ativado" : "desativado"
         } com sucesso!`
       );
+      setStatusConfirmUser(null);
     } catch (error) {
       console.error("Erro ao alterar status do usuário:", error);
       toast.error("Erro ao alterar status do usuário");
@@ -596,26 +605,42 @@ export default function UsuariosListaPage() {
           onClose={() => setImportOpen(false)}
           onImport={handleImportUsers}
         />
+        <Dialog open={!!statusConfirmUser} onOpenChange={(open) => { if (!open) setStatusConfirmUser(null); }}>
+          <DialogContent className="sm:max-w-[460px] admin-form-light bg-white text-slate-900 border-slate-200">
+            <DialogHeader>
+              <DialogTitle className="text-slate-900">Confirmar alteração de status</DialogTitle>
+              <DialogDescription className="text-slate-600">
+                {statusConfirmUser
+                  ? `Deseja realmente ${statusConfirmUser.status === "active" ? "desativar" : "ativar"} o usuário ${statusConfirmUser.name}?`
+                  : ""}
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                className="rounded-xl"
+                onClick={() => setStatusConfirmUser(null)}
+              >
+                Cancelar
+              </Button>
+              <Button type="button" className="rounded-xl" onClick={confirmToggleStatus}>
+                Confirmar
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
         {/* Header */}
         <header className="flex items-start justify-between gap-4">
           <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <Link
-                href="/adm/usuarios"
-                className="text-gray-400 hover:text-gray-600 transition-colors"
-              >
-                <ArrowLeft className="h-5 w-5" />
-              </Link>
-              <h1 className="text-3xl font-bold text-gray-900">
-                Lista de Usuários
-              </h1>
-            </div>
-            <p className="text-gray-600">
+            <h1 className="text-3xl font-bold text-gray-900">Lista de Usuários</h1>
+            <p className="text-muted-foreground">
               Gerencie alunos, professores e administradores do sistema
             </p>
           </div>
           <div className="flex gap-2">
+            <AdmBackButton href="/adm/usuarios" />
             <Button
               variant="outline"
               className="rounded-lg inline-flex items-center gap-2"
@@ -711,8 +736,7 @@ export default function UsuariosListaPage() {
         )}
 
         {/* Filters */}
-        <Card className="rounded-xl shadow-sm border-0">
-          <CardContent className="p-6">
+        <AdmFiltersCard accentClassName="from-violet-500 to-violet-600">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
               <div className="flex-1 max-w-md">
                 <div className="relative">
@@ -739,6 +763,8 @@ export default function UsuariosListaPage() {
                 </Select>
                 <div className="flex gap-1 border border-gray-200 rounded-lg p-1">
                   <button
+                    type="button"
+                    aria-pressed={viewMode === "table"}
                     onClick={() => setViewMode("table")}
                     className={`px-3 py-1.5 rounded text-sm font-medium transition-colors ${
                       viewMode === "table"
@@ -749,6 +775,8 @@ export default function UsuariosListaPage() {
                     Tabela
                   </button>
                   <button
+                    type="button"
+                    aria-pressed={viewMode === "grid"}
                     onClick={() => setViewMode("grid")}
                     className={`px-3 py-1.5 rounded text-sm font-medium transition-colors ${
                       viewMode === "grid"
@@ -761,8 +789,7 @@ export default function UsuariosListaPage() {
                 </div>
               </div>
             </div>
-          </CardContent>
-        </Card>
+        </AdmFiltersCard>
 
         {/* Users List */}
         {loading ? (

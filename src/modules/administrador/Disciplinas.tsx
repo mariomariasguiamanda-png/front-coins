@@ -85,6 +85,7 @@ const mockDisciplinas: Disciplina[] = [
 export default function Disciplinas() {
   const [disciplinas, setDisciplinas] = useState<Disciplina[]>(mockDisciplinas);
   const [filtroArea, setFiltroArea] = useState<string>("todas");
+  const [mostrarArquivadas, setMostrarArquivadas] = useState(false);
   const [editandoDisciplina, setEditandoDisciplina] = useState<number | null>(
     null
   );
@@ -117,10 +118,11 @@ export default function Disciplinas() {
     return colors[area as keyof typeof colors] || colors.exatas;
   };
 
-  const disciplinasFiltradas =
-    filtroArea === "todas"
-      ? disciplinas
-      : disciplinas.filter((d) => d.area === filtroArea);
+  const disciplinasFiltradas = disciplinas.filter((d) => {
+    const passaFiltroArea = filtroArea === "todas" || d.area === filtroArea;
+    const passaFiltroStatus = mostrarArquivadas ? !d.ativa : d.ativa;
+    return passaFiltroArea && passaFiltroStatus;
+  });
 
   const handleAdicionarDisciplina = () => {
     const nova: Disciplina = {
@@ -200,6 +202,18 @@ export default function Disciplinas() {
                   {area.charAt(0).toUpperCase() + area.slice(1)}
                 </Button>
               ))}
+              <Button
+                variant={mostrarArquivadas ? "primary" : "outline"}
+                size="sm"
+                onClick={() => setMostrarArquivadas(!mostrarArquivadas)}
+                className={
+                  mostrarArquivadas
+                    ? "bg-amber-600 hover:bg-amber-700 text-white"
+                    : "bg-white/10 hover:bg-white/20 text-white border-white/20"
+                }
+              >
+                {mostrarArquivadas ? "Ver Ativas" : "Ver Arquivadas"}
+              </Button>
             </div>
           </div>
         </CardContent>

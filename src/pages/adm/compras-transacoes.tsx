@@ -1,24 +1,23 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { AdminLayout } from "@/components/adm/AdminLayout";
+import { AdmBackButton } from "@/components/adm/AdmBackButton";
+import { AdmFiltersCard } from "@/components/adm/AdmFiltersCard";
 import { Button } from "@/components/ui/Button";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
   Search,
-  Filter,
   Download,
   XCircle,
   ArrowRight,
   TrendingUp,
   Calendar,
-  ArrowLeft,
 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { CancelarCompraDialog } from "@/components/adm/dialogs/CancelarCompraDialog";
 import { createNotification, composeMessages } from "@/services/api/notifications";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 
 // Shared mock
 import { Transacao, mockTransacoes } from "@/lib/mock/compras";
@@ -29,21 +28,13 @@ export default function ComprasTransacoesPage() {
   const [currentTab, setCurrentTab] = useState("todas");
   const [filtroTurma, setFiltroTurma] = useState("todas");
   const [filtroDisciplina, setFiltroDisciplina] = useState("todas");
-  const [filtroAluno, setFiltroAluno] = useState<string>("todos");
   const [selectedTransacao, setSelectedTransacao] = useState<Transacao | null>(null);
   const [showCancelarDialog, setShowCancelarDialog] = useState(false);
-  const [filtrosOpen, setFiltrosOpen] = useState(false);
-  const [filtroProfessor, setFiltroProfessor] = useState<string>("todos");
-  const [periodoDe, setPeriodoDe] = useState<string>("");
-  const [periodoAte, setPeriodoAte] = useState<string>("");
-  const [detalhesOpen, setDetalhesOpen] = useState(false);
   const [logsCancelamentos, setLogsCancelamentos] = useState<Array<{id:string; quando:string; admin:string; motivo:string;}>>([]);
 
   // Dados únicos para filtros
   const turmas = useMemo(() => Array.from(new Set(transacoes.map(t => t.alunoTurma))), [transacoes]);
   const disciplinas = useMemo(() => Array.from(new Set(transacoes.map(t => t.disciplinaNome))), [transacoes]);
-  const professores = useMemo(() => Array.from(new Set(transacoes.map(t => t.professorNome))), [transacoes]);
-  const alunos = useMemo(() => Array.from(new Set(transacoes.map(t => t.alunoNome))), [transacoes]);
 
   // Filtragem de transações
   const transacoesFiltradas = transacoes.filter(transacao => {
@@ -63,21 +54,7 @@ export default function ComprasTransacoesPage() {
     const matchesDisciplina = 
       filtroDisciplina === "todas" || transacao.disciplinaNome === filtroDisciplina;
 
-    const matchesAluno =
-      filtroAluno === "todos" || transacao.alunoNome === filtroAluno;
-
-    const matchesProfessor =
-      filtroProfessor === "todos" || transacao.professorNome === filtroProfessor;
-
-    const matchesPeriodo = (() => {
-      if (!periodoDe && !periodoAte) return true;
-      const ts = new Date(transacao.data).getTime();
-      const de = periodoDe ? new Date(periodoDe).getTime() : -Infinity;
-      const ate = periodoAte ? new Date(periodoAte).getTime() + 24*60*60*1000 - 1 : Infinity;
-      return ts >= de && ts <= ate;
-    })();
-
-    return matchesSearch && matchesStatus && matchesTurma && matchesDisciplina && matchesAluno && matchesProfessor && matchesPeriodo;
+    return matchesSearch && matchesStatus && matchesTurma && matchesDisciplina;
   });
 
   // Cálculos de estatísticas
@@ -139,7 +116,7 @@ export default function ComprasTransacoesPage() {
 
   return (
     <AdminLayout>
-      <div className="space-y-6">
+      <div className="space-y-6 pb-8">
         {/* Dialog de Cancelamento */}
         <CancelarCompraDialog
           open={showCancelarDialog}
@@ -151,62 +128,6 @@ export default function ComprasTransacoesPage() {
           onConfirm={handleCancelarTransacao}
         />
 
-        {/* Dialog de Detalhes */}
-        <Dialog open={detalhesOpen} onOpenChange={setDetalhesOpen}>
-          <DialogContent className="rounded-xl">
-            <DialogHeader>
-              <DialogTitle>Detalhes da Transação</DialogTitle>
-            </DialogHeader>
-            {selectedTransacao && (
-              <div className="space-y-3 text-sm">
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <p className="text-muted-foreground">Aluno</p>
-                    <p className="font-medium">{selectedTransacao.alunoNome}</p>
-                  </div>
-                  <div>
-                    <p className="text-muted-foreground">Turma</p>
-                    <p className="font-medium">{selectedTransacao.alunoTurma}</p>
-                  </div>
-                  <div>
-                    <p className="text-muted-foreground">Disciplina</p>
-                    <p className="font-medium">{selectedTransacao.disciplinaNome}</p>
-                  </div>
-                  <div>
-                    <p className="text-muted-foreground">Professor</p>
-                    <p className="font-medium">{selectedTransacao.professorNome}</p>
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <p className="text-muted-foreground">Pontos comprados</p>
-                    <p className="font-semibold text-emerald-600">+{selectedTransacao.pontosComprados}</p>
-                  </div>
-                  <div>
-                    <p className="text-muted-foreground">Moedas gastas</p>
-                    <p className="font-semibold text-amber-600">-{selectedTransacao.moedasGastas}</p>
-                  </div>
-                  <div>
-                    <p className="text-muted-foreground">Saldo antes</p>
-                    <p className="font-medium">{selectedTransacao.saldoAntes}</p>
-                  </div>
-                  <div>
-                    <p className="text-muted-foreground">Saldo depois</p>
-                    <p className="font-medium">{selectedTransacao.saldoDepois}</p>
-                  </div>
-                </div>
-                <div>
-                  <p className="text-muted-foreground">Data/Hora</p>
-                  <p className="font-medium">{new Date(selectedTransacao.data).toLocaleString("pt-BR")}</p>
-                </div>
-              </div>
-            )}
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setDetalhesOpen(false)}>Fechar</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-
         {/* Header */}
         <header className="flex items-center justify-between">
           <div className="space-y-1">
@@ -215,10 +136,7 @@ export default function ComprasTransacoesPage() {
           </div>
           <div className="flex items-center gap-2">
             <Link href="/adm/compras" className="hidden md:block">
-              <Button variant="outline" className="rounded-xl">
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Voltar ao Hub
-              </Button>
+              <AdmBackButton href="/adm/compras" />
             </Link>
             <Button
               className="rounded-lg bg-violet-600 hover:bg-violet-700"
@@ -269,9 +187,7 @@ export default function ComprasTransacoesPage() {
           </Card>
         </div>
 
-        {/* Filters */}
-        <Card className="rounded-xl">
-          <CardContent className="p-6">
+        <AdmFiltersCard accentClassName="from-violet-500 to-violet-600">
             <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
               <div className="flex max-w-[320px] items-center gap-2">
                 <Search className="h-4 w-4 text-muted-foreground" />
@@ -311,74 +227,33 @@ export default function ComprasTransacoesPage() {
                   </SelectContent>
                 </Select>
 
-                <Button variant="outline" className="rounded-lg" onClick={() => setFiltrosOpen(true)}>
-                  <Filter className="mr-2 h-4 w-4" />
-                  Mais Filtros
-                </Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
 
-        {/* Dialog Mais Filtros */}
-        <Dialog open={filtrosOpen} onOpenChange={setFiltrosOpen}>
-          <DialogContent className="rounded-xl">
-            <DialogHeader>
-              <DialogTitle>Filtros Avançados</DialogTitle>
-            </DialogHeader>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div>
-                <p className="text-sm text-muted-foreground mb-1">Aluno</p>
-                <Select value={filtroAluno} onValueChange={setFiltroAluno}>
-                  <SelectTrigger className="w-full rounded-lg">
-                    <SelectValue placeholder="Aluno" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="todos">Todos</SelectItem>
-                    {alunos.map((al) => (
-                      <SelectItem key={al} value={al}>{al}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground mb-1">Professor</p>
-                <Select value={filtroProfessor} onValueChange={setFiltroProfessor}>
-                  <SelectTrigger className="w-full rounded-lg">
-                    <SelectValue placeholder="Professor" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="todos">Todos</SelectItem>
-                    {professores.map((prof) => (
-                      <SelectItem key={prof} value={prof}>{prof}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <p className="text-sm text-muted-foreground mb-1">Período - de</p>
-                  <Input type="date" value={periodoDe} onChange={(e) => setPeriodoDe(e.target.value)} />
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground mb-1">Período - até</p>
-                  <Input type="date" value={periodoAte} onChange={(e) => setPeriodoAte(e.target.value)} />
-                </div>
               </div>
             </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setFiltrosOpen(false)}>Fechar</Button>
-              <Button onClick={() => setFiltrosOpen(false)}>Aplicar</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+        </AdmFiltersCard>
+
 
         {/* Tabs e Tabela */}
         <Tabs value={currentTab} onValueChange={setCurrentTab}>
-          <TabsList className="grid w-full grid-cols-3 lg:w-[400px]">
-            <TabsTrigger value="todas">Todas</TabsTrigger>
-            <TabsTrigger value="concluidas">Concluídas</TabsTrigger>
-            <TabsTrigger value="canceladas">Canceladas</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-3 lg:w-[400px] rounded-xl border border-slate-200 bg-slate-100 p-1">
+            <TabsTrigger
+              value="todas"
+              className="rounded-lg text-slate-600 data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-sm"
+            >
+              Todas
+            </TabsTrigger>
+            <TabsTrigger
+              value="concluidas"
+              className="rounded-lg text-slate-600 data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-sm"
+            >
+              Concluídas
+            </TabsTrigger>
+            <TabsTrigger
+              value="canceladas"
+              className="rounded-lg text-slate-600 data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-sm"
+            >
+              Canceladas
+            </TabsTrigger>
           </TabsList>
 
           <Card className="mt-4 rounded-xl">
@@ -386,14 +261,14 @@ export default function ComprasTransacoesPage() {
               <div className="rounded-lg border">
                 <table className="w-full">
                   <thead>
-                    <tr className="border-b bg-muted/50">
-                      <th className="py-3 px-4 text-left text-sm font-medium">Data/Hora</th>
-                      <th className="py-3 px-4 text-left text-sm font-medium">Aluno</th>
-                      <th className="py-3 px-4 text-left text-sm font-medium">Disciplina</th>
-                      <th className="py-3 px-4 text-left text-sm font-medium">Pontos</th>
-                      <th className="py-3 px-4 text-left text-sm font-medium">Moedas</th>
-                      <th className="py-3 px-4 text-left text-sm font-medium">Status</th>
-                      <th className="py-3 px-4 text-left text-sm font-medium">Ações</th>
+                    <tr className="border-b bg-slate-100">
+                      <th className="py-3 px-4 text-left text-sm font-semibold text-slate-700">Data/Hora</th>
+                      <th className="py-3 px-4 text-left text-sm font-semibold text-slate-700">Aluno</th>
+                      <th className="py-3 px-4 text-left text-sm font-semibold text-slate-700">Disciplina</th>
+                      <th className="py-3 px-4 text-left text-sm font-semibold text-slate-700">Pontos</th>
+                      <th className="py-3 px-4 text-left text-sm font-semibold text-slate-700">Moedas</th>
+                      <th className="py-3 px-4 text-left text-sm font-semibold text-slate-700">Status</th>
+                      <th className="py-3 px-4 text-left text-sm font-semibold text-slate-700">Ações</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -439,17 +314,6 @@ export default function ComprasTransacoesPage() {
                         </td>
                         <td className="py-3 px-4">
                           <div className="flex gap-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="rounded-lg"
-                              onClick={() => {
-                                setSelectedTransacao(transacao);
-                                setDetalhesOpen(true);
-                              }}
-                            >
-                              Detalhes
-                            </Button>
                             <Button
                               variant="outline"
                               size="sm"

@@ -1,11 +1,12 @@
 import { useMemo, useState, useEffect } from "react";
 import Link from "next/link";
 import { AdminLayout } from "@/components/adm/AdminLayout";
+import { AdmBackButton } from "@/components/adm/AdmBackButton";
+import { AdmFiltersCard } from "@/components/adm/AdmFiltersCard";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { 
-  ArrowLeft, 
   Search, 
   Plus, 
   Edit, 
@@ -327,25 +328,20 @@ export default function DisciplinasListaPage() {
         {/* Header */}
         <header className="flex items-start justify-between gap-4">
           <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <Link 
-                href="/adm/disciplinas"
-                className="text-gray-400 hover:text-gray-600 transition-colors"
-              >
-                <ArrowLeft className="h-5 w-5" />
-              </Link>
-              <h1 className="text-3xl font-bold text-gray-900">Lista de Disciplinas</h1>
-            </div>
-            <p className="text-gray-600">
+            <h1 className="text-3xl font-bold text-gray-900">Lista de Disciplinas</h1>
+            <p className="text-muted-foreground">
               Gerencie todas as disciplinas, professores e configurações
             </p>
           </div>
-          <Button 
-            className="rounded-lg inline-flex items-center gap-2" 
-            onClick={() => setCreateOpen(true)}
-          >
-            <Plus className="h-4 w-4" /> Nova Disciplina
-          </Button>
+          <div className="flex items-center gap-2">
+            <AdmBackButton href="/adm/disciplinas" />
+            <Button 
+              className="rounded-lg inline-flex items-center gap-2" 
+              onClick={() => setCreateOpen(true)}
+            >
+              <Plus className="h-4 w-4" /> Nova Disciplina
+            </Button>
+          </div>
         </header>
 
         {/* Stats */}
@@ -408,8 +404,7 @@ export default function DisciplinasListaPage() {
         </div>
 
         {/* Filters */}
-        <Card className="rounded-xl shadow-sm border-0">
-          <CardContent className="p-6">
+        <AdmFiltersCard accentClassName="from-blue-500 to-blue-600">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
               <div className="flex-1 max-w-md">
                 <div className="relative">
@@ -426,6 +421,7 @@ export default function DisciplinasListaPage() {
                 <Button 
                   variant={!showArchived ? "primary" : "outline"}
                   className="rounded-lg inline-flex items-center gap-1"
+                  aria-pressed={!showArchived}
                   onClick={() => setShowArchived(false)}
                 >
                   <CheckCircle2 className="h-4 w-4" />
@@ -434,6 +430,7 @@ export default function DisciplinasListaPage() {
                 <Button 
                   variant={showArchived ? "primary" : "outline"}
                   className="rounded-lg inline-flex items-center gap-1"
+                  aria-pressed={showArchived}
                   onClick={() => setShowArchived(true)}
                 >
                   <Archive className="h-4 w-4" />
@@ -441,8 +438,7 @@ export default function DisciplinasListaPage() {
                 </Button>
               </div>
             </div>
-          </CardContent>
-        </Card>
+        </AdmFiltersCard>
 
         {/* List */}
         {list.length > 0 ? (

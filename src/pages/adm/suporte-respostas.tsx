@@ -1,15 +1,15 @@
 import { useEffect, useState, useMemo } from "react";
 import { AdminLayout } from "@/components/adm/AdminLayout";
+import { AdmBackButton } from "@/components/adm/AdmBackButton";
+import { AdmFiltersCard } from "@/components/adm/AdmFiltersCard";
 import { Button } from "@/components/ui/Button";
 import { Card, CardContent } from "@/components/ui/Card";
 import Link from "next/link";
 import {
   FileText,
-  ChevronLeft,
   PlusCircle,
   Edit2,
   Trash2,
-  Filter,
   Layers,
   MessageSquare,
   Tag,
@@ -66,12 +66,7 @@ export default function SuporteRespostasPage() {
                 <p className="text-gray-600 mt-1">Templates para agilizar atendimentos</p>
               </div>
             </div>
-            <Link href="/adm/suporte" className="no-underline">
-              <Button variant="outline" className="rounded-lg inline-flex items-center gap-2">
-                <ChevronLeft className="h-4 w-4" />
-                Voltar ao hub
-              </Button>
-            </Link>
+            <AdmBackButton href="/adm/suporte" className="no-underline" />
           </div>
 
           {/* Stats Cards */}
@@ -135,9 +130,7 @@ export default function SuporteRespostasPage() {
         </header>
 
         {/* Controls */}
-        <Card className="rounded-xl shadow-sm">
-          <div className="h-2 bg-gradient-to-r from-purple-500 to-purple-600 rounded-t-xl"></div>
-          <CardContent className="p-6">
+        <AdmFiltersCard title="Controles" accentClassName="from-purple-500 to-purple-600">
             <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
               <Button
                 className="rounded-lg bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 inline-flex items-center gap-2"
@@ -146,7 +139,6 @@ export default function SuporteRespostasPage() {
                 <PlusCircle className="h-4 w-4" /> Nova Resposta
               </Button>
               <div className="flex items-center gap-2">
-                <Filter className="h-4 w-4 text-muted-foreground" />
                 <Select value={sortBy} onValueChange={(v) => setSortBy(v as any)}>
                   <SelectTrigger className="w-[220px] rounded-lg"><SelectValue placeholder="Ordenar por" /></SelectTrigger>
                   <SelectContent>
@@ -166,8 +158,7 @@ export default function SuporteRespostasPage() {
                 </Select>
               </div>
             </div>
-          </CardContent>
-        </Card>
+        </AdmFiltersCard>
 
         <div className="grid gap-6">{!items ? (
             <Card className="rounded-xl"><CardContent className="p-6 text-sm text-muted-foreground">Carregando…</CardContent></Card>
@@ -221,7 +212,7 @@ export default function SuporteRespostasPage() {
 
         {/* Dialogs */}
         <Dialog open={openCreate} onOpenChange={setOpenCreate}>
-          <DialogContent className="rounded-xl">
+          <DialogContent className="rounded-xl admin-form-light bg-white text-slate-900 border-slate-200">
             <DialogHeader>
               <DialogTitle>Nova Resposta Padrão</DialogTitle>
               <DialogDescription>Crie um modelo de resposta reutilizável.</DialogDescription>
@@ -241,7 +232,7 @@ export default function SuporteRespostasPage() {
         </Dialog>
 
         <Dialog open={!!openEdit} onOpenChange={(o) => !o && setOpenEdit(null)}>
-          <DialogContent className="rounded-xl">
+          <DialogContent className="rounded-xl admin-form-light bg-white text-slate-900 border-slate-200">
             <DialogHeader>
               <DialogTitle>Editar Resposta Padrão</DialogTitle>
               <DialogDescription>Atualize o conteúdo do modelo.</DialogDescription>
@@ -261,7 +252,7 @@ export default function SuporteRespostasPage() {
         </Dialog>
 
         <Dialog open={!!openDelete} onOpenChange={(o) => !o && setOpenDelete(null)}>
-          <DialogContent className="rounded-xl">
+          <DialogContent className="rounded-xl admin-form-light bg-white text-slate-900 border-slate-200">
             <DialogHeader>
               <DialogTitle>Excluir Resposta</DialogTitle>
               <DialogDescription>Esta ação removerá a resposta padrão.</DialogDescription>

@@ -3,6 +3,8 @@ import Link from "next/link";
 import { AdminLayout } from "@/components/adm/AdminLayout";
 import { Button } from "@/components/ui/Button";
 import { Card, CardContent } from "@/components/ui/Card";
+import { AdmBackButton } from "@/components/adm/AdmBackButton";
+import { AdmFiltersCard } from "@/components/adm/AdmFiltersCard";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   LineChart as LineChartIcon,
@@ -150,12 +152,7 @@ export default function RelatoriosTurmasPage() {
                 </p>
               </div>
             </div>
-            <Link href="/adm/relatorios-hub" className="no-underline">
-              <Button variant="outline" className="rounded-lg inline-flex items-center gap-2">
-                <ChevronLeft className="h-4 w-4" />
-                Voltar ao hub
-              </Button>
-            </Link>
+            <AdmBackButton href="/adm/relatorios-hub" className="no-underline" />
           </div>
 
           {/* Stats Summary */}
@@ -231,8 +228,7 @@ export default function RelatoriosTurmasPage() {
         </header>
 
         {/* Filters */}
-        <Card className="rounded-xl shadow-sm">
-          <CardContent className="p-6">
+        <AdmFiltersCard accentClassName="from-purple-500 to-purple-600">
             <div className="flex flex-wrap items-center gap-3">
               <Select
                 value={String(turmaIndex)}
@@ -263,8 +259,7 @@ export default function RelatoriosTurmasPage() {
                 </SelectContent>
               </Select>
             </div>
-          </CardContent>
-        </Card>
+        </AdmFiltersCard>
 
         {/* Turma Info */}
         <Card className="rounded-xl shadow-sm border-0 overflow-hidden">

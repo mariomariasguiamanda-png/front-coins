@@ -1,10 +1,11 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { AdminLayout } from "@/components/adm/AdminLayout";
+import { AdmBackButton } from "@/components/adm/AdmBackButton";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
-import { ArrowLeft, Search, Archive, History, Pencil } from "lucide-react";
+import { Search, Archive, History, Pencil } from "lucide-react";
 import { EditDisciplineDialog } from "@/components/adm/dialogs/EditDisciplineDialog";
 import { ViewDisciplineHistoryDialog } from "@/components/adm/dialogs/ViewDisciplineHistoryDialog";
 
@@ -102,7 +103,7 @@ export default function DisciplinasArquivadasPage() {
 
   return (
     <AdminLayout>
-      <div className="space-y-6">
+      <div className="space-y-6 pb-8">
         <EditDisciplineDialog open={!!editDiscipline} onClose={() => setEditDiscipline(null)} onSave={(data: any) => console.log("edit", data)} discipline={editDiscipline as any} />
         <ViewDisciplineHistoryDialog open={!!historyDiscipline} onClose={() => setHistoryDiscipline(null)} discipline={historyDiscipline as any} />
 
@@ -111,11 +112,7 @@ export default function DisciplinasArquivadasPage() {
             <h1 className="text-2xl font-bold">Disciplinas Arquivadas</h1>
             <p className="text-muted-foreground">Consulte e restaure disciplinas arquivadas</p>
           </div>
-          <Link href="/adm/disciplinas">
-            <Button variant="outline" className="rounded-lg">
-              <ArrowLeft className="h-4 w-4" /> Voltar ao hub
-            </Button>
-          </Link>
+          <AdmBackButton href="/adm/disciplinas" />
         </header>
 
         <Card className="rounded-xl">

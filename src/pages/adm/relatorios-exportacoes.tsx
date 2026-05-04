@@ -1,13 +1,10 @@
-import { useMemo, useState } from "react";
-import Link from "next/link";
+import { useState } from "react";
 import { AdminLayout } from "@/components/adm/AdminLayout";
+import { AdmBackButton } from "@/components/adm/AdmBackButton";
 import { Button } from "@/components/ui/Button";
 import { Card, CardContent } from "@/components/ui/Card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Download,
-  LineChart as LineChartIcon,
-  ChevronLeft,
   FileText,
   Users,
   BookOpen,
@@ -158,12 +155,7 @@ export default function RelatoriosExportacoesPage() {
                 </p>
               </div>
             </div>
-            <Link href="/adm/relatorios-hub" className="no-underline">
-              <Button variant="outline" className="rounded-lg inline-flex items-center gap-2">
-                <ChevronLeft className="h-4 w-4" />
-                Voltar ao hub
-              </Button>
-            </Link>
+            <AdmBackButton href="/adm/relatorios-hub" className="no-underline" />
           </div>
 
           {/* Stats Cards */}
@@ -238,7 +230,12 @@ export default function RelatoriosExportacoesPage() {
             </div>
 
             <div className="grid gap-4 md:grid-cols-3">
-              <div onClick={() => setKind("alunos")} className="cursor-pointer">
+              <button
+                type="button"
+                onClick={() => setKind("alunos")}
+                aria-pressed={kind === "alunos"}
+                className="text-left rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+              >
                 <Card
                   className={`rounded-lg border-2 transition-all hover:shadow-md ${
                     kind === "alunos"
@@ -260,9 +257,14 @@ export default function RelatoriosExportacoesPage() {
                     </div>
                   </CardContent>
                 </Card>
-              </div>
+              </button>
 
-              <div onClick={() => setKind("turmas")} className="cursor-pointer">
+              <button
+                type="button"
+                onClick={() => setKind("turmas")}
+                aria-pressed={kind === "turmas"}
+                className="text-left rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-500 focus-visible:ring-offset-2"
+              >
                 <Card
                   className={`rounded-lg border-2 transition-all hover:shadow-md ${
                     kind === "turmas"
@@ -284,9 +286,14 @@ export default function RelatoriosExportacoesPage() {
                   </div>
                 </CardContent>
               </Card>
-              </div>
+              </button>
 
-              <div onClick={() => setKind("disciplinas")} className="cursor-pointer">
+              <button
+                type="button"
+                onClick={() => setKind("disciplinas")}
+                aria-pressed={kind === "disciplinas"}
+                className="text-left rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2"
+              >
                 <Card
                   className={`rounded-lg border-2 transition-all hover:shadow-md ${
                     kind === "disciplinas"
@@ -308,7 +315,7 @@ export default function RelatoriosExportacoesPage() {
                     </div>
                   </CardContent>
                 </Card>
-              </div>
+              </button>
             </div>
 
             <div className="flex items-center justify-end">

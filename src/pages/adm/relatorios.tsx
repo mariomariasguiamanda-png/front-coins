@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { AdminLayout } from "@/components/adm/AdminLayout";
+import { AdmBackButton } from "@/components/adm/AdmBackButton";
 import { Button } from "@/components/ui/Button";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
@@ -279,9 +280,7 @@ export default function RelatoriosPage() {
 			setSelectedAlunoId(null);
 			return;
 		}
-		if (!selectedAlunoId || !alunosFiltrados.some((aluno) => aluno.id === selectedAlunoId)) {
-			setSelectedAlunoId(alunosFiltrados[0].id);
-		}
+		setSelectedAlunoId(alunosFiltrados[0].id);
 	}, [alunosFiltrados, selectedAlunoId]);
 
 	const alunoAtivo = useMemo(() => {
@@ -421,7 +420,7 @@ export default function RelatoriosPage() {
 
 	return (
 		<AdminLayout>
-			<div className="space-y-6">
+			<div className="space-y-6 pb-8">
 				<header className="flex items-center justify-between">
 					<div className="space-y-1">
 						<h1 className="flex items-center gap-2 text-2xl font-bold">
@@ -433,9 +432,7 @@ export default function RelatoriosPage() {
 						</p>
 					</div>
 						<div className="flex items-center gap-2">
-							<Link href="/adm/relatorios-hub" className="no-underline">
-								<Button variant="outline" className="rounded-lg">Voltar ao hub</Button>
-							</Link>
+							<AdmBackButton href="/adm/relatorios-hub" className="no-underline" />
 						<Select value={exportKind} onValueChange={(valor) => setExportKind(valor as ExportKind)}>
 							<SelectTrigger className="w-[180px] rounded-lg">
 								<SelectValue placeholder="Exportar" />
@@ -536,8 +533,12 @@ export default function RelatoriosPage() {
 					</div>
 				</div>
 
-				<div className="flex space-x-2 border-b">
+				<div className="flex space-x-2 border-b" role="tablist" aria-label="Modo de visualização dos relatórios">
 					<button
+						type="button"
+						role="tab"
+						aria-selected={viewMode === "alunos"}
+						aria-pressed={viewMode === "alunos"}
 						className={`px-4 py-2 text-sm font-medium ${
 							viewMode === "alunos"
 								? "border-b-2 border-violet-600 text-violet-600"
@@ -551,6 +552,10 @@ export default function RelatoriosPage() {
 						Visualização por Alunos
 					</button>
 					<button
+						type="button"
+						role="tab"
+						aria-selected={viewMode === "turmas"}
+						aria-pressed={viewMode === "turmas"}
 						className={`px-4 py-2 text-sm font-medium ${
 							viewMode === "turmas"
 								? "border-b-2 border-violet-600 text-violet-600"

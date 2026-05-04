@@ -61,26 +61,26 @@ export function EditUserDialog({
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-[425px] admin-form-light bg-white text-slate-900 border-slate-200">
         <DialogHeader>
-          <DialogTitle>{user ? "Editar Usuário" : "Novo Usuário"}</DialogTitle>
+          <DialogTitle className="text-slate-900">{user ? "Editar Usuário" : "Novo Usuário"}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit}>
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
-              <Label htmlFor="name">Nome</Label>
+              <Label htmlFor="name" className="text-slate-700">Nome</Label>
               <Input
                 id="name"
                 value={formData.name}
                 onChange={(e) =>
                   setFormData({ ...formData, name: e.target.value })
                 }
-                className="rounded-xl"
+                className="rounded-xl bg-white text-slate-900 border-slate-300"
                 required
               />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="email">E-mail</Label>
+              <Label htmlFor="email" className="text-slate-700">E-mail</Label>
               <Input
                 id="email"
                 type="email"
@@ -88,39 +88,39 @@ export function EditUserDialog({
                 onChange={(e) =>
                   setFormData({ ...formData, email: e.target.value })
                 }
-                className="rounded-xl"
+                className="rounded-xl bg-white text-slate-900 border-slate-300"
                 required
               />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="type">Tipo</Label>
+              <Label htmlFor="type" className="text-slate-700">Tipo</Label>
               <Select
                 value={formData.type}
                 onValueChange={(value: "student" | "teacher") =>
                   setFormData({ ...formData, type: value })
                 }
               >
-                <SelectTrigger id="type" className="rounded-xl bg-white">
+                <SelectTrigger id="type" className="rounded-xl bg-white text-slate-900 border-slate-300">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-white text-slate-900 border-slate-200">
                   <SelectItem value="student">Aluno</SelectItem>
                   <SelectItem value="teacher">Professor</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="status">Status</Label>
+              <Label htmlFor="status" className="text-slate-700">Status</Label>
               <Select
                 value={formData.status}
                 onValueChange={(value: "active" | "inactive" | "pending") =>
                   setFormData({ ...formData, status: value })
                 }
               >
-                <SelectTrigger id="status" className="rounded-xl bg-white">
+                <SelectTrigger id="status" className="rounded-xl bg-white text-slate-900 border-slate-300">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-white text-slate-900 border-slate-200">
                   <SelectItem value="active">Ativo</SelectItem>
                   <SelectItem value="inactive">Inativo</SelectItem>
                   <SelectItem value="pending">Pendente</SelectItem>

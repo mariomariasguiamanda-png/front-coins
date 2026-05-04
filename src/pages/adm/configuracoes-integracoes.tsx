@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { AdminLayout } from "@/components/adm/AdminLayout";
+import { AdmBackButton } from "@/components/adm/AdmBackButton";
 import { Button } from "@/components/ui/Button";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
-import { Save, ArrowLeft } from "lucide-react";
+import { Save } from "lucide-react";
 import { useToast } from "@/components/ui/Toast";
 import { getSystemSettings, updateSystemSettings, diffSystemSettings, type SystemSettings } from "@/services/api/system-settings";
 import { createNotification } from "@/services/api/notifications";
@@ -23,17 +24,15 @@ export default function ConfigIntegracoesPage() {
 
   return (
     <AdminLayout>
-      <div className="space-y-6">
+      <div className="space-y-6 pb-8">
         <header className="flex items-center justify-between">
           <div className="space-y-1">
             <h1 className="text-2xl font-bold">Integrações</h1>
             <p className="text-muted-foreground">Serviços externos e APIs</p>
           </div>
           <div className="flex items-center gap-2">
-            <Link href="/adm/configuracoes" className="hidden md:block">
-              <Button variant="outline" className="rounded-xl"><ArrowLeft className="mr-2 h-4 w-4"/>Voltar ao Hub</Button>
-            </Link>
-            <Button className="rounded-xl" disabled={!changesPending || !draft} isLoading={saving} onClick={async () => {
+            <AdmBackButton href="/adm/configuracoes" className="hidden md:block" />
+            <Button className="rounded-lg" disabled={!changesPending || !draft} isLoading={saving} onClick={async () => {
               if (!data || !draft) return;
               const diffs = diffSystemSettings(data, draft);
               if (!diffs.length) return;
@@ -104,7 +103,7 @@ export default function ConfigIntegracoesPage() {
 
         {/* Dialog de configuração da integração */}
         <Dialog open={!!openConfigFor} onOpenChange={(o) => !o && setOpenConfigFor(null)}>
-          <DialogContent className="rounded-xl">
+          <DialogContent className="rounded-xl admin-form-light bg-white text-slate-900 border-slate-200">
             {(() => {
               const sel = draft?.integrations?.find((ix) => ix.id === openConfigFor);
               if (!sel || !draft) return null;
@@ -121,7 +120,7 @@ export default function ConfigIntegracoesPage() {
                     {sel.tipo === "google_classroom" && (
                       <>
                         <div className="md:col-span-1">
-                          <label className="text-sm font-medium">Client ID</label>
+                          <label className="text-sm font-medium text-slate-700">Client ID</label>
                           <Input
                             type="password"
                             className="rounded-lg"
@@ -139,7 +138,7 @@ export default function ConfigIntegracoesPage() {
                           />
                         </div>
                         <div className="md:col-span-1">
-                          <label className="text-sm font-medium">Client Secret</label>
+                          <label className="text-sm font-medium text-slate-700">Client Secret</label>
                           <Input
                             type="password"
                             className="rounded-lg"
@@ -162,7 +161,7 @@ export default function ConfigIntegracoesPage() {
                     {sel.tipo === "moodle" && (
                       <>
                         <div className="md:col-span-1">
-                          <label className="text-sm font-medium">URL do Moodle</label>
+                          <label className="text-sm font-medium text-slate-700">URL do Moodle</label>
                           <Input
                             className="rounded-lg"
                             value={sel.configuracao.url || ""}
@@ -179,7 +178,7 @@ export default function ConfigIntegracoesPage() {
                           />
                         </div>
                         <div className="md:col-span-1">
-                          <label className="text-sm font-medium">Token de Acesso</label>
+                          <label className="text-sm font-medium text-slate-700">Token de Acesso</label>
                           <Input
                             type="password"
                             className="rounded-lg"
@@ -202,7 +201,7 @@ export default function ConfigIntegracoesPage() {
                     {sel.tipo === "api" && (
                       <>
                         <div className="md:col-span-1">
-                          <label className="text-sm font-medium">Base URL</label>
+                          <label className="text-sm font-medium text-slate-700">Base URL</label>
                           <Input
                             className="rounded-lg"
                             value={sel.configuracao.baseUrl || ""}
@@ -219,7 +218,7 @@ export default function ConfigIntegracoesPage() {
                           />
                         </div>
                         <div className="md:col-span-1">
-                          <label className="text-sm font-medium">API Key</label>
+                          <label className="text-sm font-medium text-slate-700">API Key</label>
                           <Input
                             type="password"
                             className="rounded-lg"

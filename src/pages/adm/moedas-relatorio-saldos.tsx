@@ -1,23 +1,22 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { AdminLayout } from "@/components/adm/AdminLayout";
+import { AdmBackButton } from "@/components/adm/AdmBackButton";
+import { AdmFiltersCard } from "@/components/adm/AdmFiltersCard";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { StudentHistoryDialog } from "@/components/adm/dialogs/StudentHistoryDialog";
 import { 
-  ArrowLeft, 
   Search, 
   Download,
   TrendingUp,
   TrendingDown,
   Coins,
   Users,
-  Calendar,
-  Filter,
-  FileText,
-  BarChart3
+  BarChart3,
+  FileText
 } from "lucide-react";
 
 interface StudentBalance {
@@ -171,20 +170,13 @@ export default function MoedasRelatorioSaldosPage() {
         {/* Header */}
         <header className="flex items-start justify-between gap-4">
           <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <Link 
-                href="/adm/moedas"
-                className="text-gray-400 hover:text-gray-600 transition-colors"
-              >
-                <ArrowLeft className="h-5 w-5" />
-              </Link>
-              <h1 className="text-3xl font-bold text-gray-900">Controle de Saldos</h1>
-            </div>
-            <p className="text-gray-600">
+            <h1 className="text-3xl font-bold text-gray-900">Controle de Saldos</h1>
+            <p className="text-muted-foreground">
               Visualize relatórios completos, histórico de movimentações e saldos por aluno
             </p>
           </div>
           <div className="flex gap-2">
+            <AdmBackButton href="/adm/moedas" />
             <Button variant="outline" className="rounded-lg inline-flex items-center gap-2" onClick={handleExportar}>
               <Download className="h-4 w-4" /> Exportar Relatório
             </Button>
@@ -307,8 +299,7 @@ export default function MoedasRelatorioSaldosPage() {
         </div>
 
         {/* Filters */}
-        <Card className="rounded-xl shadow-sm border-0">
-          <CardContent className="p-6">
+        <AdmFiltersCard accentClassName="from-blue-500 to-blue-600">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
               <div className="flex-1 max-w-md">
                 <div className="relative">
@@ -348,8 +339,7 @@ export default function MoedasRelatorioSaldosPage() {
                 </Select>
               </div>
             </div>
-          </CardContent>
-        </Card>
+        </AdmFiltersCard>
 
         {/* Table */}
         <Card className="rounded-xl shadow-sm border-0">
