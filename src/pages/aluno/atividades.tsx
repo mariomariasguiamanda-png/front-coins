@@ -90,7 +90,7 @@ export default function AtividadesPage() {
   >("atividades");
 
   const [filtroStatus, setFiltroStatus] = useState<
-    "todos" | "pendente" | "enviado" | "concluido"
+    "todos" | "pendente" | "concluido"
   >("todos");
 
   const [filtroDisciplina, setFiltroDisciplina] = useState("todas");
@@ -219,10 +219,14 @@ export default function AtividadesPage() {
     const totalResumosBD = resumos.length;
     const totalVideosBD = videoaulas.length;
 
-    const enviadas = atividades.filter((a) => {
-      const status = a.status_progresso;
-      return status === "enviado" || status === "concluida";
-    }).length;
+    const pendentes = atividades.filter((a) => a.status === "pendente").length;
+
+    const moedasPendentes = atividades
+      .filter((a) => a.status === "pendente")
+      .reduce((total, a) => total + (a.recompensa_moedas ?? 0), 0);
+
+    const concluidas = atividades.filter((a) => a.status === "concluida")
+      .length;
 
     const resumosLidos = resumos.filter((r) => {
       const status = r.progresso_resumos?.[0]?.status;
@@ -230,11 +234,14 @@ export default function AtividadesPage() {
     }).length;
 
     return {
-      atividadesEnviadas: enviadas,
-      atividadesTotal: totalAtividadesBD,
+      atividadesPendentes: pendentes,
+      atividadesConcluidas: concluidas,
       resumosLidos,
-      resumosTotal: totalResumosBD,
-      videoaulasTotal: totalVideosBD,
+      resumosTotal: resumos.length,
+      totalResumos: resumos.length,
+      totalVideoaulas: videoaulas.length,
+      moedasPendentes,
+      totalAtividades: atividades.length,
     };
   }, [atividades, resumos, videoaulas]);
 
@@ -299,6 +306,16 @@ export default function AtividadesPage() {
     return iconByDisciplina.mat;
   };
 
+  const statusConcluidoVariants = [
+    "concluida",
+    "concluido",
+    "corrigido",
+    "entregue",
+    "enviado",
+    "lido",
+    "assistido",
+  ];
+
   if (loading) {
     return (
       <AlunoLayout>
@@ -307,8 +324,6 @@ export default function AtividadesPage() {
         </div>
       </AlunoLayout>
     );
-  }
-
   return (
     <AlunoLayout>
       <div className="space-y-6">
@@ -329,12 +344,9 @@ export default function AtividadesPage() {
           <Card className="border border-green-200 bg-green-50 hover:shadow-md transition-shadow">
             <CardContent className="p-4 flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-green-600">Enviadas</p>
+                <p className="text-sm font-medium text-green-600">Concluídas</p>
                 <p className="text-2xl font-bold text-green-700">
-                  {estatisticas.atividadesEnviadas}{" "}
-                  <span className="text-sm font-normal text-green-600">
-                    de {estatisticas.atividadesTotal}
-                  </span>
+                  {estatisticas.atividadesConcluidas}
                 </p>
               </div>
               <CheckCircle className="h-8 w-8 text-green-500" />
@@ -361,7 +373,7 @@ export default function AtividadesPage() {
         <Card className="border border-gray-200">
           <CardContent className="p-4">
             <div className="flex flex-wrap gap-4 items-center">
-              <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2">
                 <label className="text-sm font-medium text-gray-700">
                   Status:
                 </label>
@@ -372,7 +384,6 @@ export default function AtividadesPage() {
                 >
                   <option value="todos">Todos</option>
                   <option value="pendente">Pendente</option>
-                  <option value="enviado">Enviado</option>
                   <option value="concluido">Concluído</option>
                 </select>
               </div>
@@ -436,15 +447,21 @@ export default function AtividadesPage() {
           {/* ABA ATIVIDADES */}
           {activeTab === "atividades" && (
             <div className="grid gap-4">
-              {atividades
+                  {atividades
                 .filter((a) => {
-                  const status = a.status_progresso ?? "pendente";
+                  const statusConcluidoVariants = [
+                    "concluida",
+                    "concluido",
+                    "corrigido",
+                    "entregue",
+                    "enviado",
+                  ];
 
                   const sMatch =
                     filtroStatus === "todos" ||
-                    status === filtroStatus ||
-                    (filtroStatus === "enviado" &&
-                      (status === "enviado" || status === "concluida"));
+                    (filtroStatus === "concluido"
+                      ? statusConcluidoVariants.includes(a.status)
+                      : a.status === filtroStatus);
 
                   const dMatch =
                     filtroDisciplina === "todas" ||
@@ -490,7 +507,7 @@ export default function AtividadesPage() {
                                   className={`px-2 py-1 text-xs font-medium rounded-full ${
                                     status === "pendente"
                                       ? "bg-red-100 text-red-700"
-                                      : status === "enviado"
+                                      : a.status === "concluida"
                                         ? "bg-green-100 text-green-700"
                                         : "bg-blue-100 text-blue-700"
                                   }`}
@@ -544,10 +561,23 @@ export default function AtividadesPage() {
                 </p>
               )}
 
-              {resumos.map((r) => {
-                if (!r) return null;
+              {resumos
+                .filter((r) => {
+                  const sMatch =
+                    filtroStatus === "todos" ||
+                    (filtroStatus === "concluido"
+                      ? statusConcluidoVariants.includes(r.status)
+                      : r.status === filtroStatus);
 
-                const discId = r.id_disciplina;
+                  const dMatch =
+                    filtroDisciplina === "todas" ||
+                    r.resumos.id_disciplina.toString() ===
+                      filtroDisciplina.toString();
+
+                  return sMatch && dMatch;
+                })
+                .map((r) => {
+                const discId = r.resumos.id_disciplina;
                 const DiscIcon = getDisciplinaIcon(discId);
                 const discCor = getDisciplinaCor(discId);
 
@@ -623,10 +653,22 @@ export default function AtividadesPage() {
                 </p>
               )}
 
-              {videoaulas.length > 0 &&
-                videoaulas.map((v) => {
-                  if (!v.videoaulas) return null;
+              {videoaulas
+                .filter((v) => {
+                  const sMatch =
+                    filtroStatus === "todos" ||
+                    (filtroStatus === "concluido"
+                      ? statusConcluidoVariants.includes(v.status)
+                      : v.status === filtroStatus);
 
+                  const dMatch =
+                    filtroDisciplina === "todas" ||
+                    v.videoaulas.id_disciplina.toString() ===
+                      filtroDisciplina.toString();
+
+                  return sMatch && dMatch;
+                })
+                .map((v) => {
                   const discId = v.videoaulas.id_disciplina;
                   const DiscIcon = getDisciplinaIcon(discId);
                   const discCor = getDisciplinaCor(discId);
@@ -682,3 +724,6 @@ export default function AtividadesPage() {
     </AlunoLayout>
   );
 }
+
+}
+
