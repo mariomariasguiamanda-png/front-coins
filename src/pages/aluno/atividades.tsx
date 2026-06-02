@@ -316,8 +316,6 @@ export default function AtividadesPage() {
         </div>
       </AlunoLayout>
     );
-  }
-
   return (
     <AlunoLayout>
       <div className="space-y-6">
@@ -338,12 +336,9 @@ export default function AtividadesPage() {
           <Card className="border border-green-200 bg-green-50 hover:shadow-md transition-shadow">
             <CardContent className="p-4 flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-green-600">Enviadas</p>
+                <p className="text-sm font-medium text-green-600">Concluídas</p>
                 <p className="text-2xl font-bold text-green-700">
-                  {estatisticas.atividadesEnviadas}{" "}
-                  <span className="text-sm font-normal text-green-600">
-                    de {estatisticas.atividadesTotal}
-                  </span>
+                  {estatisticas.atividadesConcluidas}
                 </p>
               </div>
               <CheckCircle className="h-8 w-8 text-green-500" />
@@ -666,10 +661,6 @@ export default function AtividadesPage() {
                   return sMatch && dMatch;
                 })
                 .map((v) => {
-                const discId = v.videoaulas.id_disciplina;
-                const DiscIcon = getDisciplinaIcon(discId);
-                const discCor = getDisciplinaCor(discId);
-
                   const discId = v.videoaulas.id_disciplina;
                   const DiscIcon = getDisciplinaIcon(discId);
                   const discCor = getDisciplinaCor(discId);
