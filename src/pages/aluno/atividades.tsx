@@ -324,6 +324,8 @@ export default function AtividadesPage() {
         </div>
       </AlunoLayout>
     );
+  }
+
   return (
     <AlunoLayout>
       <div className="space-y-6">
@@ -724,6 +726,3 @@ export default function AtividadesPage() {
     </AlunoLayout>
   );
 }
-
-}
-
