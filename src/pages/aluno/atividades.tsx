@@ -219,6 +219,12 @@ export default function AtividadesPage() {
     const totalResumosBD = resumos.length;
     const totalVideosBD = videoaulas.length;
 
+    const pendentes = atividades.filter((a) => a.status === "pendente").length;
+
+    const moedasPendentes = atividades
+      .filter((a) => a.status === "pendente")
+      .reduce((total, a) => total + (a.recompensa_moedas ?? 0), 0);
+
     const concluidas = atividades.filter((a) => a.status === "concluida")
       .length;
 
@@ -230,6 +236,8 @@ export default function AtividadesPage() {
     return {
       atividadesPendentes: pendentes,
       atividadesConcluidas: concluidas,
+      resumosLidos,
+      resumosTotal: resumos.length,
       totalResumos: resumos.length,
       totalVideoaulas: videoaulas.length,
       moedasPendentes,
@@ -716,3 +724,6 @@ export default function AtividadesPage() {
     </AlunoLayout>
   );
 }
+
+}
+

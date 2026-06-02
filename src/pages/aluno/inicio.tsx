@@ -2,7 +2,15 @@ import { useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import AlunoLayout from "../../components/layout/AlunoLayout";
 import { Card, CardContent } from "../../components/ui/Card";
-import { TrendingUp, Award, BookOpen, Target } from "lucide-react";
+import {
+  TrendingUp,
+  Award,
+  BookOpen,
+  Target,
+  AlertTriangle,
+  ChevronUp,
+  ChevronDown,
+} from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 
 const GraficoMoedas = dynamic(
@@ -253,6 +261,8 @@ const obterCriadoEspecifico = (row: ProgressoAtividadeRow) => {
 
 export default function Inicio() {
   const [loading, setLoading] = useState(true);
+  const [mounted, setMounted] = useState(false);
+  const [expandirDificuldades, setExpandirDificuldades] = useState(false);
   const [periodoSelecionado, setPeriodoSelecionado] =
     useState<PeriodoFiltro>("esseMes");
   const [progressoAtividades, setProgressoAtividades] = useState<
