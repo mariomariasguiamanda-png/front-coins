@@ -1,96 +1,27 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { TrendingUp } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/Card";
-import { supabase } from "@/lib/supabaseClient"; // ajusta o caminho se precisar
-
-interface GraficoMoedasProps {
-  className?: string;
-}
 
 type DadoBarra = {
-  label: string;   // nome da disciplina
+  label: string;
   moedas: number;
 };
 
-export default function GraficoMoedas({ className }: GraficoMoedasProps) {
-  const [dados, setDados] = useState<DadoBarra[]>([]);
-  const [totalAcumulado, setTotalAcumulado] = useState(0);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+interface GraficoMoedasProps {
+  className?: string;
+  dados?: DadoBarra[];
+  totalAcumulado?: number;
+  loading?: boolean;
+  error?: string | null;
+}
 
-  useEffect(() => {
-    const carregarDados = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-
-        // 1) Usuário autenticado
-        const {
-          data: { user },
-          error: authError,
-        } = await supabase.auth.getUser();
-
-        if (authError || !user) {
-          throw new Error("Não foi possível obter o usuário autenticado.");
-        }
-
-        // 2) id_usuario em usuarios
-        const { data: usuario, error: usuarioError } = await supabase
-          .from("usuarios")
-          .select("id_usuario")
-          .eq("auth_user_id", user.id)
-          .maybeSingle();
-
-        if (usuarioError || !usuario) {
-          throw new Error("Usuário não encontrado na tabela usuarios.");
-        }
-
-        const idUsuario = usuario.id_usuario as number;
-
-        // 3) id_aluno em alunos
-        const { data: aluno, error: alunoError } = await supabase
-          .from("alunos")
-          .select("id_aluno")
-          .eq("id_usuario", idUsuario)
-          .maybeSingle();
-
-        if (alunoError || !aluno) {
-          throw new Error("Aluno não encontrado na tabela alunos.");
-        }
-
-        const idAluno = aluno.id_aluno as number;
-
-        // 4) Buscar dados na MESMA VIEW do card: vw_disciplinas_moedas_aluno
-        const { data: linhas, error: viewError } = await supabase
-          .from("vw_disciplinas_moedas_aluno")
-          .select("nome_disciplina, moedas_conquistadas")
-          .eq("id_aluno", idAluno);
-
-        if (viewError) throw viewError;
-
-        const dadosFormatados: DadoBarra[] =
-          linhas?.map((row: any) => ({
-            label: row.nome_disciplina ?? "Disciplina",
-            moedas: Number(row.moedas_conquistadas ?? 0),
-          })) ?? [];
-
-        setDados(dadosFormatados);
-
-        const total = dadosFormatados.reduce(
-          (acc, item) => acc + item.moedas,
-          0
-        );
-        setTotalAcumulado(total);
-      } catch (err: any) {
-        console.error(err);
-        setError(err.message ?? "Erro ao carregar gráfico de moedas.");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    carregarDados();
-  }, []);
+export default function GraficoMoedas({
+  className,
+  dados = [],
+  totalAcumulado = 0,
+  loading = false,
+  error = null,
+}: GraficoMoedasProps) {
 
   const maxMoedas =
     dados.length > 0 ? Math.max(...dados.map((d) => d.moedas)) : 1;
