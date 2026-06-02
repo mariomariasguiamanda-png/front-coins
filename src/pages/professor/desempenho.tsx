@@ -58,6 +58,7 @@ export default function DesempenhoPage() {
       class: "1º A",
       trend: "up" as const,
       attendance: 98,
+      period: "bimestre1",
     },
     {
       studentId: "2024002",
@@ -73,6 +74,7 @@ export default function DesempenhoPage() {
       class: "1º A",
       trend: "up" as const,
       attendance: 95,
+      period: "bimestre1",
     },
     {
       studentId: "2024003",
@@ -88,6 +90,7 @@ export default function DesempenhoPage() {
       class: "1º A",
       trend: "stable" as const,
       attendance: 92,
+      period: "bimestre2",
     },
     {
       studentId: "2024004",
@@ -103,6 +106,7 @@ export default function DesempenhoPage() {
       class: "2º B",
       trend: "up" as const,
       attendance: 90,
+      period: "bimestre2",
     },
     {
       studentId: "2024005",
@@ -118,6 +122,7 @@ export default function DesempenhoPage() {
       class: "3º C",
       trend: "stable" as const,
       attendance: 88,
+      period: "bimestre3",
     },
     {
       studentId: "2024006",
@@ -133,6 +138,7 @@ export default function DesempenhoPage() {
       class: "2º B",
       trend: "up" as const,
       attendance: 97,
+      period: "bimestre3",
     },
     {
       studentId: "2024007",
@@ -148,6 +154,7 @@ export default function DesempenhoPage() {
       class: "3º C",
       trend: "down" as const,
       attendance: 85,
+      period: "bimestre4",
     },
     {
       studentId: "2024008",
@@ -163,6 +170,7 @@ export default function DesempenhoPage() {
       class: "1º A",
       trend: "stable" as const,
       attendance: 93,
+      period: "bimestre4",
     },
     {
       studentId: "2024009",
@@ -178,6 +186,7 @@ export default function DesempenhoPage() {
       class: "3º C",
       trend: "down" as const,
       attendance: 80,
+      period: "bimestre1",
     },
     {
       studentId: "2024010",
@@ -193,6 +202,7 @@ export default function DesempenhoPage() {
       class: "1º A",
       trend: "up" as const,
       attendance: 96,
+      period: "bimestre2",
     },
     {
       studentId: "2024011",
@@ -208,6 +218,7 @@ export default function DesempenhoPage() {
       class: "2º B",
       trend: "up" as const,
       attendance: 91,
+      period: "bimestre3",
     },
     {
       studentId: "2024012",
@@ -223,6 +234,7 @@ export default function DesempenhoPage() {
       class: "1º A",
       trend: "down" as const,
       attendance: 78,
+      period: "bimestre1",
     },
   ];
 
