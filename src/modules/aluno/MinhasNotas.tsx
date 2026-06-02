@@ -54,7 +54,7 @@ export default function MinhasNotas() {
             nota_final,
             status_final,
             atualizado_em
-          `
+          `,
           )
           .eq("id_aluno", idAluno);
 
@@ -77,33 +77,33 @@ export default function MinhasNotas() {
           atualizado_em: row.atualizado_em,
         }));
 
-        // 3) calcula estatísticas em cima das notas finais
-        let soma = 0;
-        let qtd = 0;
-        let aprov = 0;
-        let rec = 0;
+        // 3) calcula estatísticas em cima das notas finais (lógica simplificada)
+        const totalComNota = convertidos.filter((n) => n.nota_final !== null);
 
-        for (const n of convertidos) {
-          if (n.nota_final !== null && !isNaN(n.nota_final)) {
-            soma += n.nota_final;
-            qtd += 1;
+        const somaNotas = totalComNota.reduce(
+          (acc, curr) => acc + (curr.nota_final || 0),
+          0,
+        );
 
-            if (n.status_final === "aprovado") aprov += 1;
-            else if (n.status_final === "recuperacao") rec += 1;
-            else {
-              // se não tiver status_final, podemos inferir pela nota
-              if (n.nota_final >= 6) aprov += 1;
-              else rec += 1;
-            }
-          }
-        }
+        const media =
+          totalComNota.length > 0 ? somaNotas / totalComNota.length : 0;
+
+        const aprovadas = convertidos.filter(
+          (n) =>
+            n.status_final?.toLowerCase() === "aprovado" ||
+            (n.nota_final || 0) >= 6,
+        ).length;
+
+        const recuperacao = convertidos.filter(
+          (n) => n.status_final?.toLowerCase() === "recuperacao",
+        ).length;
 
         setNotasFinais(convertidos);
         setStats({
-          mediaGeral: qtd > 0 ? soma / qtd : null,
-          aprovadas: aprov,
-          recuperacao: rec,
-          totalDisciplinasComNota: qtd,
+          mediaGeral: media,
+          aprovadas,
+          recuperacao,
+          totalDisciplinasComNota: totalComNota.length,
         });
       } catch (err: any) {
         console.error(err);
@@ -255,7 +255,7 @@ export default function MinhasNotas() {
                       </td>
                       <td
                         className={`py-3 px-4 text-center font-bold ${getNotaColor(
-                          item.nota_final
+                          item.nota_final,
                         )}`}
                       >
                         {item.nota_final !== null
@@ -265,7 +265,7 @@ export default function MinhasNotas() {
                       <td className="py-3 px-4 text-center">
                         <span
                           className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusBadgeClasses(
-                            item.status_final
+                            item.status_final,
                           )}`}
                         >
                           {item.status_final
@@ -280,7 +280,7 @@ export default function MinhasNotas() {
                       <td className="py-3 px-4 text-center text-gray-500">
                         {item.atualizado_em
                           ? new Date(item.atualizado_em).toLocaleDateString(
-                              "pt-BR"
+                              "pt-BR",
                             )
                           : "-"}
                       </td>

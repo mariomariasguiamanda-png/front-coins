@@ -132,108 +132,100 @@ export default function AtividadesPage() {
     carregarIdentificacao();
   }, []);
 
-  // 2️⃣ Buscar dados após saber o ID do aluno
+  // 2️⃣ Buscar disciplinas únicas após saber o ID do aluno (para o filtro)
   useEffect(() => {
     if (!alunoId) return;
 
-    const carregarDados = async () => {
-      setLoading(true);
-
-      // 📌 disciplinas do aluno
+    const carregarDisciplinas = async () => {
       const { data: disc } = await supabase
-        .from("alunos_disciplinas")
-        .select(
-          `
-        id_disciplina,
-        disciplinas (nome, id_disciplina)
-      `
-        )
+        .from("vw_disciplinas_unicas_aluno")
+        .select("id_disciplina, disciplina_nome")
         .eq("id_aluno", alunoId);
 
       setDisciplinas(disc || []);
+    };
 
-      // 📌 atividades do aluno
-      const { data: atv } = await supabase
-        .from("progresso_atividades")
-        .select(
-          `
-        id_progresso_atividade,
-        status,
-        nota,
-        concluido_em,
-        criado_em,
-        atividades (
-          id_atividade,
-          titulo,
-          descricao,
-          recompensa_moedas,
-          valido_ate,
-          id_disciplina,
-          disciplinas (nome)
-        )
-      `
-        )
-        .eq("id_aluno", alunoId);
+    carregarDisciplinas();
+  }, [alunoId]);
 
-      setAtividades(atv || []);
+  // 3️⃣ Buscar dados do painel já filtrados por disciplina no banco
+  useEffect(() => {
+    if (!alunoId) return;
 
-      // 📌 resumos do aluno
-      const { data: rs } = await supabase
-        .from("progresso_resumos")
-        .select(
-          `
-        status,
-        lido_em,
-        resumos (
-          id_resumo,
-          titulo,
-          conteudo,
-          id_disciplina,
-          disciplinas (nome)
-        )
-      `
-        )
-        .eq("id_aluno", alunoId);
+    const carregarPainelFiltrado = async () => {
+      setLoading(true);
 
-      setResumos(rs || []);
+      // Busca atividades gerais (todas as atividades da disciplina, com ou sem progresso do aluno)
+      let queryAtv = supabase.from("vw_painel_atividades_geral").select("*");
 
-      // 📌 videoaulas do aluno
-      const { data: vids } = await supabase
-        .from("progresso_videoaulas")
-        .select(
-          `
-        status,
-        percentual_assistido,
-        videoaulas (
-          id_videoaula,
-          titulo,
-          descricao,
-          recompensa_moedas,
-          id_disciplina,
-          disciplinas (nome)
-        )
-      `
-        )
-        .eq("id_aluno", alunoId);
+      // Busca todos os resumos da disciplina (independente de ter progresso ou não)
+      let queryRes = supabase.from("resumos").select(
+        `
+        *,
+        disciplinas(nome),
+        progresso_resumos!left(status, lido_em)
+      `,
+      );
 
-      setVideoaulas(vids || []);
+      // Busca videoaulas gerais (todas as videoaulas da disciplina, com ou sem progresso do aluno)
+      let queryVid = supabase.from("vw_painel_videoaulas_geral").select("*");
 
+      if (filtroDisciplina !== "todas") {
+        queryAtv = queryAtv.eq("id_disciplina", filtroDisciplina);
+        queryRes = queryRes.eq("id_disciplina", filtroDisciplina);
+        queryVid = queryVid.eq("id_disciplina", filtroDisciplina);
+      }
+
+      if (alunoId) {
+        queryRes = queryRes.eq("progresso_resumos.id_aluno", alunoId);
+      }
+
+      // Garante que vemos o progresso do aluno logado ou registros sem aluno (pendentes)
+      queryAtv = queryAtv.or(`id_aluno.eq.${alunoId},id_aluno.is.null`);
+      queryVid = queryVid.or(`id_aluno.eq.${alunoId},id_aluno.is.null`);
+
+      const [atv, res, vid] = await Promise.all([queryAtv, queryRes, queryVid]);
+
+      const atividadesProcessadas = atv.data?.reduce(
+        (acc: any[], curr: any) => {
+          const index = acc.findIndex(
+            (item: any) => item.id_atividade === curr.id_atividade,
+          );
+
+          if (index === -1) {
+            acc.push(curr);
+          } else if (curr.id_aluno) {
+            // Prioriza o registro que já tem progresso do aluno
+            acc[index] = curr;
+          }
+
+          return acc;
+        },
+        [] as any[],
+      );
+
+      setAtividades(atividadesProcessadas || []);
+      setResumos(res.data || []);
+      setVideoaulas(vid.data || []);
       setLoading(false);
     };
 
-    carregarDados();
-  }, [alunoId]);
+    carregarPainelFiltrado();
+  }, [alunoId, filtroDisciplina]);
 
-  // 3️⃣ Estatísticas superiores
+  // 4️⃣ Estatísticas superiores (totais da disciplina x progresso do aluno)
   const estatisticas = useMemo(() => {
-    const pendentes = atividades.filter((a) => a.status === "pendente").length;
+    const totalAtividadesBD = atividades.length;
+    const totalResumosBD = resumos.length;
+    const totalVideosBD = videoaulas.length;
 
     const concluidas = atividades.filter((a) => a.status === "concluida")
       .length;
 
-    const moedasPendentes = atividades
-      .filter((a) => a.status === "pendente")
-      .reduce((s, a) => s + (a.atividades?.recompensa_moedas ?? 0), 0);
+    const resumosLidos = resumos.filter((r) => {
+      const status = r.progresso_resumos?.[0]?.status;
+      return status === "lido";
+    }).length;
 
     return {
       atividadesPendentes: pendentes,
@@ -270,10 +262,10 @@ export default function AtividadesPage() {
 
   const getDisciplinaCor = (disciplinaId: number) => {
     const disciplina = disciplinas.find(
-      (d) => d.disciplinas.id_disciplina === disciplinaId
+      (d) => d.id_disciplina === disciplinaId,
     );
 
-    const nome = disciplina?.disciplinas?.nome?.toLowerCase();
+    const nome = disciplina?.disciplina_nome?.toLowerCase();
 
     if (!nome) return coresByDisciplina.mat;
 
@@ -289,10 +281,10 @@ export default function AtividadesPage() {
 
   const getDisciplinaIcon = (disciplinaId: number) => {
     const disciplina = disciplinas.find(
-      (d) => d.disciplinas.id_disciplina === disciplinaId
+      (d) => d.id_disciplina === disciplinaId,
     );
 
-    const nome = disciplina?.disciplinas?.nome?.toLowerCase();
+    const nome = disciplina?.disciplina_nome?.toLowerCase();
 
     if (!nome) return iconByDisciplina.mat;
 
@@ -335,7 +327,9 @@ export default function AtividadesPage() {
             <Activity className="h-6 w-6 text-white" />
           </div>
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Painel de Desempenho</h1>
+            <h1 className="text-3xl font-bold text-gray-900">
+              Painel de Desempenho
+            </h1>
           </div>
         </div>
 
@@ -346,7 +340,10 @@ export default function AtividadesPage() {
               <div>
                 <p className="text-sm font-medium text-green-600">Enviadas</p>
                 <p className="text-2xl font-bold text-green-700">
-                  {estatisticas.atividadesEnviadas}
+                  {estatisticas.atividadesEnviadas}{" "}
+                  <span className="text-sm font-normal text-green-600">
+                    de {estatisticas.atividadesTotal}
+                  </span>
                 </p>
               </div>
               <CheckCircle className="h-8 w-8 text-green-500" />
@@ -358,7 +355,10 @@ export default function AtividadesPage() {
               <div>
                 <p className="text-sm font-medium text-blue-600">Resumos</p>
                 <p className="text-2xl font-bold text-blue-700">
-                  {estatisticas.totalResumos}
+                  {estatisticas.resumosLidos}{" "}
+                  <span className="text-sm font-normal text-blue-600">
+                    de {estatisticas.resumosTotal}
+                  </span>
                 </p>
               </div>
               <FileText className="h-8 w-8 text-blue-500" />
@@ -397,11 +397,8 @@ export default function AtividadesPage() {
                   <option value="todas">Todas</option>
 
                   {disciplinas.map((d) => (
-                    <option
-                      key={d.disciplinas.id_disciplina}
-                      value={d.disciplinas.id_disciplina}
-                    >
-                      {d.disciplinas.nome}
+                    <option key={d.id_disciplina} value={d.id_disciplina}>
+                      {d.disciplina_nome}
                     </option>
                   ))}
                 </select>
@@ -465,17 +462,18 @@ export default function AtividadesPage() {
 
                   const dMatch =
                     filtroDisciplina === "todas" ||
-                    a.atividades.id_disciplina.toString() ===
-                      filtroDisciplina.toString();
+                    Number(a.id_disciplina) === Number(filtroDisciplina);
 
                   return sMatch && dMatch;
                 })
                 .map((a) => {
-                  const discId = a.atividades.id_disciplina;
+                  const discId = a.id_disciplina;
                   const discCor = getDisciplinaCor(discId);
                   const DiscIcon = getDisciplinaIcon(discId);
 
-                  const prazoInfo = formatarPrazo(a.atividades.valido_ate);
+                  const prazoInfo = formatarPrazo(a.valido_ate);
+
+                  const status = a.status_progresso ?? "pendente";
 
                   return (
                     <Card
@@ -498,25 +496,25 @@ export default function AtividadesPage() {
                                 <span
                                   className={`text-sm font-medium ${discCor.text}`}
                                 >
-                                  {a.atividades.disciplinas.nome}
+                                  {a.disciplina_nome}
                                 </span>
 
                                 {/* Status */}
                                 <span
                                   className={`px-2 py-1 text-xs font-medium rounded-full ${
-                                    a.status === "pendente"
+                                    status === "pendente"
                                       ? "bg-red-100 text-red-700"
                                       : a.status === "concluida"
                                         ? "bg-green-100 text-green-700"
                                         : "bg-blue-100 text-blue-700"
                                   }`}
                                 >
-                                  {a.status}
+                                  {status === "pendente" ? "Pendente" : status}
                                 </span>
                               </div>
 
                               <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                                {a.atividades.titulo}
+                                {a.atividade_titulo}
                               </h3>
 
                               <div className="flex items-center gap-4 text-sm text-gray-600">
@@ -529,9 +527,7 @@ export default function AtividadesPage() {
 
                                 <div className="flex items-center gap-1">
                                   <Award className="h-4 w-4 text-amber-500" />
-                                  <span>
-                                    {a.atividades.recompensa_moedas} moedas
-                                  </span>
+                                  <span>{a.recompensa_moedas} moedas</span>
                                 </div>
                               </div>
                             </div>
@@ -582,9 +578,16 @@ export default function AtividadesPage() {
                 const DiscIcon = getDisciplinaIcon(discId);
                 const discCor = getDisciplinaCor(discId);
 
+                const statusResumo =
+                  r.progresso_resumos && r.progresso_resumos.length > 0
+                    ? r.progresso_resumos[0]?.status
+                    : null;
+
+                const isLido = statusResumo === "lido";
+
                 return (
                   <Card
-                    key={r.resumos.id_resumo}
+                    key={r.id_resumo}
                     className="border border-gray-200 hover:shadow-lg transition"
                   >
                     <CardContent className="p-6">
@@ -596,16 +599,29 @@ export default function AtividadesPage() {
                         </div>
 
                         <div className="flex-1">
-                          <p className={`text-sm font-medium ${discCor.text}`}>
-                            {r.resumos.disciplinas.nome}
-                          </p>
+                          <div className="flex items-center gap-2 mb-1">
+                            <p
+                              className={`text-sm font-medium ${discCor.text}`}
+                            >
+                              {r.disciplinas?.nome}
+                            </p>
+                            {statusResumo && (
+                              <span
+                                className={`px-2 py-0.5 text-[11px] font-medium rounded-full ${
+                                  isLido
+                                    ? "bg-emerald-50 text-emerald-700"
+                                    : "bg-amber-50 text-amber-700"
+                                }`}
+                              >
+                                {isLido ? "Lido" : "Pendente"}
+                              </span>
+                            )}
+                          </div>
 
-                          <h3 className="text-lg font-semibold">
-                            {r.resumos.titulo}
-                          </h3>
+                          <h3 className="text-lg font-semibold">{r.titulo}</h3>
 
                           <p className="text-sm text-gray-600 line-clamp-2">
-                            {r.resumos.conteudo}
+                            {r.conteudo}
                           </p>
                         </div>
 
@@ -630,7 +646,7 @@ export default function AtividadesPage() {
             <div className="grid gap-4">
               {videoaulas.length === 0 && (
                 <p className="text-center text-gray-500 py-10">
-                  Nenhuma videoaula disponível
+                  Nenhuma videoaula disponível para esta disciplina
                 </p>
               )}
 
@@ -654,48 +670,54 @@ export default function AtividadesPage() {
                 const DiscIcon = getDisciplinaIcon(discId);
                 const discCor = getDisciplinaCor(discId);
 
-                return (
-                  <Card
-                    key={v.videoaulas.id_videoaula}
-                    className="border border-gray-200 hover:shadow-lg transition"
-                  >
-                    <CardContent className="p-6">
-                      <div className="flex items-start gap-4">
-                        <div
-                          className={`p-3 rounded-lg bg-gradient-to-br ${discCor.grad}`}
-                        >
-                          <DiscIcon className="h-5 w-5 text-white" />
+                  const discId = v.videoaulas.id_disciplina;
+                  const DiscIcon = getDisciplinaIcon(discId);
+                  const discCor = getDisciplinaCor(discId);
+
+                  return (
+                    <Card
+                      key={v.videoaulas.id_videoaula}
+                      className="border border-gray-200 hover:shadow-lg transition"
+                    >
+                      <CardContent className="p-6">
+                        <div className="flex items-start gap-4">
+                          <div
+                            className={`p-3 rounded-lg bg-gradient-to-br ${discCor.grad}`}
+                          >
+                            <DiscIcon className="h-5 w-5 text-white" />
+                          </div>
+
+                          <div className="flex-1">
+                            <p
+                              className={`text-sm font-medium ${discCor.text}`}
+                            >
+                              {v.videoaulas.disciplinas.nome}
+                            </p>
+
+                            <h3 className="text-lg font-semibold">
+                              {v.videoaulas.titulo}
+                            </h3>
+
+                            <p className="text-sm text-gray-600 line-clamp-2">
+                              {v.videoaulas.descricao}
+                            </p>
+                          </div>
+
+                          <button
+                            onClick={() =>
+                              router.push(
+                                `/aluno/disciplinas/${discId}/videoaulas`,
+                              )
+                            }
+                            className="px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg text-white"
+                          >
+                            Assistir
+                          </button>
                         </div>
-
-                        <div className="flex-1">
-                          <p className={`text-sm font-medium ${discCor.text}`}>
-                            {v.videoaulas.disciplinas.nome}
-                          </p>
-
-                          <h3 className="text-lg font-semibold">
-                            {v.videoaulas.titulo}
-                          </h3>
-
-                          <p className="text-sm text-gray-600 line-clamp-2">
-                            {v.videoaulas.descricao}
-                          </p>
-                        </div>
-
-                        <button
-                          onClick={() =>
-                            router.push(
-                              `/aluno/disciplinas/${discId}/videoaulas`
-                            )
-                          }
-                          className="px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg text-white"
-                        >
-                          Assistir
-                        </button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                );
-              })}
+                      </CardContent>
+                    </Card>
+                  );
+                })}
             </div>
           )}
         </div>
