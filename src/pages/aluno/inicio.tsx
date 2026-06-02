@@ -490,7 +490,8 @@ export default function Inicio() {
       });
   }, [progressoFiltrado]);
 
-  const riscoNumero = useMemo(() => Math.max(0, itensAtencaoCritica.length), [itensAtencaoCritica]);
+  // riscoNumero agora reflete o número de disciplinas críticas mostradas
+  // (alinha o número do cartão com as matérias renderizadas abaixo)
 
   const desempenhoDisciplinas = useMemo(() => {
     const lista = dadosGrafico.slice(0, 4);
@@ -507,6 +508,8 @@ export default function Inicio() {
     () => desempenhoDisciplinas.filter((d) => d.score < LIMIAR_CRITICO),
     [desempenhoDisciplinas]
   );
+
+  const riscoNumero = useMemo(() => disciplinasCriticas.length, [disciplinasCriticas]);
 
   
 
