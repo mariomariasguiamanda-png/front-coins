@@ -53,6 +53,7 @@ interface PerformanceData {
   class: string;
   trend?: "up" | "down" | "stable";
   attendance?: number;
+  period?: string;
 }
 
 interface DesempenhoProfessorProps {
@@ -79,7 +80,8 @@ export function DesempenhoProfessor({
   const filteredData = performanceData.filter(data => {
     const matchesDiscipline = selectedDiscipline === "todas" || data.discipline === selectedDiscipline;
     const matchesClass = selectedClass === "todas" || data.class === selectedClass;
-    return matchesDiscipline && matchesClass;
+    const matchesPeriod = selectedPeriod === "todos" || !data.period || data.period === selectedPeriod;
+    return matchesDiscipline && matchesClass && matchesPeriod;
   });
 
   // Estatísticas
