@@ -511,6 +511,19 @@ export default function Inicio() {
 
   const riscoNumero = useMemo(() => disciplinasCriticas.length, [disciplinasCriticas]);
 
+  // Debug logs: mostra contagens no servidor (SSR) e no cliente (useEffect)
+  try {
+    // SSR/server-side log
+    // eslint-disable-next-line no-console
+    console.log("SSR: itensAtencaoCritica.length=", itensAtencaoCritica.length, "disciplinasCriticas.length=", disciplinasCriticas.length);
+  } catch (e) {}
+
+  useEffect(() => {
+    // Client-side log (abra o console do navegador)
+    // eslint-disable-next-line no-console
+    console.log("CLIENT: itensAtencaoCritica=", itensAtencaoCritica, "disciplinasCriticas=", disciplinasCriticas, "riscoNumero=", riscoNumero);
+  }, [itensAtencaoCritica, disciplinasCriticas, riscoNumero]);
+
   
 
   return (
