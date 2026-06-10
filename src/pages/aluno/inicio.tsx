@@ -8,6 +8,8 @@ import {
   BookOpen,
   Target,
   AlertTriangle,
+  Zap,
+  ShieldCheck,
   ChevronUp,
   ChevronDown,
 } from "lucide-react";
@@ -741,66 +743,183 @@ export default function Inicio() {
           error={error}
         />
 
-        {/* Zona de Atenção Crítica - usa dados completos (não filtrados pelo período) */}
-        <Card className="border border-red-200 rounded-2xl">
-          <CardContent className="p-6">
-            <h3 className="text-xl font-bold text-red-700 mb-4">
-              Zona de Atenção Crítica
-            </h3>
+        {/* Zona de Atenção Crítica - visual estilo dashboard */}
+        <Card className="overflow-hidden rounded-3xl border border-red-200 bg-white shadow-xl shadow-red-100/70">
+          <CardContent className="p-0">
+            <style jsx>{`
+              @keyframes criticalPulse {
+                0%, 100% {
+                  transform: scale(1);
+                  opacity: 0.65;
+                }
+                50% {
+                  transform: scale(1.18);
+                  opacity: 0.18;
+                }
+              }
+
+              @keyframes criticalGlow {
+                0%, 100% {
+                  filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.75));
+                }
+                50% {
+                  filter: drop-shadow(0 0 24px rgba(255, 255, 255, 1));
+                }
+              }
+
+              .critical-pulse-ring {
+                animation: criticalPulse 1.8s ease-in-out infinite;
+              }
+
+              .critical-glow-icon {
+                animation: criticalGlow 1.8s ease-in-out infinite;
+              }
+            `}</style>
 
             {loading ? (
-              <div className="space-y-3">
-                {[1, 2, 3].map((i) => (
-                  <div
-                    key={i}
-                    className="flex items-center justify-between p-3 bg-red-50 rounded-lg animate-pulse"
-                  >
-                    <div>
-                      <div className="h-4 w-48 bg-red-200 rounded mb-2" />
-                      <div className="h-3 w-32 bg-red-200 rounded" />
-                    </div>
-                    <div className="h-4 w-16 bg-red-200 rounded" />
+              <div className="grid grid-cols-1 lg:grid-cols-[300px_1fr]">
+                <div className="min-h-[280px] bg-gradient-to-br from-red-800 via-red-600 to-red-500 p-6">
+                  <div className="flex h-full flex-col items-center justify-center animate-pulse">
+                    <div className="mb-5 h-24 w-24 rounded-full bg-white/20" />
+                    <div className="h-12 w-20 rounded-xl bg-white/25" />
+                    <div className="mt-3 h-3 w-40 rounded bg-white/20" />
                   </div>
-                ))}
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-center">
-                <div className="col-span-1 bg-gradient-to-b from-red-600 to-red-400 text-white rounded-lg p-6 flex flex-col items-center justify-center">
-                  <div className="rounded-full bg-red-500/20 p-4 mb-4">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                      <path strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
-                    </svg>
-                  </div>
-                  <div className="text-5xl font-bold">{riscoNumero}</div>
-                  <div className="text-xs uppercase mt-2">Risco Acadêmico</div>
                 </div>
 
-                <div className="col-span-2">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h4 className="text-lg font-semibold text-gray-900">Zona de Atenção Crítica</h4>
-                      <p className="text-sm text-gray-500">Resultados abaixo de 7.0 detectados no seu histórico recente.</p>
+                <div className="p-6 lg:p-8">
+                  <div className="animate-pulse space-y-5">
+                    <div className="h-7 w-64 rounded bg-red-100" />
+                    <div className="h-4 w-full max-w-xl rounded bg-gray-100" />
+                    <div className="h-24 rounded-2xl bg-gray-100" />
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 lg:grid-cols-[300px_1fr]">
+                {/* Lado vermelho */}
+                <div className="relative overflow-hidden bg-gradient-to-br from-red-800 via-red-600 to-red-500 p-6 text-white">
+                  <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_20%,rgba(255,255,255,0.24),transparent_34%),radial-gradient(circle_at_90%_85%,rgba(255,255,255,0.14),transparent_26%)]" />
+                  <div className="absolute -right-14 -top-14 h-36 w-36 rounded-full bg-white/10 blur-2xl" />
+                  <div className="absolute -bottom-16 -left-16 h-44 w-44 rounded-full bg-red-950/30 blur-2xl" />
+
+                  <div className="relative z-10 flex min-h-[300px] flex-col items-center justify-center text-center">
+                    <div className="relative mb-6">
+                      <div className="critical-pulse-ring absolute inset-0 rounded-full bg-white/20" />
+                      <div className="critical-pulse-ring absolute -inset-5 rounded-full border border-white/25" />
+                      <div className="critical-pulse-ring absolute -inset-10 rounded-full border border-white/15" />
+
+                      <div className="critical-glow-icon relative flex h-28 w-28 items-center justify-center rounded-full bg-white/15 ring-2 ring-white/25 backdrop-blur-sm">
+                        <AlertTriangle
+                          className="h-16 w-16 text-white"
+                          strokeWidth={2.7}
+                        />
+                      </div>
                     </div>
-                    <button className="bg-red-600 text-white px-4 py-2 rounded-full shadow">Ação Imediata</button>
+
+                    <p className="text-7xl font-black leading-none drop-shadow-xl">
+                      {riscoNumero}
+                    </p>
+
+                    <p className="mt-4 text-[11px] font-black uppercase tracking-[0.35em] text-white">
+                      Risco Acadêmico
+                    </p>
+
+                    <div className="mt-5 inline-flex items-center gap-2 rounded-full bg-red-950/30 px-4 py-2 text-xs font-black uppercase tracking-widest text-white">
+                      <Zap className="h-4 w-4" />
+                      Alerta
+                    </div>
+                  </div>
+                </div>
+
+                {/* Lado direito */}
+                <div className="flex flex-col justify-center p-6 lg:p-8">
+                  <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+                    <div>
+                      <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-red-50 px-4 py-2 text-xs font-black uppercase tracking-wide text-red-700">
+                        <AlertTriangle className="h-4 w-4" />
+                        Monitoramento de desempenho
+                      </div>
+
+                      <div className="flex items-center gap-3">
+                        <AlertTriangle className="h-9 w-9 text-red-600" />
+                        <h3 className="text-3xl font-black tracking-tight text-gray-950">
+                          Zona de Atenção Crítica
+                        </h3>
+                      </div>
+
+                      <div className="mt-4 h-1 w-24 rounded-full bg-red-600" />
+
+                      <p className="mt-4 max-w-2xl text-sm font-medium leading-relaxed text-gray-500">
+                        Resultados abaixo de 7.0 detectados no seu histórico recente.
+                      </p>
+                    </div>
+
+                    <button
+                      type="button"
+                      disabled={riscoNumero === 0}
+                      className={`inline-flex items-center justify-center gap-2 rounded-2xl px-5 py-3 text-sm font-black shadow-lg transition-all ${
+                        riscoNumero > 0
+                          ? "bg-gradient-to-r from-red-700 to-red-500 text-white shadow-red-200 hover:-translate-y-0.5 hover:shadow-xl"
+                          : "cursor-not-allowed bg-gray-100 text-gray-400 shadow-gray-100"
+                      }`}
+                    >
+                      <Zap className="h-5 w-5" />
+                      {riscoNumero > 0 ? "Ação Imediata" : "Tudo certo"}
+                    </button>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
-                    {disciplinasCriticas.length === 0 ? (
-                      <div className="p-4 bg-white rounded-lg border">
-                        <p className="text-sm text-gray-600">Nenhuma disciplina com desempenho crítico no período selecionado.</p>
+                  {disciplinasCriticas.length === 0 ? (
+                    <div className="flex items-center gap-5 rounded-3xl border border-red-100 bg-gradient-to-br from-red-50 via-white to-green-50 p-6">
+                      <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-3xl bg-green-100 text-green-700">
+                        <ShieldCheck className="h-9 w-9" />
                       </div>
-                    ) : (
-                      disciplinasCriticas.map((d, i) => (
-                        <div key={i} className="p-4 bg-white rounded-lg border">
-                          <div className="text-xs font-semibold text-red-600">{d.nome}</div>
-                          <div className="text-sm font-medium mt-1">Desempenho: {d.score} / 10</div>
-                          <div className="w-full bg-gray-200 rounded-full h-3 mt-3">
-                            <div className="bg-red-500 h-3 rounded-full" style={{ width: `${Math.max(5, d.score * 10)}%` }} />
+
+                      <div>
+                        <p className="text-lg font-black text-green-700">
+                          Nenhuma disciplina com desempenho crítico no período selecionado.
+                        </p>
+                        <p className="mt-1 text-sm text-gray-500">
+                          Continue assim! Seu desempenho está dentro do esperado.
+                        </p>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                      {disciplinasCriticas.map((d, i) => (
+                        <div
+                          key={i}
+                          className="group rounded-2xl border border-red-200 bg-white p-5 shadow-sm transition hover:-translate-y-1 hover:border-red-400 hover:shadow-lg"
+                        >
+                          <div className="flex items-start justify-between gap-3">
+                            <div>
+                              <p className="text-sm font-black text-gray-900">
+                                {d.nome}
+                              </p>
+                              <p className="mt-1 text-xs font-semibold text-red-600">
+                                Necessita revisão
+                              </p>
+                            </div>
+
+                            <AlertTriangle className="h-5 w-5 text-red-500" />
+                          </div>
+
+                          <div className="mt-4">
+                            <div className="mb-2 flex justify-between text-xs font-bold text-gray-500">
+                              <span>Desempenho</span>
+                              <span>{d.score}/10</span>
+                            </div>
+
+                            <div className="h-2 overflow-hidden rounded-full bg-red-100">
+                              <div
+                                className="h-full rounded-full bg-gradient-to-r from-red-500 to-red-800 shadow-[0_0_12px_rgba(220,38,38,0.55)]"
+                                style={{ width: `${Math.max(10, d.score * 10)}%` }}
+                              />
+                            </div>
                           </div>
                         </div>
-                      ))
-                    )}
-                  </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
             )}
