@@ -1,21 +1,18 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { useRouter } from "next/router";
 import { supabase } from "@/lib/supabaseClient";
 import AlunoLayout from "@/components/layout/AlunoLayout";
 import { Card, CardContent } from "@/components/ui/Card";
 
 import {
-  Calendar,
   Activity,
-  BookOpen,
   Play,
   FileText,
   Award,
   Clock,
   CheckCircle,
-  AlertCircle,
 } from "lucide-react";
 
 import {
@@ -29,6 +26,7 @@ import {
 
 type IconComponent = (props: { className?: string }) => JSX.Element;
 
+// ── Constantes fora do componente (não recriadas a cada render) ──────────────
 const iconByDisciplina: Record<string, IconComponent> = {
   mat: (p) => <FaCalculator {...p} />,
   port: (p) => <FaBook {...p} />,
@@ -43,56 +41,62 @@ const coresByDisciplina: Record<
   string,
   { grad: string; text: string; bgLight: string; border: string }
 > = {
-  mat: {
-    grad: "from-blue-500 to-blue-600",
-    text: "text-blue-600",
-    bgLight: "bg-blue-50",
-    border: "border-blue-200",
-  },
-  port: {
-    grad: "from-purple-500 to-purple-600",
-    text: "text-purple-600",
-    bgLight: "bg-purple-50",
-    border: "border-purple-200",
-  },
-  hist: {
-    grad: "from-amber-500 to-amber-600",
-    text: "text-amber-600",
-    bgLight: "bg-amber-50",
-    border: "border-amber-200",
-  },
-  geo: {
-    grad: "from-teal-500 to-teal-600",
-    text: "text-teal-600",
-    bgLight: "bg-teal-50",
-    border: "border-teal-200",
-  },
-  bio: {
-    grad: "from-green-500 to-green-600",
-    text: "text-green-600",
-    bgLight: "bg-green-50",
-    border: "border-green-200",
-  },
-  fis: {
-    grad: "from-indigo-500 to-indigo-600",
-    text: "text-indigo-600",
-    bgLight: "bg-indigo-50",
-    border: "border-indigo-200",
-  },
+  mat: { grad: "from-blue-500 to-blue-600", text: "text-blue-600", bgLight: "bg-blue-50", border: "border-blue-200" },
+  port: { grad: "from-purple-500 to-purple-600", text: "text-purple-600", bgLight: "bg-purple-50", border: "border-purple-200" },
+  hist: { grad: "from-amber-500 to-amber-600", text: "text-amber-600", bgLight: "bg-amber-50", border: "border-amber-200" },
+  geo: { grad: "from-teal-500 to-teal-600", text: "text-teal-600", bgLight: "bg-teal-50", border: "border-teal-200" },
+  bio: { grad: "from-green-500 to-green-600", text: "text-green-600", bgLight: "bg-green-50", border: "border-green-200" },
+  fis: { grad: "from-indigo-500 to-indigo-600", text: "text-indigo-600", bgLight: "bg-indigo-50", border: "border-indigo-200" },
 };
+
+// Status de conclusão como Sets para lookup O(1) em vez de Array.includes O(n)
+const STATUS_CONCLUIDO_ATV = new Set(["concluida", "concluido", "corrigido", "entregue", "enviado"]);
+const STATUS_CONCLUIDO_RES = new Set(["lido", "concluido", "concluida"]);
+const STATUS_CONCLUIDO_VID = new Set(["assistido", "concluido", "concluida"]);
+
+// Resolve cor e ícone pelo nome da disciplina (fora do componente, puro)
+function resolverCorByNome(nome: string | undefined) {
+  if (!nome) return coresByDisciplina.mat;
+  const n = nome.toLowerCase();
+  if (n.includes("mat")) return coresByDisciplina.mat;
+  if (n.includes("port")) return coresByDisciplina.port;
+  if (n.includes("hist")) return coresByDisciplina.hist;
+  if (n.includes("geo")) return coresByDisciplina.geo;
+  if (n.includes("bio")) return coresByDisciplina.bio;
+  if (n.includes("fis")) return coresByDisciplina.fis;
+  return coresByDisciplina.mat;
+}
+
+function resolverIconByNome(nome: string | undefined): IconComponent {
+  if (!nome) return iconByDisciplina.mat;
+  const n = nome.toLowerCase();
+  if (n.includes("mat")) return iconByDisciplina.mat;
+  if (n.includes("port")) return iconByDisciplina.port;
+  if (n.includes("hist")) return iconByDisciplina.hist;
+  if (n.includes("geo")) return iconByDisciplina.geo;
+  if (n.includes("bio")) return iconByDisciplina.bio;
+  if (n.includes("fis")) return iconByDisciplina.fis;
+  return iconByDisciplina.mat;
+}
+
+function formatarPrazo(prazo: string | null) {
+  if (!prazo) return { texto: "Sem prazo", cor: "text-gray-500", bgCor: "bg-gray-50" };
+  const data = new Date(prazo);
+  const hoje = new Date();
+  const diffDays = Math.ceil((data.getTime() - hoje.getTime()) / 86400000);
+  if (diffDays < 0) return { texto: "Atrasado", cor: "text-red-600", bgCor: "bg-red-50" };
+  if (diffDays === 0) return { texto: "Hoje", cor: "text-orange-600", bgCor: "bg-orange-50" };
+  if (diffDays === 1) return { texto: "Amanhã", cor: "text-yellow-600", bgCor: "bg-yellow-50" };
+  return { texto: `${diffDays} dias`, cor: "text-green-600", bgCor: "bg-green-50" };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 
 export default function AtividadesPage() {
   const router = useRouter();
 
-  // Estados
-  const [activeTab, setActiveTab] = useState<
-    "atividades" | "resumos" | "videoaulas"
-  >("atividades");
-
-  const [filtroStatus, setFiltroStatus] = useState<
-    "todos" | "pendente" | "concluido"
-  >("todos");
-
+  const [activeTab, setActiveTab] = useState<"atividades" | "resumos" | "videoaulas">("atividades");
+  const [filtroStatus, setFiltroStatus] = useState<"todos" | "pendente" | "concluido">("todos");
   const [filtroDisciplina, setFiltroDisciplina] = useState("todas");
 
   const [atividades, setAtividades] = useState<any[]>([]);
@@ -101,15 +105,19 @@ export default function AtividadesPage() {
   const [disciplinas, setDisciplinas] = useState<any[]>([]);
 
   const [alunoId, setAlunoId] = useState<number | null>(null);
-  const [usuarioId, setUsuarioId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // 1️⃣ Buscar usuário logado → aluno → disciplinas do aluno
+  // ── Mapa id_disciplina → nome (O(1) lookup no render) ─────────────────────
+  const disciplinaMapaNome = useMemo<Record<number, string>>(() => {
+    const map: Record<number, string> = {};
+    disciplinas.forEach((d) => { map[d.id_disciplina] = d.disciplina_nome; });
+    return map;
+  }, [disciplinas]);
+
+  // ── 1️⃣ Buscar usuário → aluno → dados iniciais de uma só vez ────────────
   useEffect(() => {
-    const carregarIdentificacao = async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+    const init = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
       const { data: usuario } = await supabase
@@ -118,204 +126,133 @@ export default function AtividadesPage() {
         .eq("auth_user_id", user.id)
         .maybeSingle();
 
-      setUsuarioId(usuario?.id_usuario);
+      if (!usuario?.id_usuario) return;
 
       const { data: aluno } = await supabase
         .from("alunos")
         .select("id_aluno")
-        .eq("id_usuario", usuario?.id_usuario)
+        .eq("id_usuario", usuario.id_usuario)
         .maybeSingle();
 
-      setAlunoId(aluno?.id_aluno);
-    };
+      if (!aluno?.id_aluno) return;
 
-    carregarIdentificacao();
-  }, []);
+      const id = aluno.id_aluno;
+      setAlunoId(id);
 
-  // 2️⃣ Buscar disciplinas únicas após saber o ID do aluno (para o filtro)
-  useEffect(() => {
-    if (!alunoId) return;
+      // Busca disciplinas + dados do painel em paralelo (economiza 2 round-trips)
+      const [discResult, atvResult, resResult, vidResult] = await Promise.all([
+        supabase
+          .from("vw_disciplinas_unicas_aluno")
+          .select("id_disciplina, disciplina_nome")
+          .eq("id_aluno", id),
 
-    const carregarDisciplinas = async () => {
-      const { data: disc } = await supabase
-        .from("vw_disciplinas_unicas_aluno")
-        .select("id_disciplina, disciplina_nome")
-        .eq("id_aluno", alunoId);
+        supabase
+          .from("vw_painel_atividades_geral")
+          .select("*")
+          .or(`id_aluno.eq.${id},id_aluno.is.null`),
 
-      setDisciplinas(disc || []);
-    };
+        supabase
+          .from("resumos")
+          .select("*, disciplinas(nome), progresso_resumos!left(status, lido_em)")
+          .eq("progresso_resumos.id_aluno", id),
 
-    carregarDisciplinas();
-  }, [alunoId]);
+        supabase
+          .from("vw_painel_videoaulas_geral")
+          .select("*")
+          .or(`id_aluno.eq.${id},id_aluno.is.null`),
+      ]);
 
-  // 3️⃣ Buscar dados do painel já filtrados por disciplina no banco
-  useEffect(() => {
-    if (!alunoId) return;
+      setDisciplinas(discResult.data || []);
 
-    const carregarPainelFiltrado = async () => {
-      setLoading(true);
-
-      // Busca atividades gerais (todas as atividades da disciplina, com ou sem progresso do aluno)
-      let queryAtv = supabase.from("vw_painel_atividades_geral").select("*");
-
-      // Busca todos os resumos da disciplina (independente de ter progresso ou não)
-      let queryRes = supabase.from("resumos").select(
-        `
-        *,
-        disciplinas(nome),
-        progresso_resumos!left(status, lido_em)
-      `,
-      );
-
-      // Busca videoaulas gerais (todas as videoaulas da disciplina, com ou sem progresso do aluno)
-      let queryVid = supabase.from("vw_painel_videoaulas_geral").select("*");
-
-      if (filtroDisciplina !== "todas") {
-        queryAtv = queryAtv.eq("id_disciplina", filtroDisciplina);
-        queryRes = queryRes.eq("id_disciplina", filtroDisciplina);
-        queryVid = queryVid.eq("id_disciplina", filtroDisciplina);
+      // Deduplicar atividades com Map (O(n)) em vez de findIndex (O(n²))
+      const atvMap = new Map<number, any>();
+      for (const curr of atvResult.data ?? []) {
+        const existing = atvMap.get(curr.id_atividade);
+        if (!existing || curr.id_aluno) {
+          atvMap.set(curr.id_atividade, curr);
+        }
       }
-
-      if (alunoId) {
-        queryRes = queryRes.eq("progresso_resumos.id_aluno", alunoId);
-      }
-
-      // Garante que vemos o progresso do aluno logado ou registros sem aluno (pendentes)
-      queryAtv = queryAtv.or(`id_aluno.eq.${alunoId},id_aluno.is.null`);
-      queryVid = queryVid.or(`id_aluno.eq.${alunoId},id_aluno.is.null`);
-
-      const [atv, res, vid] = await Promise.all([queryAtv, queryRes, queryVid]);
-
-      const atividadesProcessadas = atv.data?.reduce(
-        (acc: any[], curr: any) => {
-          const index = acc.findIndex(
-            (item: any) => item.id_atividade === curr.id_atividade,
-          );
-
-          if (index === -1) {
-            acc.push(curr);
-          } else if (curr.id_aluno) {
-            // Prioriza o registro que já tem progresso do aluno
-            acc[index] = curr;
-          }
-
-          return acc;
-        },
-        [] as any[],
-      );
-
-      setAtividades(atividadesProcessadas || []);
-      setResumos(res.data || []);
-      setVideoaulas(vid.data || []);
+      setAtividades(Array.from(atvMap.values()));
+      setResumos(resResult.data || []);
+      setVideoaulas(vidResult.data || []);
       setLoading(false);
     };
 
-    carregarPainelFiltrado();
-  }, [alunoId, filtroDisciplina]);
+    init();
+  }, []); // ← roda só uma vez; filtros são aplicados no client
 
-  // 4️⃣ Estatísticas superiores (totais da disciplina x progresso do aluno)
+  // ── Estatísticas (memo) ───────────────────────────────────────────────────
   const estatisticas = useMemo(() => {
-    const totalAtividadesBD = atividades.length;
-    const totalResumosBD = resumos.length;
-    const totalVideosBD = videoaulas.length;
+    const concluidas = atividades.filter((a) =>
+      STATUS_CONCLUIDO_ATV.has(a.status_progresso ?? a.status)
+    ).length;
 
-    const pendentes = atividades.filter((a) => a.status === "pendente").length;
-
-    const moedasPendentes = atividades
-      .filter((a) => a.status === "pendente")
-      .reduce((total, a) => total + (a.recompensa_moedas ?? 0), 0);
-
-    const concluidas = atividades.filter((a) => a.status === "concluida")
-      .length;
-
-    const resumosLidos = resumos.filter((r) => {
-      const status = r.progresso_resumos?.[0]?.status;
-      return status === "lido";
-    }).length;
+    const resumosLidos = resumos.filter(
+      (r) => r.progresso_resumos?.[0]?.status === "lido"
+    ).length;
 
     return {
-      atividadesPendentes: pendentes,
       atividadesConcluidas: concluidas,
+      atividadesPendentes: atividades.length - concluidas,
       resumosLidos,
       resumosTotal: resumos.length,
-      totalResumos: resumos.length,
       totalVideoaulas: videoaulas.length,
-      moedasPendentes,
       totalAtividades: atividades.length,
     };
   }, [atividades, resumos, videoaulas]);
 
-  const formatarPrazo = (prazo: string | null) => {
-    if (!prazo)
-      return { texto: "Sem prazo", cor: "text-gray-500", bgCor: "bg-gray-50" };
+  // ── Listas filtradas (memo, só recalcula quando deps mudam) ──────────────
+  const atividadesFiltradas = useMemo(() => {
+    return atividades.filter((a) => {
+      const statusAtual = a.status_progresso ?? a.status ?? "pendente";
+      const isConcluido = STATUS_CONCLUIDO_ATV.has(statusAtual);
+      const sMatch =
+        filtroStatus === "todos" ||
+        (filtroStatus === "concluido" ? isConcluido : !isConcluido);
+      const dMatch =
+        filtroDisciplina === "todas" ||
+        Number(a.id_disciplina) === Number(filtroDisciplina);
+      return sMatch && dMatch;
+    });
+  }, [atividades, filtroStatus, filtroDisciplina]);
 
-    const data = new Date(prazo);
-    const hoje = new Date();
-    const diffTime = data.getTime() - hoje.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  const resumosFiltrados = useMemo(() => {
+    return resumos.filter((r) => {
+      const statusResumo =
+        r.progresso_resumos?.length > 0
+          ? r.progresso_resumos[0]?.status
+          : "pendente";
+      const isConcluido = STATUS_CONCLUIDO_RES.has(statusResumo);
+      const sMatch =
+        filtroStatus === "todos" ||
+        (filtroStatus === "concluido" ? isConcluido : !isConcluido);
+      const dMatch =
+        filtroDisciplina === "todas" ||
+        r.id_disciplina?.toString() === filtroDisciplina.toString();
+      return sMatch && dMatch;
+    });
+  }, [resumos, filtroStatus, filtroDisciplina]);
 
-    if (diffDays < 0)
-      return { texto: "Atrasado", cor: "text-red-600", bgCor: "bg-red-50" };
-    if (diffDays === 0)
-      return { texto: "Hoje", cor: "text-orange-600", bgCor: "bg-orange-50" };
-    if (diffDays === 1)
-      return { texto: "Amanhã", cor: "text-yellow-600", bgCor: "bg-yellow-50" };
+  const videoaulasFiltradas = useMemo(() => {
+    return videoaulas.filter((v) => {
+      const statusVideo = v.status_progresso ?? "pendente";
+      const isConcluido = STATUS_CONCLUIDO_VID.has(statusVideo);
+      const sMatch =
+        filtroStatus === "todos" ||
+        (filtroStatus === "concluido" ? isConcluido : !isConcluido);
+      const dMatch =
+        filtroDisciplina === "todas" ||
+        v.id_disciplina?.toString() === filtroDisciplina.toString();
+      return sMatch && dMatch;
+    });
+  }, [videoaulas, filtroStatus, filtroDisciplina]);
 
-    return {
-      texto: `${diffDays} dias`,
-      cor: "text-green-600",
-      bgCor: "bg-green-50",
-    };
-  };
+  const limparFiltros = useCallback(() => {
+    setFiltroStatus("todos");
+    setFiltroDisciplina("todas");
+  }, []);
 
-  const getDisciplinaCor = (disciplinaId: number) => {
-    const disciplina = disciplinas.find(
-      (d) => d.id_disciplina === disciplinaId,
-    );
-
-    const nome = disciplina?.disciplina_nome?.toLowerCase();
-
-    if (!nome) return coresByDisciplina.mat;
-
-    if (nome.includes("mat")) return coresByDisciplina.mat;
-    if (nome.includes("port")) return coresByDisciplina.port;
-    if (nome.includes("hist")) return coresByDisciplina.hist;
-    if (nome.includes("geo")) return coresByDisciplina.geo;
-    if (nome.includes("bio")) return coresByDisciplina.bio;
-    if (nome.includes("fis")) return coresByDisciplina.fis;
-
-    return coresByDisciplina.mat;
-  };
-
-  const getDisciplinaIcon = (disciplinaId: number) => {
-    const disciplina = disciplinas.find(
-      (d) => d.id_disciplina === disciplinaId,
-    );
-
-    const nome = disciplina?.disciplina_nome?.toLowerCase();
-
-    if (!nome) return iconByDisciplina.mat;
-
-    if (nome.includes("mat")) return iconByDisciplina.mat;
-    if (nome.includes("port")) return iconByDisciplina.port;
-    if (nome.includes("hist")) return iconByDisciplina.hist;
-    if (nome.includes("geo")) return iconByDisciplina.geo;
-    if (nome.includes("bio")) return iconByDisciplina.bio;
-    if (nome.includes("fis")) return iconByDisciplina.fis;
-
-    return iconByDisciplina.mat;
-  };
-
-  const statusConcluidoVariants = [
-    "concluida",
-    "concluido",
-    "corrigido",
-    "entregue",
-    "enviado",
-    "lido",
-    "assistido",
-  ];
-
+  // ─────────────────────────────────────────────────────────────────────────
   if (loading) {
     return (
       <AlunoLayout>
@@ -324,6 +261,8 @@ export default function AtividadesPage() {
         </div>
       </AlunoLayout>
     );
+  }
+
   return (
     <AlunoLayout>
       <div className="space-y-6">
@@ -333,9 +272,7 @@ export default function AtividadesPage() {
             <Activity className="h-6 w-6 text-white" />
           </div>
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">
-              Painel de Desempenho
-            </h1>
+            <h1 className="text-3xl font-bold text-gray-900">Painel de Desempenho</h1>
           </div>
         </div>
 
@@ -373,10 +310,8 @@ export default function AtividadesPage() {
         <Card className="border border-gray-200">
           <CardContent className="p-4">
             <div className="flex flex-wrap gap-4 items-center">
-                <div className="flex items-center gap-2">
-                <label className="text-sm font-medium text-gray-700">
-                  Status:
-                </label>
+              <div className="flex items-center gap-2">
+                <label className="text-sm font-medium text-gray-700">Status:</label>
                 <select
                   value={filtroStatus}
                   onChange={(e) => setFiltroStatus(e.target.value as any)}
@@ -389,16 +324,13 @@ export default function AtividadesPage() {
               </div>
 
               <div className="flex items-center gap-2">
-                <label className="text-sm font-medium text-gray-700">
-                  Disciplina:
-                </label>
+                <label className="text-sm font-medium text-gray-700">Disciplina:</label>
                 <select
                   value={filtroDisciplina}
                   onChange={(e) => setFiltroDisciplina(e.target.value)}
                   className="px-3 py-1 border border-gray-300 rounded-md text-sm bg-white"
                 >
                   <option value="todas">Todas</option>
-
                   {disciplinas.map((d) => (
                     <option key={d.id_disciplina} value={d.id_disciplina}>
                       {d.disciplina_nome}
@@ -408,10 +340,7 @@ export default function AtividadesPage() {
               </div>
 
               <button
-                onClick={() => {
-                  setFiltroStatus("todos");
-                  setFiltroDisciplina("todas");
-                }}
+                onClick={limparFiltros}
                 className="px-3 py-1 text-sm text-gray-600 hover:text-gray-800 underline"
               >
                 Limpar filtros
@@ -444,75 +373,48 @@ export default function AtividadesPage() {
 
         {/* Conteúdo das Abas */}
         <div className="space-y-4">
+
           {/* ABA ATIVIDADES */}
           {activeTab === "atividades" && (
             <div className="grid gap-4">
-                  {atividades
-                .filter((a) => {
-                  const statusConcluidoVariants = [
-                    "concluida",
-                    "concluido",
-                    "corrigido",
-                    "entregue",
-                    "enviado",
-                  ];
-
-                  const sMatch =
-                    filtroStatus === "todos" ||
-                    (filtroStatus === "concluido"
-                      ? statusConcluidoVariants.includes(a.status)
-                      : a.status === filtroStatus);
-
-                  const dMatch =
-                    filtroDisciplina === "todas" ||
-                    Number(a.id_disciplina) === Number(filtroDisciplina);
-
-                  return sMatch && dMatch;
-                })
-                .map((a) => {
-                  const discId = a.id_disciplina;
-                  const discCor = getDisciplinaCor(discId);
-                  const DiscIcon = getDisciplinaIcon(discId);
-
+              {atividadesFiltradas.length === 0 ? (
+                <p className="text-center text-gray-500 py-10">
+                  Nenhuma atividade encontrada com os filtros selecionados
+                </p>
+              ) : (
+                atividadesFiltradas.map((a) => {
+                  const discNome = disciplinaMapaNome[a.id_disciplina];
+                  const discCor = resolverCorByNome(discNome ?? a.disciplina_nome);
+                  const DiscIcon = resolverIconByNome(discNome ?? a.disciplina_nome);
                   const prazoInfo = formatarPrazo(a.valido_ate);
-
                   const status = a.status_progresso ?? "pendente";
+                  const isConcluido = STATUS_CONCLUIDO_ATV.has(status);
 
                   return (
                     <Card
-                      key={a.id_progresso_atividade}
+                      key={a.id_progresso_atividade ?? a.id_atividade}
                       className="border border-gray-200 hover:shadow-lg transition-all duration-200"
                     >
                       <CardContent className="p-6">
                         <div className="flex items-start justify-between">
                           <div className="flex items-start gap-4 flex-1">
-                            {/* Ícone */}
-                            <div
-                              className={`p-3 rounded-lg bg-gradient-to-br ${discCor.grad}`}
-                            >
+                            <div className={`p-3 rounded-lg bg-gradient-to-br ${discCor.grad}`}>
                               <DiscIcon className="h-5 w-5 text-white" />
                             </div>
 
-                            {/* Conteúdo */}
                             <div className="flex-1">
                               <div className="flex items-center gap-2 mb-2">
-                                <span
-                                  className={`text-sm font-medium ${discCor.text}`}
-                                >
+                                <span className={`text-sm font-medium ${discCor.text}`}>
                                   {a.disciplina_nome}
                                 </span>
-
-                                {/* Status */}
                                 <span
                                   className={`px-2 py-1 text-xs font-medium rounded-full ${
-                                    status === "pendente"
-                                      ? "bg-red-100 text-red-700"
-                                      : a.status === "concluida"
-                                        ? "bg-green-100 text-green-700"
-                                        : "bg-blue-100 text-blue-700"
+                                    isConcluido
+                                      ? "bg-green-100 text-green-700"
+                                      : "bg-red-100 text-red-700"
                                   }`}
                                 >
-                                  {status === "pendente" ? "Pendente" : status}
+                                  {isConcluido ? status : "Pendente"}
                                 </span>
                               </div>
 
@@ -523,11 +425,8 @@ export default function AtividadesPage() {
                               <div className="flex items-center gap-4 text-sm text-gray-600">
                                 <div className="flex items-center gap-1">
                                   <Clock className="h-4 w-4" />
-                                  <span className={prazoInfo.cor}>
-                                    {prazoInfo.texto}
-                                  </span>
+                                  <span className={prazoInfo.cor}>{prazoInfo.texto}</span>
                                 </div>
-
                                 <div className="flex items-center gap-1">
                                   <Award className="h-4 w-4 text-amber-500" />
                                   <span>{a.recompensa_moedas} moedas</span>
@@ -537,9 +436,7 @@ export default function AtividadesPage() {
                           </div>
 
                           <button
-                            onClick={() =>
-                              router.push(`/aluno/disciplinas/${discId}`)
-                            }
+                            onClick={() => router.push(`/aluno/disciplinas/${a.id_disciplina}`)}
                             className="px-4 py-2 rounded-lg bg-purple-600 text-white hover:bg-purple-700 transition-all"
                           >
                             Abrir
@@ -548,67 +445,45 @@ export default function AtividadesPage() {
                       </CardContent>
                     </Card>
                   );
-                })}
+                })
+              )}
             </div>
           )}
 
           {/* ABA RESUMOS */}
           {activeTab === "resumos" && (
             <div className="grid gap-4">
-              {resumos.length === 0 && (
+              {resumosFiltrados.length === 0 ? (
                 <p className="text-center text-gray-500 py-10">
-                  Nenhum resumo disponível
+                  Nenhum resumo encontrado com os filtros selecionados
                 </p>
-              )}
+              ) : (
+                resumosFiltrados.map((r) => {
+                  const discNome = disciplinaMapaNome[r.id_disciplina] ?? r.disciplinas?.nome;
+                  const discCor = resolverCorByNome(discNome);
+                  const DiscIcon = resolverIconByNome(discNome);
+                  const statusResumo =
+                    r.progresso_resumos?.length > 0
+                      ? r.progresso_resumos[0]?.status
+                      : null;
+                  const isLido = statusResumo === "lido";
 
-              {resumos
-                .filter((r) => {
-                  const sMatch =
-                    filtroStatus === "todos" ||
-                    (filtroStatus === "concluido"
-                      ? statusConcluidoVariants.includes(r.status)
-                      : r.status === filtroStatus);
+                  return (
+                    <Card
+                      key={r.id_resumo}
+                      className="border border-gray-200 hover:shadow-lg transition"
+                    >
+                      <CardContent className="p-6">
+                        <div className="flex items-start gap-4">
+                          <div className={`p-3 rounded-lg bg-gradient-to-br ${discCor.grad}`}>
+                            <DiscIcon className="h-5 w-5 text-white" />
+                          </div>
 
-                  const dMatch =
-                    filtroDisciplina === "todas" ||
-                    r.resumos.id_disciplina.toString() ===
-                      filtroDisciplina.toString();
-
-                  return sMatch && dMatch;
-                })
-                .map((r) => {
-                const discId = r.resumos.id_disciplina;
-                const DiscIcon = getDisciplinaIcon(discId);
-                const discCor = getDisciplinaCor(discId);
-
-                const statusResumo =
-                  r.progresso_resumos && r.progresso_resumos.length > 0
-                    ? r.progresso_resumos[0]?.status
-                    : null;
-
-                const isLido = statusResumo === "lido";
-
-                return (
-                  <Card
-                    key={r.id_resumo}
-                    className="border border-gray-200 hover:shadow-lg transition"
-                  >
-                    <CardContent className="p-6">
-                      <div className="flex items-start gap-4">
-                        <div
-                          className={`p-3 rounded-lg bg-gradient-to-br ${discCor.grad}`}
-                        >
-                          <DiscIcon className="h-5 w-5 text-white" />
-                        </div>
-
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
-                            <p
-                              className={`text-sm font-medium ${discCor.text}`}
-                            >
-                              {r.disciplinas?.nome}
-                            </p>
-                            {statusResumo && (
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-1">
+                              <p className={`text-sm font-medium ${discCor.text}`}>
+                                {r.disciplinas?.nome ?? discNome}
+                              </p>
                               <span
                                 className={`px-2 py-0.5 text-[11px] font-medium rounded-full ${
                                   isLido
@@ -618,95 +493,66 @@ export default function AtividadesPage() {
                               >
                                 {isLido ? "Lido" : "Pendente"}
                               </span>
-                            )}
+                            </div>
+
+                            <h3 className="text-lg font-semibold">{r.titulo}</h3>
+                            <p className="text-sm text-gray-600 line-clamp-2">{r.conteudo}</p>
                           </div>
 
-                          <h3 className="text-lg font-semibold">{r.titulo}</h3>
-
-                          <p className="text-sm text-gray-600 line-clamp-2">
-                            {r.conteudo}
-                          </p>
+                          <button
+                            onClick={() => router.push(`/aluno/disciplinas/${r.id_disciplina}/resumos`)}
+                            className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg"
+                          >
+                            Ver
+                          </button>
                         </div>
-
-                        <button
-                          onClick={() =>
-                            router.push(`/aluno/disciplinas/${discId}/resumos`)
-                          }
-                          className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg"
-                        >
-                          Ver
-                        </button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                );
-              })}
+                      </CardContent>
+                    </Card>
+                  );
+                })
+              )}
             </div>
           )}
 
           {/* ABA VIDEOAULAS */}
           {activeTab === "videoaulas" && (
             <div className="grid gap-4">
-              {videoaulas.length === 0 && (
+              {videoaulasFiltradas.length === 0 ? (
                 <p className="text-center text-gray-500 py-10">
-                  Nenhuma videoaula disponível para esta disciplina
+                  Nenhuma videoaula encontrada com os filtros selecionados
                 </p>
-              )}
-
-              {videoaulas
-                .filter((v) => {
-                  const sMatch =
-                    filtroStatus === "todos" ||
-                    (filtroStatus === "concluido"
-                      ? statusConcluidoVariants.includes(v.status)
-                      : v.status === filtroStatus);
-
-                  const dMatch =
-                    filtroDisciplina === "todas" ||
-                    v.videoaulas.id_disciplina.toString() ===
-                      filtroDisciplina.toString();
-
-                  return sMatch && dMatch;
-                })
-                .map((v) => {
-                  const discId = v.videoaulas.id_disciplina;
-                  const DiscIcon = getDisciplinaIcon(discId);
-                  const discCor = getDisciplinaCor(discId);
+              ) : (
+                videoaulasFiltradas.map((v) => {
+                  const discNome =
+                    disciplinaMapaNome[v.id_disciplina] ??
+                    v.videoaulas?.disciplinas?.nome;
+                  const discCor = resolverCorByNome(discNome);
+                  const DiscIcon = resolverIconByNome(discNome);
 
                   return (
                     <Card
-                      key={v.videoaulas.id_videoaula}
+                      key={v.videoaulas?.id_videoaula ?? v.id_videoaula}
                       className="border border-gray-200 hover:shadow-lg transition"
                     >
                       <CardContent className="p-6">
                         <div className="flex items-start gap-4">
-                          <div
-                            className={`p-3 rounded-lg bg-gradient-to-br ${discCor.grad}`}
-                          >
+                          <div className={`p-3 rounded-lg bg-gradient-to-br ${discCor.grad}`}>
                             <DiscIcon className="h-5 w-5 text-white" />
                           </div>
 
                           <div className="flex-1">
-                            <p
-                              className={`text-sm font-medium ${discCor.text}`}
-                            >
-                              {v.videoaulas.disciplinas.nome}
+                            <p className={`text-sm font-medium ${discCor.text}`}>
+                              {v.videoaulas?.disciplinas?.nome ?? discNome}
                             </p>
-
-                            <h3 className="text-lg font-semibold">
-                              {v.videoaulas.titulo}
-                            </h3>
-
+                            <h3 className="text-lg font-semibold">{v.videoaulas?.titulo}</h3>
                             <p className="text-sm text-gray-600 line-clamp-2">
-                              {v.videoaulas.descricao}
+                              {v.videoaulas?.descricao}
                             </p>
                           </div>
 
                           <button
                             onClick={() =>
-                              router.push(
-                                `/aluno/disciplinas/${discId}/videoaulas`,
-                              )
+                              router.push(`/aluno/disciplinas/${v.id_disciplina}/videoaulas`)
                             }
                             className="px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg text-white"
                           >
@@ -716,7 +562,8 @@ export default function AtividadesPage() {
                       </CardContent>
                     </Card>
                   );
-                })}
+                })
+              )}
             </div>
           )}
         </div>
@@ -724,6 +571,3 @@ export default function AtividadesPage() {
     </AlunoLayout>
   );
 }
-
-}
-
