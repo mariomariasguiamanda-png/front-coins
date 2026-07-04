@@ -1,18 +1,28 @@
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
 import * as bcrypt from 'bcryptjs';
 import * as jwt from 'jsonwebtoken';
+import { randomBytes, createHash } from 'crypto';
 import { DatabaseService } from '../database/database.service';
+import { MailService } from '../common/mail/mail.service';
 import type { AuthUser } from '../common/types/auth-user';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
+import { EsqueciSenhaDto } from './dto/esqueci-senha.dto';
+import { RedefinirSenhaDto } from './dto/redefinir-senha.dto';
+
+const RESET_TOKEN_VALIDADE_MS = 60 * 60 * 1000; // 1 hora
 
 @Injectable()
 export class AuthService {
-  constructor(private db: DatabaseService) {}
+  constructor(
+    private db: DatabaseService,
+    private mailService: MailService,
+  ) {}
 
   private signToken(payload: AuthUser): string {
     return jwt.sign(payload, process.env.JWT_SECRET as string, {
@@ -126,5 +136,61 @@ export class AuthService {
       tipo_usuario: user.tipo_usuario,
       foto_url: user.alunos?.foto_url ?? null,
     };
+  }
+
+  async esqueciSenha(dto: EsqueciSenhaDto) {
+    const user = await this.db.usuarios.findUnique({ where: { email: dto.email } });
+
+    // Mensagem genérica sempre, para não revelar se o e-mail existe na base.
+    const mensagemGenerica = {
+      message: 'Se o e-mail existir, um link de redefinição foi enviado.',
+    };
+
+    if (!user) return mensagemGenerica;
+
+    const token = randomBytes(32).toString('hex');
+    const tokenHash = createHash('sha256').update(token).digest('hex');
+
+    await this.db.usuarios.update({
+      where: { id_usuario: user.id_usuario },
+      data: {
+        reset_token_hash: tokenHash,
+        reset_token_expira_em: new Date(Date.now() + RESET_TOKEN_VALIDADE_MS),
+      },
+    });
+
+    const frontendUrl = process.env.FRONTEND_URL?.split(',')[0] ?? 'http://localhost:3000';
+    const resetUrl = `${frontendUrl}/redefinir-senha?token=${token}`;
+    await this.mailService.sendPasswordReset(user.email, resetUrl);
+
+    return mensagemGenerica;
+  }
+
+  async redefinirSenha(dto: RedefinirSenhaDto) {
+    const tokenHash = createHash('sha256').update(dto.token).digest('hex');
+
+    const user = await this.db.usuarios.findFirst({
+      where: {
+        reset_token_hash: tokenHash,
+        reset_token_expira_em: { gt: new Date() },
+      },
+    });
+
+    if (!user) {
+      throw new BadRequestException('Token inválido ou expirado');
+    }
+
+    const hash = await bcrypt.hash(dto.nova_senha, 10);
+
+    await this.db.usuarios.update({
+      where: { id_usuario: user.id_usuario },
+      data: {
+        senha_hash: hash,
+        reset_token_hash: null,
+        reset_token_expira_em: null,
+      },
+    });
+
+    return { message: 'Senha redefinida com sucesso' };
   }
 }

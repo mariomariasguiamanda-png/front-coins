@@ -5,6 +5,8 @@ import { CurrentUser } from '../common/decorators/current-user.decorator';
 import type { AuthUser } from '../common/types/auth-user';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
+import { EsqueciSenhaDto } from './dto/esqueci-senha.dto';
+import { RedefinirSenhaDto } from './dto/redefinir-senha.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -24,5 +26,15 @@ export class AuthController {
   @UseGuards(JwtGuard)
   getMe(@CurrentUser() user: AuthUser) {
     return this.authService.getMe(user);
+  }
+
+  @Post('esqueci-senha')
+  esqueciSenha(@Body() body: EsqueciSenhaDto) {
+    return this.authService.esqueciSenha(body);
+  }
+
+  @Post('redefinir-senha')
+  redefinirSenha(@Body() body: RedefinirSenhaDto) {
+    return this.authService.redefinirSenha(body);
   }
 }
