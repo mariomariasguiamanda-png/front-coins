@@ -178,6 +178,7 @@ export class AtividadesService {
       status: a.aluno_atividade[0]?.status ?? 'pendente',
       nota: a.aluno_atividade[0]?.nota ?? null,
       feedback: a.aluno_atividade[0]?.feedback ?? null,
+      data_entrega: a.aluno_atividade[0]?.data_entrega ?? null,
       aluno_atividade: undefined,
     }));
   }
