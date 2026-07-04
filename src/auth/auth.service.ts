@@ -126,8 +126,8 @@ export class AuthService {
     const user = await this.db.usuarios.findUnique({
       where: { id_usuario: authUser.sub },
       include: {
-        alunos: { select: { foto_url: true } },
-        professores: { select: { foto_url: true } },
+        alunos: { select: { id_aluno: true, foto_url: true } },
+        professores: { select: { id_professor: true, foto_url: true } },
       },
     });
     if (!user) throw new UnauthorizedException('Usuário não encontrado');
@@ -138,6 +138,8 @@ export class AuthService {
       email: user.email,
       tipo_usuario: user.tipo_usuario,
       foto_url: user.alunos?.foto_url ?? user.professores?.foto_url ?? null,
+      id_aluno: user.alunos ? Number(user.alunos.id_aluno) : null,
+      id_professor: user.professores ? Number(user.professores.id_professor) : null,
     };
   }
 
@@ -163,7 +165,7 @@ export class AuthService {
     });
 
     const frontendUrl = process.env.FRONTEND_URL?.split(',')[0] ?? 'http://localhost:3000';
-    const resetUrl = `${frontendUrl}/redefinir-senha?token=${token}`;
+    const resetUrl = `${frontendUrl}/atualizar-senha?token=${token}`;
     await this.mailService.sendPasswordReset(user.email, resetUrl);
 
     return mensagemGenerica;
