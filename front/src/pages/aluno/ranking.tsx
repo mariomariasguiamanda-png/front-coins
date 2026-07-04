@@ -12,11 +12,9 @@ import {
   ChevronUp,
   Users,
 } from "lucide-react";
-import { supabase } from "@/lib/supabaseClient";
+import { api, resolveMediaUrl } from "@/lib/api";
 
 type RankingAluno = {
-  id_turma: number;
-  nome_turma: string;
   id_aluno: number;
   nome_aluno: string;
   total_moedas_ganhas: number;
@@ -29,6 +27,7 @@ export default function RankingPage() {
   const [showFullRanking, setShowFullRanking] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [ranking, setRanking] = useState<RankingAlunoWithPos[]>([]);
+  const [meuIdAluno, setMeuIdAluno] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -44,25 +43,31 @@ export default function RankingPage() {
         setLoading(true);
         setError(null);
 
-        // TODO: substituir pelo id da turma do aluno logado
-        const idTurma = 1;
+        // Turma e id do próprio aluno vêm do perfil/sessão - não é mais hardcoded
+        const [me, perfil] = await Promise.all([
+          api.get("/auth/me"),
+          api.get("/aluno/perfil"),
+        ]);
 
-        const { data, error } = await supabase
-          .from("vw_ranking_moedas_turma")
-          .select(
-            "id_turma, nome_turma, id_aluno, nome_aluno, total_moedas_ganhas, foto_url"
-          )
-          .eq("id_turma", idTurma)
-          .order("total_moedas_ganhas", { ascending: false });
+        setMeuIdAluno(me?.id_aluno ?? null);
 
-        if (error) throw error;
+        const idTurma = perfil?.turma?.id_turma;
+        if (!idTurma) {
+          setRanking([]);
+          return;
+        }
 
-        const rows = (data ?? []) as RankingAluno[];
+        const data = await api.get(`/aluno/moedas/ranking?turma=${idTurma}`);
 
-        const mapped: RankingAlunoWithPos[] = rows.map((row, index) => ({
-          ...row,
-          posicao: index + 1,
-        }));
+        const mapped: RankingAlunoWithPos[] = (data?.alunos ?? []).map(
+          (row: any) => ({
+            id_aluno: row.id_aluno,
+            nome_aluno: row.nome,
+            total_moedas_ganhas: row.saldo_total,
+            foto_url: row.foto_url,
+            posicao: row.posicao,
+          })
+        );
 
         setRanking(mapped);
       } catch (err) {
@@ -148,7 +153,7 @@ export default function RankingPage() {
 
             <div className="space-y-3">
               {displayedRanking.map((aluno, displayIndex) => {
-                const isCurrentUser = aluno.nome_aluno === "Ana Souza";
+                const isCurrentUser = aluno.id_aluno === meuIdAluno;
                 const actualPosition = aluno.posicao - 1; // Índice real baseado na posição
 
                 return (
@@ -185,7 +190,7 @@ export default function RankingPage() {
                       <div className="flex items-center gap-3">
                         {aluno.foto_url ? (
                           <img
-                            src={aluno.foto_url}
+                            src={resolveMediaUrl(aluno.foto_url) ?? undefined}
                             alt={aluno.nome_aluno}
                             className="w-10 h-10 rounded-full object-cover border border-gray-300 shadow-sm"
                           />

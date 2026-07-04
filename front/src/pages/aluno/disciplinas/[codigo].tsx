@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
-import { supabase } from "@/lib/supabaseClient";
+import { api } from "@/lib/api";
 import AlunoLayout from "@/components/layout/AlunoLayout";
 import Modal from "@/components/ui/Modal";
 import {
@@ -115,25 +115,14 @@ const DisciplinaDetalhePage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Progresso real
-  const [alunoId, setAlunoId] = useState<number | null>(null);
+  // Progresso real (já vem achatado em cada item de atividades/resumos/videoaulas,
+  // e os totais/meta vêm prontos de GET aluno/disciplinas)
   const [atividadesConcluidas, setAtividadesConcluidas] = useState(0);
   const [videosAssistidos, setVideosAssistidos] = useState(0);
   const [resumosLidos, setResumosLidos] = useState(0);
   // Moedas: meta total (atividades + videoaulas) e conquistadas (concluídas/assistidas)
   const [metaMoedas, setMetaMoedas] = useState<number>(0);
   const [moedasConquistadas, setMoedasConquistadas] = useState<number>(0);
-
-  // Mapas de progresso para usar no modal (status por item)
-  const [mapProgressoAtividades, setMapProgressoAtividades] = useState<
-    Record<number, string>
-  >({});
-  const [mapProgressoResumos, setMapProgressoResumos] = useState<
-    Record<number, string>
-  >({});
-  const [mapProgressoVideoaulas, setMapProgressoVideoaulas] = useState<
-    Record<number, { status: string | null; percentual: number | null }>
-  >({});
 
   // Modal "Ver todos..."
   const [modalTipo, setModalTipo] = useState<ModalTipo>(null);
@@ -150,68 +139,8 @@ const DisciplinaDetalhePage = () => {
     setModalTipo(null);
   };
 
-  // Busca o id_aluno a partir do usuário logado (Supabase Auth -> usuarios -> alunos)
-  const fetchAlunoId = async (): Promise<number | null> => {
-    try {
-      const {
-        data: { user },
-        error: userError,
-      } = await supabase.auth.getUser();
-
-      if (userError) {
-        console.error("Erro ao obter usuário autenticado:", userError);
-        return null;
-      }
-
-      if (!user || !user.id) {
-        console.warn("Nenhum usuário autenticado ou id ausente.");
-        return null;
-      }
-
-      // 1) Busca o usuário na tabela `usuarios` pelo auth_user_id
-      const { data: usuario, error: usuarioError } = await supabase
-        .from("usuarios")
-        .select("id_usuario")
-        .eq("auth_user_id", user.id)
-        .maybeSingle();
-
-      if (usuarioError) {
-        console.error("Erro ao buscar usuario em `usuarios`:", usuarioError);
-        return null;
-      }
-
-      if (!usuario) {
-        console.warn(
-          "Nenhum registro encontrado em `usuarios` para esse email.",
-        );
-        return null;
-      }
-
-      // 2) Busca o aluno correspondente em `alunos`
-      const { data: aluno, error: alunoError } = await supabase
-        .from("alunos")
-        .select("id_aluno")
-        .eq("id_usuario", usuario.id_usuario)
-        .maybeSingle();
-
-      if (alunoError) {
-        console.error("Erro ao buscar aluno em `alunos`:", alunoError);
-        return null;
-      }
-
-      if (!aluno) {
-        console.warn("Nenhum aluno associado a esse usuário.");
-        return null;
-      }
-
-      return aluno.id_aluno as number;
-    } catch (err) {
-      console.error("Erro inesperado ao obter id_aluno:", err);
-      return null;
-    }
-  };
-
-  // Carregar dados da disciplina + materiais + progresso
+  // Carregar dados da disciplina + materiais + progresso - a API já resolve
+  // id_aluno a partir do JWT, então basta filtrar tudo por disciplina.
   const loadDisciplinaData = async () => {
     if (!codigo) return;
 
@@ -219,190 +148,51 @@ const DisciplinaDetalhePage = () => {
       setLoading(true);
       setError(null);
 
-      const codigoStr = String(codigo); // ex: "mat"
-
-      // Garante que temos id_aluno em memória
-      let alunoIdLocal = alunoId;
-      if (!alunoIdLocal) {
-        alunoIdLocal = await fetchAlunoId();
-        if (alunoIdLocal) {
-          setAlunoId(alunoIdLocal);
-        }
-      }
-
-      // 1. Buscar disciplina (case-insensitive) pelo código ou pelo ID numérico
-      let disciplinaData;
-      let disciplinaError;
-
+      const codigoStr = String(codigo); // ex: "MAT" ou o id numérico
       const isNumeric = /^\d+$/.test(codigoStr);
 
-      if (isNumeric) {
-        const res = await supabase
-          .from("disciplinas")
-          .select("*")
-          .eq("id_disciplina", Number(codigoStr))
-          .maybeSingle();
-        disciplinaData = res.data;
-        disciplinaError = res.error;
-      } else {
-        const res = await supabase
-          .from("disciplinas")
-          .select("*")
-          .ilike("codigo", codigoStr)
-          .maybeSingle();
-        disciplinaData = res.data;
-        disciplinaError = res.error;
-      }
+      // 1. Resolver a disciplina (por código ou por id) na lista pública
+      const todasDisciplinas = await api.get("/disciplinas");
+      const disciplinaEncontrada = isNumeric
+        ? todasDisciplinas.find(
+            (d: any) => Number(d.id_disciplina) === Number(codigoStr),
+          )
+        : todasDisciplinas.find(
+            (d: any) =>
+              (d.codigo || "").toLowerCase() === codigoStr.toLowerCase(),
+          );
 
-      if (disciplinaError) {
-        throw new Error(disciplinaError.message);
-      }
-
-      if (!disciplinaData) {
+      if (!disciplinaEncontrada) {
         throw new Error("Disciplina não encontrada.");
       }
 
-      setDisciplina(disciplinaData);
+      setDisciplina(disciplinaEncontrada);
+      const idDisciplina = disciplinaEncontrada.id_disciplina;
 
-      // 2. Atividades da disciplina
-      const { data: atividadesData, error: atividadesError } = await supabase
-        .from("atividades")
-        .select("*")
-        .eq("id_disciplina", disciplinaData.id_disciplina);
-
-      if (atividadesError) {
-        throw new Error(atividadesError.message);
-      }
+      // 2. Materiais da disciplina (já filtrados e com status/progresso do aluno)
+      // + totais/meta que a antiga view dava, agora vindos de GET aluno/disciplinas
+      const [minhasDisciplinas, atividadesData, resumosData, videoaulasData] =
+        await Promise.all([
+          api.get("/aluno/disciplinas"),
+          api.get(`/aluno/atividades?disciplina=${idDisciplina}`),
+          api.get(`/aluno/resumos?disciplina=${idDisciplina}`),
+          api.get(`/aluno/videoaulas?disciplina=${idDisciplina}`),
+        ]);
 
       setAtividades(atividadesData || []);
-
-      // 2.1 Progresso das atividades para o aluno logado
-      if (alunoIdLocal && (atividadesData || []).length > 0) {
-        const idsAtividades = (atividadesData || []).map(
-          (a: any) => a.id_atividade,
-        );
-
-        const { data: progressoData, error: progressoError } = await supabase
-          .from("progresso_atividades")
-          .select("id_atividade, status")
-          .eq("id_aluno", alunoIdLocal)
-          .in("id_atividade", idsAtividades);
-
-        if (progressoError) {
-          throw new Error(progressoError.message);
-        }
-
-        const map: Record<number, string> = {};
-        (progressoData || []).forEach((p: any) => {
-          map[p.id_atividade] = p.status;
-        });
-        setMapProgressoAtividades(map);
-      } else {
-        setMapProgressoAtividades({});
-      }
-
-      // 3. Resumos
-      const { data: resumosData, error: resumosError } = await supabase
-        .from("resumos")
-        .select("*")
-        .eq("id_disciplina", disciplinaData.id_disciplina);
-
-      if (resumosError) {
-        throw new Error(resumosError.message);
-      }
-
       setResumos(resumosData || []);
-
-      // 3.1 Progresso de resumos para o aluno logado
-      if (alunoIdLocal && (resumosData || []).length > 0) {
-        const idsResumos = (resumosData || []).map((r: any) => r.id_resumo);
-
-        const { data: progressoResumos, error: progressoResumosError } =
-          await supabase
-            .from("progresso_resumos")
-            .select("id_resumo, status, lido_em")
-            .eq("id_aluno", alunoIdLocal)
-            .in("id_resumo", idsResumos);
-
-        if (progressoResumosError) {
-          throw new Error(progressoResumosError.message);
-        }
-
-        const lidos = (progressoResumos || []).filter(
-          (pr: any) => pr.status === "lido",
-        ).length;
-
-        setResumosLidos(lidos);
-
-        const map: Record<number, string> = {};
-        (progressoResumos || []).forEach((p: any) => {
-          map[p.id_resumo] = p.status;
-        });
-        setMapProgressoResumos(map);
-      } else {
-        setResumosLidos(0);
-        setMapProgressoResumos({});
-      }
-
-      // 4. Videoaulas
-      const { data: videoaulasData, error: videoaulasError } = await supabase
-        .from("videoaulas")
-        .select("*")
-        .eq("id_disciplina", disciplinaData.id_disciplina);
-
-      if (videoaulasError) {
-        throw new Error(videoaulasError.message);
-      }
-
       setVideoaulas(videoaulasData || []);
 
-      // 4.1 Progresso das videoaulas para o aluno logado
-      if (alunoIdLocal && (videoaulasData || []).length > 0) {
-        const idsVideoaulas = (videoaulasData || []).map(
-          (v: any) => v.id_videoaula,
-        );
+      const statsDisciplina = (minhasDisciplinas || []).find(
+        (d: any) => Number(d.id_disciplina) === Number(idDisciplina),
+      );
 
-        const { data: progressoVideos, error: progressoVideosError } =
-          await supabase
-            .from("progresso_videoaulas")
-            .select("id_videoaula, status, percentual_assistido")
-            .eq("id_aluno", alunoIdLocal)
-            .in("id_videoaula", idsVideoaulas);
-
-        if (progressoVideosError) {
-          throw new Error(progressoVideosError.message);
-        }
-
-        const map: Record<
-          number,
-          { status: string | null; percentual: number | null }
-        > = {};
-        (progressoVideos || []).forEach((pv: any) => {
-          map[pv.id_videoaula] = {
-            status: pv.status,
-            percentual: pv.percentual_assistido,
-          };
-        });
-        setMapProgressoVideoaulas(map);
-      } else {
-        setMapProgressoVideoaulas({});
-      }
-
-      // ===== Lógica simplificada de moedas/progresso via view agregada =====
-      if (alunoIdLocal) {
-        const { data: stats, error: statsError } = await supabase
-          .from("vw_detalhe_disciplina_aluno")
-          .select("*")
-          .eq("id_disciplina", disciplinaData.id_disciplina)
-          .eq("id_aluno", alunoIdLocal)
-          .single();
-
-        if (!statsError && stats) {
-          setMetaMoedas(stats.meta_moedas ?? 0);
-          setMoedasConquistadas(stats.moedas_conquistadas ?? 0);
-          setAtividadesConcluidas(stats.atividades_concluidas ?? 0);
-          setVideosAssistidos(stats.videos_assistidos ?? 0);
-        }
+      if (statsDisciplina) {
+        setMetaMoedas(statsDisciplina.moedas_totais_disciplina ?? 0);
+        setMoedasConquistadas(statsDisciplina.moedas_conquistadas ?? 0);
+        setAtividadesConcluidas(statsDisciplina.atividades_concluidas ?? 0);
+        setVideosAssistidos(statsDisciplina.videoaulas_assistidas ?? 0);
+        setResumosLidos(statsDisciplina.resumos_lidos ?? 0);
       }
     } catch (err: any) {
       setError(err.message || "Erro ao carregar os dados da disciplina");
@@ -486,11 +276,11 @@ const DisciplinaDetalhePage = () => {
     }
 
     if (tipo === "atividades") {
-      const status = mapProgressoAtividades[item.id_atividade] ?? "pendente";
+      const status = item.status ?? "pendente";
 
-      if (status === "concluida") {
+      if (status === "entregue" || status === "corrigida") {
         return {
-          label: "Concluída",
+          label: status === "corrigida" ? "Corrigida" : "Concluída",
           isConcluido: true,
           className:
             "inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-emerald-50 text-emerald-700",
@@ -506,7 +296,7 @@ const DisciplinaDetalhePage = () => {
     }
 
     if (tipo === "resumos") {
-      const status = mapProgressoResumos[item.id_resumo] ?? "pendente";
+      const status = item.status ?? "pendente";
 
       if (status === "lido") {
         return {
@@ -526,9 +316,8 @@ const DisciplinaDetalhePage = () => {
     }
 
     // videoaulas
-    const prog = mapProgressoVideoaulas[item.id_videoaula];
-    const status = prog?.status ?? "pendente";
-    const percentual = prog?.percentual ?? 0;
+    const status = item.status ?? "pendente";
+    const percentual = item.percentual_assistido ?? 0;
 
     const concluida =
       status === "assistida" ||
@@ -969,7 +758,7 @@ const DisciplinaDetalhePage = () => {
                         </div>
                         <p className="text-xs text-gray-600 mt-1 line-clamp-2">
                           {modalTipo === "videoaulas"
-                            ? item.url
+                            ? item.url_video
                             : item.descricao || item.conteudo || ""}
                         </p>
 

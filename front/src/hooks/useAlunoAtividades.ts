@@ -16,11 +16,11 @@ export function useAlunoAtividades() {
       try {
         setLoading(true);
         
-        // 1. Buscar o ID do aluno baseado no user.id (UUID)
+        // 1. Buscar o ID do aluno baseado no id_usuario logado
         const { data: aluno, error: alunoError } = await supabase
           .from('alunos')
           .select('id_aluno')
-          .eq('user_id', user.id)
+          .eq('id_usuario', user.id_usuario)
           .single();
 
         if (alunoError) throw alunoError;

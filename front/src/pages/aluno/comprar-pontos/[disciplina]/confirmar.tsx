@@ -19,7 +19,7 @@ import {
   Globe2,
   Flame,
 } from "lucide-react";
-import { supabase } from "@/lib/supabaseClient";
+import { api } from "@/lib/api";
 
 // Dados das disciplinas (visual + idDisciplina para a RPC comprar_pontos)
 const disciplinasData = {
@@ -99,7 +99,7 @@ const disciplinasData = {
 
 type ConfigDisciplina = {
   id_disciplina: number;
-  codigo_disciplina: string;
+  codigo: string;
 };
 
 export default function ConfirmarCompra() {
@@ -124,65 +124,47 @@ export default function ConfirmarCompra() {
     setMounted(true);
   }, []);
 
-  // Carrega saldo total via get_total_moedas_aluno (mesma função do código que você mandou)
+  // Carrega saldo total (soma dos saldos por disciplina, mesma fonte da listagem)
   useEffect(() => {
     if (!mounted) return;
 
     const carregarSaldoTotal = async () => {
-      const { data, error } = await supabase.rpc("get_total_moedas_aluno");
-
-      if (error) {
-        console.error("Erro ao buscar saldo total (confirmar):", error);
-        setSaldoAtual(0);
-        setCarregandoSaldo(false);
-        return;
-      }
-
-      let valor = 0;
-      if (typeof data === "number") {
-        valor = data;
-      } else if (Array.isArray(data)) {
-        valor = data.reduce(
-          (acc, item) => acc + (typeof item === "number" ? item : 0),
+      try {
+        const data = await api.get("/aluno/moedas/saldo");
+        const valor = (data?.disciplinas ?? []).reduce(
+          (acc: number, d: any) => acc + (d.saldo ?? 0),
           0
         );
-      } else if (data && typeof data === "object") {
-        const maybeTotal = (data as any).total;
-        if (typeof maybeTotal === "number") {
-          valor = maybeTotal;
-        }
+        setSaldoAtual(valor);
+      } catch (err) {
+        console.error("Erro ao buscar saldo total (confirmar):", err);
+        setSaldoAtual(0);
+      } finally {
+        setCarregandoSaldo(false);
       }
-
-      setSaldoAtual(valor);
-      setCarregandoSaldo(false);
     };
 
     carregarSaldoTotal();
   }, [mounted]);
 
-  // Busca o id da disciplina via RPC para não depender do mapa local
+  // Busca o id da disciplina via config-precos para não depender do mapa local
   useEffect(() => {
     if (!mounted || typeof disciplina !== "string") return;
 
     const carregarIdDisciplina = async () => {
-      const { data, error } = await supabase.rpc(
-        "get_config_compra_pontos_por_aluno"
-      );
+      try {
+        const data = await api.get("/aluno/moedas/config-precos");
+        const listaCfg = (data?.disciplinas ?? []) as ConfigDisciplina[];
+        const itemCfg = listaCfg.find(
+          (cfg) => cfg.codigo.toLowerCase() === disciplina.toLowerCase()
+        );
 
-      if (error) {
-        console.error("Erro ao buscar id da disciplina (confirmar):", error);
+        setIdDisciplinaConfig(itemCfg?.id_disciplina ?? null);
+      } catch (err) {
+        console.error("Erro ao buscar id da disciplina (confirmar):", err);
+      } finally {
         setCarregandoIdDisciplina(false);
-        return;
       }
-
-      const listaCfg = (data ?? []) as ConfigDisciplina[];
-      const itemCfg = listaCfg.find(
-        (cfg) =>
-          cfg.codigo_disciplina.toLowerCase() === disciplina.toLowerCase()
-      );
-
-      setIdDisciplinaConfig(itemCfg?.id_disciplina ?? null);
-      setCarregandoIdDisciplina(false);
     };
 
     carregarIdDisciplina();
@@ -230,40 +212,25 @@ export default function ConfirmarCompra() {
     try {
       setConfirmando(true);
 
-      const { data, error } = await supabase.rpc("comprar_pontos", {
-        p_id_disciplina: idParaCompra,
-        p_pontos: pontosNum,
+      await api.post("/aluno/moedas/comprar-pontos", {
+        id_disciplina: String(idParaCompra),
+        quantidade_pontos: pontosNum,
       });
 
-      if (error) {
-        console.error("Erro ao comprar pontos:", error);
-        setErroApi(error.message || "Erro ao processar a compra.");
-        setConfirmando(false);
-        return;
-      }
-
-      const result = Array.isArray(data) ? data[0] : data;
-
-      if (!result) {
-        setErroApi("Não foi possível obter o resultado da compra.");
-        setConfirmando(false);
-        return;
-      }
-
-      const { pontos_comprados, moedas_gastas, saldo_antes, saldo_depois } =
-        result as {
-          pontos_comprados: number;
-          moedas_gastas: number;
-          saldo_antes: number;
-          saldo_depois: number;
-        };
+      // Recalcula o saldo TOTAL (soma de todas as disciplinas) pra manter a mesma
+      // semântica de "saldo antes/depois" que a tela já usava.
+      const saldoData = await api.get("/aluno/moedas/saldo");
+      const saldoDepoisTotal = (saldoData?.disciplinas ?? []).reduce(
+        (acc: number, d: any) => acc + (d.saldo ?? 0),
+        0
+      );
 
       router.push(
-        `/aluno/comprar-pontos/${disciplina}/sucesso?pontos=${pontos_comprados}&total=${moedas_gastas}&saldoAntes=${saldo_antes}&saldoDepois=${saldo_depois}`
+        `/aluno/comprar-pontos/${disciplina}/sucesso?pontos=${pontosNum}&total=${totalNum}&saldoAntes=${saldoAntes}&saldoDepois=${saldoDepoisTotal}`
       );
     } catch (err: any) {
       console.error(err);
-      setErroApi("Erro inesperado ao processar a compra.");
+      setErroApi(err?.message || "Erro inesperado ao processar a compra.");
       setConfirmando(false);
     }
   };

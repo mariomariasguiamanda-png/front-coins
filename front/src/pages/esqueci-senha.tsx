@@ -2,7 +2,7 @@ import Head from "next/head";
 import Image from "next/image";
 import { Roboto } from "next/font/google";
 import { FormEvent, useState } from "react";
-import { supabase } from "@/lib/supabaseClient";
+import { api } from "@/lib/api";
 
 const roboto = Roboto({ subsets: ["latin"], weight: ["400", "500", "700"] });
 
@@ -26,18 +26,7 @@ export default function EsqueciSenhaPage() {
     setIsLoading(true);
 
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/atualizar-senha`,
-      });
-
-      if (error) {
-        console.error("Erro ao enviar link:", error);
-        setErrorMsg(
-          error.message ||
-            "Erro ao enviar link de recuperação. Tente novamente em instantes."
-        );
-        return;
-      }
+      await api.post("/auth/esqueci-senha", { email });
 
       setSuccessMsg(
         "Se o e-mail estiver cadastrado, você receberá um link para redefinir a senha."

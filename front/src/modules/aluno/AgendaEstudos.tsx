@@ -16,8 +16,7 @@ import {
   X,
   ExternalLink,
 } from "lucide-react";
-import { supabase } from "@/lib/supabaseClient";
-import { getAlunoFromSession } from "@/lib/getAlunoFromSession";
+import { api } from "@/lib/api";
 
 // ==================== TIPOS E INTERFACES ====================
 
@@ -120,26 +119,15 @@ export default function Frequencia() {
     setMounted(true);
 
     const fetchAll = async () => {
-      // 1) Tenta obter id do aluno da sessão
-      let idAluno: number | null = null;
+      // A API já resolve o aluno logado a partir do JWT
       try {
-        const aluno = await getAlunoFromSession();
-        idAluno = (aluno?.idAluno ?? null) as number | null;
-      } catch {}
+        const data = await api.get("/aluno/agenda");
 
-      // 2) Se tiver idAluno, busca direto na tabela agenda_estudos
-      if (idAluno != null) {
-        const { data, error } = await supabase
-          .from("agenda_estudos")
-          .select("*")
-          .eq("id_aluno", idAluno)
-          .order("data_estudo", { ascending: true });
-
-        if (!error && data && Array.isArray(data)) {
+        if (Array.isArray(data)) {
           const mapped: RevisionEvent[] = data.map((row: any) => ({
             id: String(row.id_evento),
             title: row.titulo || "Estudo",
-            date: row.data_estudo, // formato "YYYY-MM-DD"
+            date: String(row.data_estudo).split("T")[0], // formato "YYYY-MM-DD"
             subject: row.assunto || "",
             type: (row.tipo as RevisionEvent["type"]) || "study",
             completed: !!row.concluido,
@@ -149,12 +137,12 @@ export default function Frequencia() {
           }));
           setEvents(mapped);
           return;
-        } else if (error) {
-          console.error("Erro ao buscar agenda_estudos:", error);
         }
+      } catch (err) {
+        console.error("Erro ao buscar agenda de estudos:", err);
       }
 
-      // 3) Se não achar aluno ou der erro, tenta carregar do localStorage (mock/offline)
+      // Se der erro (ex: offline), tenta carregar do localStorage (fallback)
       try {
         const saved = localStorage.getItem("agendaEventos");
         if (saved) {
@@ -332,21 +320,17 @@ export default function Frequencia() {
   };
 
   const handleCompleteEvent = (eventId: string) => {
-    // Atualiza estado local
+    // Atualiza estado local (cache otimista)
     setEvents((prev) =>
       prev.map((ev) => (ev.id === eventId ? { ...ev, completed: true } : ev))
     );
 
-    // Reflete no Supabase
+    // Reflete na API
     (async () => {
       try {
-        const { error } = await supabase
-          .from("agenda_estudos")
-          .update({ concluido: true })
-          .eq("id_evento", Number(eventId));
-        if (error) console.error("Erro ao marcar conclusão:", error);
+        await api.patch(`/aluno/agenda/${eventId}/concluir`, {});
       } catch (e) {
-        console.error("Falha ao atualizar conclusão no Supabase:", e);
+        console.error("Falha ao atualizar conclusão na API:", e);
       }
     })();
   };
@@ -368,41 +352,28 @@ export default function Frequencia() {
     // Validação mínima
     if (!newEvent.title || !newEvent.date || !newEvent.type) return;
 
-    // 1) Obter aluno da sessão
-    const aluno = await getAlunoFromSession();
-    const idAluno = aluno?.idAluno ?? null;
-
-    if (idAluno == null) {
-      console.error("Aluno não encontrado na sessão.");
-      return;
-    }
-
-    // 2) Inserir primeiro no Supabase e obter o ID real
-    const { data, error } = await supabase
-      .from("agenda_estudos")
-      .insert({
-        id_aluno: idAluno,
+    // Insere via API (o aluno logado é resolvido pelo JWT) e obtém o ID real
+    let data: any;
+    try {
+      data = await api.post("/aluno/agenda", {
         data_estudo: newEvent.date!,
         titulo: newEvent.title!,
-        assunto: newEvent.subject || null,
+        assunto: newEvent.subject || undefined,
         tipo: newEvent.type as "revision" | "study" | "exam",
-        link_type: newEvent.linkType ?? null,
-        disciplina_id: newEvent.disciplinaId ?? null,
-        item_id: newEvent.itemId ?? null,
-      })
-      .select()
-      .single();
-
-    if (error || !data) {
-      console.error("Erro ao salvar evento no Supabase:", error);
+        link_type: newEvent.linkType ?? undefined,
+        disciplina_id: newEvent.disciplinaId ?? undefined,
+        item_id: newEvent.itemId ?? undefined,
+      });
+    } catch (err) {
+      console.error("Erro ao salvar evento na API:", err);
       return;
     }
 
-    // 3) Construir o objeto usando o id_evento do banco
+    // Constrói o objeto usando o id_evento do banco
     const created: RevisionEvent = {
       id: String(data.id_evento),
       title: data.titulo,
-      date: data.data_estudo,
+      date: String(data.data_estudo).split("T")[0],
       subject: data.assunto || "",
       type: data.tipo as RevisionEvent["type"],
       completed: !!data.concluido,

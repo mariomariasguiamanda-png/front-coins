@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { supabase } from "@/lib/supabaseClient";
+import { api } from "@/lib/api";
 
 // Mesmo formato que o componente Notifications usa
 export interface Notification {
@@ -26,12 +26,12 @@ type NotificacaoRow = {
   id_notificacao: number;
   id_usuario: number;
   titulo: string | null;
-  mensagem: string;
+  mensagem: string | null;
   tipo: string | null;
   categoria: string | null;
   disciplina: string | null;
-  data_envio: string;
-  status: string; // enum_notificacoes_status
+  criado_em: string | null;
+  lida: boolean | null;
 };
 
 const getTempoRelativo = (dataEnvio: string) => {
@@ -54,69 +54,31 @@ export function useAlunoNotifications() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [idUsuario, setIdUsuario] = useState<number | null>(null);
 
   const carregar = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
 
-      // 1) Usuário logado (auth.users)
-      const {
-        data: { user },
-        error: authError,
-      } = await supabase.auth.getUser();
-      if (authError) throw authError;
-      if (!user) {
-        setError("Usuário não autenticado.");
-        setLoading(false);
-        return;
-      }
+      // A API já resolve o usuário logado a partir do JWT
+      const data: NotificacaoRow[] = await api.get("/aluno/notificacoes");
 
-      // 2) Buscar id_usuario em public.usuarios
-      const { data: usuarioRow, error: usuarioError } = await supabase
-        .from("usuarios")
-        .select("id_usuario")
-        .eq("auth_user_id", user.id)
-        .single();
+      const mapped: Notification[] = (data ?? []).map((row) => {
+        const type = (row.tipo as Notification["type"]) ?? "info";
+        const category =
+          (row.categoria as Notification["category"]) ?? "sistema";
 
-      if (usuarioError) throw usuarioError;
-
-      const id_usuario = usuarioRow.id_usuario as number;
-      setIdUsuario(id_usuario);
-
-      // 3) Buscar notificações desse usuário
-      const { data, error: notifError } = await supabase
-        .from("notificacoes")
-        .select(
-          "id_notificacao, id_usuario, titulo, mensagem, tipo, categoria, disciplina, data_envio, status"
-        )
-        .eq("id_usuario", id_usuario)
-        .order("data_envio", { ascending: false });
-
-      if (notifError) throw notifError;
-
-      const mapped: Notification[] =
-        (data as NotificacaoRow[]).map((row) => {
-          const read = row.status !== "nao_lida"; // tudo que NÃO for nao_lida conta como lida
-          const type =
-            (row.tipo as Notification["type"]) ??
-            ("info" as Notification["type"]);
-          const category =
-            (row.categoria as Notification["category"]) ??
-            ("sistema" as Notification["category"]);
-
-          return {
-            id: String(row.id_notificacao),
-            type,
-            category,
-            title: row.titulo || "Notificação",
-            message: row.mensagem,
-            discipline: row.disciplina || "Sistema",
-            time: getTempoRelativo(row.data_envio),
-            read,
-          };
-        }) ?? [];
+        return {
+          id: String(row.id_notificacao),
+          type,
+          category,
+          title: row.titulo || "Notificação",
+          message: row.mensagem ?? "",
+          discipline: row.disciplina || "Sistema",
+          time: row.criado_em ? getTempoRelativo(row.criado_em) : "",
+          read: !!row.lida,
+        };
+      });
 
       setNotifications(mapped);
       setUnreadCount(mapped.filter((n) => !n.read).length);
@@ -135,12 +97,7 @@ export function useAlunoNotifications() {
   const markAsRead = async (id: string) => {
     if (!id) return;
     try {
-      const { error: updError } = await supabase
-        .from("notificacoes")
-        .update({ status: "lida" }) // se no enum o valor for outro, trocar aqui
-        .eq("id_notificacao", Number(id));
-
-      if (updError) throw updError;
+      await api.patch(`/aluno/notificacoes/${id}/lida`, {});
 
       setNotifications((prev) =>
         prev.map((n) => (n.id === id ? { ...n, read: true } : n))
@@ -153,15 +110,8 @@ export function useAlunoNotifications() {
   };
 
   const markAllAsRead = async () => {
-    if (!idUsuario) return;
     try {
-      const { error: updError } = await supabase
-        .from("notificacoes")
-        .update({ status: "lida" })
-        .eq("id_usuario", idUsuario)
-        .eq("status", "nao_lida");
-
-      if (updError) throw updError;
+      await api.patch("/aluno/notificacoes/lidas-todas", {});
 
       setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
       setUnreadCount(0);
@@ -171,20 +121,10 @@ export function useAlunoNotifications() {
     }
   };
 
+  // Sem endpoint de exclusão na API (não é usado hoje pela UI) - remove só
+  // localmente, mantendo a assinatura pra não quebrar quem consome o hook.
   const removeNotification = async (id: string) => {
-    try {
-      const { error: delError } = await supabase
-        .from("notificacoes")
-        .delete()
-        .eq("id_notificacao", Number(id));
-
-      if (delError) throw delError;
-
-      setNotifications((prev) => prev.filter((n) => n.id !== id));
-    } catch (err) {
-      console.error("Erro ao excluir notificação:", err);
-      setError("Erro ao excluir notificação.");
-    }
+    setNotifications((prev) => prev.filter((n) => n.id !== id));
   };
 
   return {

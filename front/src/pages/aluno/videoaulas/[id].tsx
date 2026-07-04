@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/router";
-import { supabase } from "@/lib/supabaseClient";
+import { api } from "@/lib/api";
 import AlunoLayout from "@/components/layout/AlunoLayout";
 import { CheckCircle2, PlayCircle, Loader2, Sparkles } from "lucide-react";
 
@@ -10,9 +10,10 @@ type Videoaula = {
   id_videoaula: number;
   titulo: string;
   descricao?: string | null;
-  url: string;
+  url_video: string;
   id_disciplina: number;
-  created_at?: string;
+  status: "pendente" | "assistida";
+  percentual_assistido: number;
 };
 
 // Detecta tipo do vídeo com base na URL
@@ -254,58 +255,13 @@ const VideoaulaDetalhePage = () => {
   const [videoaula, setVideoaula] = useState<Videoaula | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  // Progresso da videoaula para o aluno logado
-  const [alunoId, setAlunoId] = useState<number | null>(null);
+  // Progresso da videoaula para o aluno logado (já vem achatado da API)
   const [statusVideo, setStatusVideo] = useState<"pendente" | "assistida">(
     "pendente"
   );
   const [percentualAssistido, setPercentualAssistido] = useState<number>(0);
   const [saving, setSaving] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
-
-  const fetchAlunoId = async (): Promise<number | null> => {
-    try {
-      const {
-        data: { user },
-        error: userError,
-      } = await supabase.auth.getUser();
-
-      if (userError || !user?.id) {
-        console.warn("Nenhum usuário autenticado para progresso de videoaula.");
-        return null;
-      }
-
-      const { data: usuario, error: usuarioError } = await supabase
-        .from("usuarios")
-        .select("id_usuario")
-        .eq("auth_user_id", user.id)
-        .maybeSingle();
-
-      if (usuarioError || !usuario) {
-        console.warn("Usuário não encontrado na tabela usuarios.");
-        return null;
-      }
-
-      const { data: aluno, error: alunoError } = await supabase
-        .from("alunos")
-        .select("id_aluno")
-        .eq("id_usuario", usuario.id_usuario)
-        .maybeSingle();
-
-      if (alunoError || !aluno) {
-        console.warn("Aluno não encontrado na tabela alunos.");
-        return null;
-      }
-
-      return aluno.id_aluno as number;
-    } catch (err) {
-      console.error(
-        "Erro ao buscar id_aluno para progresso de videoaula:",
-        err
-      );
-      return null;
-    }
-  };
 
   useEffect(() => {
     const fetchVideoaula = async () => {
@@ -320,61 +276,10 @@ const VideoaulaDetalhePage = () => {
           throw new Error("ID de videoaula inválido.");
         }
 
-        // 1) Busca a própria vídeo-aula
-        const { data, error } = await supabase
-          .from("videoaulas")
-          .select("*")
-          .eq("id_videoaula", idNumber)
-          .maybeSingle();
-
-        if (error) {
-          throw new Error(error.message);
-        }
-
-        if (!data) {
-          throw new Error("Videoaula não encontrada.");
-        }
-
-        setVideoaula(data as Videoaula);
-
-        // 2) Descobre o aluno logado
-        const alunoIdLocal = await fetchAlunoId();
-        if (!alunoIdLocal) {
-          return; // sem aluno, não tem como registrar progresso
-        }
-        setAlunoId(alunoIdLocal);
-
-        // 3) Busca progresso dessa videoaula para esse aluno
-        const { data: prog, error: progError } = await supabase
-          .from("progresso_videoaulas")
-          .select("status, percentual_assistido")
-          .eq("id_videoaula", idNumber)
-          .eq("id_aluno", alunoIdLocal)
-          .maybeSingle();
-
-        if (progError) {
-          console.warn("Erro ao buscar progresso_videoaulas:", progError);
-          return;
-        }
-
-        if (prog) {
-          const status =
-            prog.status === "assistida" ||
-            (typeof prog.percentual_assistido === "number" &&
-              prog.percentual_assistido >= 90)
-              ? "assistida"
-              : "pendente";
-
-          setStatusVideo(status);
-          setPercentualAssistido(
-            typeof prog.percentual_assistido === "number"
-              ? prog.percentual_assistido
-              : 0
-          );
-        } else {
-          setStatusVideo("pendente");
-          setPercentualAssistido(0);
-        }
+        const data: Videoaula = await api.get(`/aluno/videoaulas/${idNumber}`);
+        setVideoaula(data);
+        setStatusVideo(data.status === "assistida" ? "assistida" : "pendente");
+        setPercentualAssistido(data.percentual_assistido ?? 0);
       } catch (err: any) {
         setError(err.message ?? "Erro ao carregar a videoaula.");
       } finally {
@@ -390,28 +295,13 @@ const VideoaulaDetalhePage = () => {
   };
 
   const handleMarcarAssistida = async () => {
-    if (!videoaula || !alunoId || statusVideo === "assistida") return;
+    if (!videoaula || statusVideo === "assistida") return;
 
     try {
       setSaving(true);
-
-      const { error } = await supabase.from("progresso_videoaulas").upsert(
-        {
-          id_videoaula: videoaula.id_videoaula,
-          id_aluno: alunoId,
-          status: "assistida",
-          percentual_assistido: 100,
-          assistido_em: new Date().toISOString(),
-        },
-        {
-          onConflict: "id_videoaula,id_aluno",
-        }
-      );
-
-      if (error) {
-        console.error("Erro ao salvar progresso de videoaula:", error);
-        return;
-      }
+      await api.patch(`/aluno/videoaulas/${videoaula.id_videoaula}/progresso`, {
+        percentual_assistido: 100,
+      });
 
       setStatusVideo("assistida");
       setPercentualAssistido(100);
@@ -420,6 +310,8 @@ const VideoaulaDetalhePage = () => {
       setTimeout(() => {
         setToastMessage(null);
       }, 4000);
+    } catch (err) {
+      console.error("Erro ao salvar progresso de videoaula:", err);
     } finally {
       setSaving(false);
     }
@@ -453,7 +345,7 @@ const VideoaulaDetalhePage = () => {
     );
   }
 
-  const videoType = getVideoType(videoaula.url);
+  const videoType = getVideoType(videoaula.url_video);
   const isFileVideo = videoType === "file";
 
   return (
@@ -515,7 +407,7 @@ const VideoaulaDetalhePage = () => {
               <button
                 type="button"
                 onClick={handleMarcarAssistida}
-                disabled={!alunoId || statusVideo === "assistida" || saving}
+                disabled={statusVideo === "assistida" || saving}
                 className={`inline-flex items-center gap-2 rounded-lg text-sm font-medium px-4 py-2 transition-colors ${
                   statusVideo === "assistida"
                     ? "bg-emerald-50 text-emerald-700 cursor-default"
@@ -545,7 +437,7 @@ const VideoaulaDetalhePage = () => {
 
         {/* Player */}
         <VideoPlayer
-          url={videoaula.url}
+          url={videoaula.url_video}
           title={videoaula.titulo}
           onComplete={handleMarcarAssistida}
         />

@@ -17,7 +17,7 @@ import {
   Globe2,
   Flame,
 } from "lucide-react";
-import { supabase } from "@/lib/supabaseClient";
+import { api } from "@/lib/api";
 
 // Dados visuais das disciplinas (cores/ícone) + fallback de preço/saldo
 const disciplinasData = {
@@ -105,10 +105,10 @@ const disciplinasData = {
 
 type ConfigDisciplina = {
   id_disciplina: number;
-  codigo_disciplina: string;
-  nome_disciplina: string;
-  pontos: number;
-  preco_moedas: number;
+  codigo: string;
+  nome: string;
+  pontos_por_compra_max: number;
+  preco_moedas_por_ponto: number;
 };
 
 export default function ComprarPontosDisciplina() {
@@ -124,12 +124,13 @@ export default function ComprarPontosDisciplina() {
 
   const [precoPorPonto, setPrecoPorPonto] = useState<number | null>(null);
   const [carregandoPreco, setCarregandoPreco] = useState(true);
+  const [pontosMax, setPontosMax] = useState(10);
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  // Carregar saldo por disciplina + preço real da tabela config_compra_pontos
+  // Carregar saldo da disciplina + preço/limite reais de GET aluno/moedas/*
   useEffect(() => {
     if (!mounted || typeof disciplina !== "string") return;
 
@@ -138,49 +139,44 @@ export default function ComprarPontosDisciplina() {
       disciplinasData[disciplina as keyof typeof disciplinasData];
 
     const carregarDados = async () => {
-      // 1) Saldo por disciplina (view/mecanismo que você já tem)
-      const { data: saldoData, error: saldoError } = await supabase.rpc(
-        "get_moedas_por_disciplina_compra"
-      );
-
-      if (saldoError) {
-        console.error("Erro ao buscar saldo:", saldoError);
-        setSaldoAtual(metaDisciplina?.saldoAtual ?? 0);
-      } else {
-        const listaSaldo = (saldoData ?? []) as {
-          codigo_disciplina: string;
-          moedas_disponiveis: number;
-        }[];
-
-        const itemSaldo = listaSaldo.find(
-          (d) => d.codigo_disciplina.toLowerCase() === codigo
+      // 1) Preço/limite por disciplina (config-precos) - já resolve a disciplina certa
+      let idDisciplina: number | null = null;
+      try {
+        const cfgData = await api.get("/aluno/moedas/config-precos");
+        const listaCfg = (cfgData?.disciplinas ?? []) as ConfigDisciplina[];
+        const itemCfg = listaCfg.find(
+          (c) => c.codigo.toLowerCase() === codigo
         );
-        setSaldoAtual(itemSaldo?.moedas_disponiveis ?? 0);
-      }
-      setCarregandoSaldo(false);
 
-      // 2) Preço por ponto vindo da config_compra_pontos
-      const { data: cfgData, error: cfgError } = await supabase.rpc(
-        "get_config_compra_pontos_por_aluno"
-      );
-
-      if (cfgError) {
-        console.error("Erro ao buscar config de compra:", cfgError);
+        idDisciplina = itemCfg?.id_disciplina ?? null;
+        setPrecoPorPonto(
+          itemCfg?.preco_moedas_por_ponto ?? metaDisciplina?.precoMoedas ?? 0
+        );
+        setPontosMax(itemCfg?.pontos_por_compra_max ?? 10);
+      } catch (err) {
+        console.error("Erro ao buscar config de compra:", err);
         setPrecoPorPonto(metaDisciplina?.precoMoedas ?? 0);
+      } finally {
         setCarregandoPreco(false);
-        return;
       }
 
-      const listaCfg = (cfgData ?? []) as ConfigDisciplina[];
-
-      const itemCfg = listaCfg.find(
-        (c) => c.codigo_disciplina.toLowerCase() === codigo
-      );
-
-      setPrecoPorPonto(
-        itemCfg?.preco_moedas ?? metaDisciplina?.precoMoedas ?? 0
-      );
-      setCarregandoPreco(false);
+      // 2) Saldo dessa disciplina especificamente
+      try {
+        const saldoData = await api.get("/aluno/moedas/saldo");
+        const listaSaldo = (saldoData?.disciplinas ?? []) as {
+          id_disciplina: number;
+          saldo: number;
+        }[];
+        const itemSaldo = listaSaldo.find(
+          (d) => d.id_disciplina === idDisciplina
+        );
+        setSaldoAtual(itemSaldo?.saldo ?? 0);
+      } catch (err) {
+        console.error("Erro ao buscar saldo:", err);
+        setSaldoAtual(metaDisciplina?.saldoAtual ?? 0);
+      } finally {
+        setCarregandoSaldo(false);
+      }
     };
 
     carregarDados();
@@ -285,12 +281,12 @@ export default function ComprarPontosDisciplina() {
                   <input
                     type="number"
                     min="1"
-                    max="10"
+                    max={pontosMax}
                     value={pontos}
                     onChange={(e) => {
                       const value = Math.max(
                         1,
-                        Math.min(10, Number(e.target.value))
+                        Math.min(pontosMax, Number(e.target.value))
                       );
                       setPontos(value);
                       setErro("");
@@ -298,14 +294,14 @@ export default function ComprarPontosDisciplina() {
                     className="w-20 h-10 text-center text-lg font-bold border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent"
                   />
                   <button
-                    onClick={() => setPontos(Math.min(10, pontos + 1))}
+                    onClick={() => setPontos(Math.min(pontosMax, pontos + 1))}
                     className="w-10 h-10 rounded-lg border border-gray-300 hover:bg-gray-50 flex items-center justify-center font-bold smooth-transition"
                   >
                     +
                   </button>
                 </div>
                 <p className="text-xs text-gray-500 mt-2">
-                  Máximo: 10 pontos por compra
+                  Máximo: {pontosMax} pontos por compra
                 </p>
               </div>
 

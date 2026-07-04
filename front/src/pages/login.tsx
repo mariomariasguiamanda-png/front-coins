@@ -5,7 +5,7 @@ import { Roboto } from "next/font/google";
 import { Eye, EyeOff } from "@/components/ui/Icons";
 import { FormEvent, useState } from "react";
 import { HiOutlineMail, HiOutlineLockClosed } from "react-icons/hi";
-import { supabase } from "@/lib/supabaseClient";
+import { api } from "@/lib/api";
 
 const roboto = Roboto({ subsets: ["latin"], weight: ["400", "500", "700"] });
 
@@ -37,44 +37,17 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
-      // 1) Login no Supabase com e-mail e senha
-      const { data: signInData, error: signInErr } =
-        await supabase.auth.signInWithPassword({ email, password });
-
-      console.log("signInData:", signInData);
-
-      if (signInErr) {
-        console.error("Erro no signIn:", signInErr);
-        throw new Error(signInErr.message);
+      const response = await api.post("/auth/login", { email, senha: password });
+      
+      if (!response.token) {
+        throw new Error("Token não retornado pela API");
       }
-
-      const userId = signInData.user?.id;
-      console.log("userId:", userId);
-
-      if (!userId) throw new Error("Não foi possível identificar o usuário.");
-
-      // 2) Consulta o tipo de usuário na tabela `usuarios` usando o auth_user_id
-      const { data: perfil, error: perfilErr } = await supabase
-        .from("usuarios")
-        .select("tipo_usuario")
-        .eq("auth_user_id", userId)
-        .maybeSingle();
-
-      console.log("🟢 Resultado da consulta em usuarios:", {
-        perfil,
-        perfilErr,
-      });
-
-      if (perfilErr) {
-        console.warn("⚠️ Erro ao buscar perfil em usuarios:", perfilErr);
-      }
-
-      const tipo = perfil?.tipo_usuario ?? "aluno";
+      
+      localStorage.setItem("coins_token", response.token);
+      
+      const tipo = response.tipo_usuario ?? "aluno";
       const destino = redirectByRole(tipo);
-
-      console.log("redirectByRole | tipo_usuario recebido:", tipo);
-      console.log("Redirecionando para:", destino);
-
+      
       router.push(destino);
     } catch (err: any) {
       console.error("Erro no login:", err);

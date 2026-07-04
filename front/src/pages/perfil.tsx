@@ -18,8 +18,7 @@ export default function PerfilPage() {
           <div className="mt-4 space-y-2">
             <div>
               <strong>Nome:</strong>{" "}
-              {/* Supabase User não tem 'name', normalmente vem em user_metadata */}
-              {user.user_metadata?.nome ?? "Sem nome cadastrado"}
+              {user.nome ?? "Sem nome cadastrado"}
             </div>
             <div>
               <strong>Email:</strong> {user.email}

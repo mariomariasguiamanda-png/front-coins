@@ -1,31 +1,24 @@
-import { supabase } from '@/lib/supabaseClient'
+import { api } from '@/lib/api'
 
 export type Papel = 'aluno' | 'professor' | 'admin'
 
 export function getDashboardPath(papel: Papel) {
   switch (papel) {
     case 'admin': return '/adm/dashboard'
-    case 'professor': return '/prof/dashboard'
+    case 'professor': return '/professor/dashboard'
     case 'aluno':
-    default: return '/aluno/dashboard'
+    default: return '/aluno/inicio'
   }
 }
 
+// O papel já vem no retorno do login (`tipo_usuario`) ou de GET /auth/me - não é mais
+// necessário consultar o Supabase para descobrir isso.
 export async function fetchUserPapel(): Promise<Papel | null> {
-  const { data: auth } = await supabase.auth.getUser()
-  const user = auth?.user
-  if (!user) return null
-
-  // lê na tabela `usuarios` o tipo_usuario do usuário logado
-  const { data, error } = await supabase
-    .from('usuarios')
-    .select('tipo_usuario')
-    .eq('auth_user_id', user.id)
-    .maybeSingle()
-
-  if (error) {
-    console.error('[fetchUserPapel] erro:', error.message)
+  try {
+    const data = await api.get('/auth/me')
+    return (data?.tipo_usuario ?? null) as Papel | null
+  } catch (error) {
+    console.error('[fetchUserPapel] erro:', error)
     return null
   }
-  return (data?.tipo_usuario ?? 'aluno') as Papel
 }

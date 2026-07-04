@@ -14,7 +14,7 @@ import {
   Globe2,
   Flame,
 } from "lucide-react";
-import { supabase } from "@/lib/supabaseClient";
+import { api } from "@/lib/api";
 
 // Metadados visuais das disciplinas (cores/ícone/slug)
 const DISCIPLINAS_META: Record<
@@ -35,6 +35,14 @@ const DISCIPLINAS_META: Record<
     gradient: "from-blue-500 to-blue-600",
     textColor: "text-blue-600",
     bgColor: "bg-blue-500/10",
+  },
+  port: {
+    slug: "port",
+    nome: "Português",
+    icon: BookOpen,
+    gradient: "from-green-500 to-green-600",
+    textColor: "text-green-600",
+    bgColor: "bg-green-500/10",
   },
   bio: {
     slug: "bio",
@@ -89,10 +97,10 @@ const DISCIPLINAS_META: Record<
 
 type ConfigCompra = {
   id_disciplina: number;
-  codigo_disciplina: string;
-  nome_disciplina: string;
-  pontos: number;
-  preco_moedas: number;
+  codigo: string;
+  nome: string;
+  pontos_por_compra_max: number;
+  preco_moedas_por_ponto: number;
 };
 
 export default function ComprarPontosPage() {
@@ -113,65 +121,45 @@ export default function ComprarPontosPage() {
     setMounted(true);
   }, []);
 
-  // Carrega saldo total
+  // Carrega saldo total (soma dos saldos por disciplina)
   useEffect(() => {
     if (!mounted) return;
 
     const carregarSaldoTotal = async () => {
-      const { data, error } = await supabase.rpc("get_total_moedas_aluno");
-
-      if (error) {
-        console.error("Erro ao buscar saldo total:", error);
-        setErroSaldo("Não foi possível carregar o saldo de moedas.");
-        setCarregandoSaldo(false);
-        return;
-      }
-
-      // data deve ser um número; se vier qualquer outra coisa, converte/faz fallback
-      let valor = 0;
-      if (typeof data === "number") {
-        valor = data;
-      } else if (Array.isArray(data)) {
-        // se por algum motivo vier array, soma os campos que fizerem sentido
-        valor = data.reduce(
-          (acc, item) => acc + (typeof item === "number" ? item : 0),
+      try {
+        const data = await api.get("/aluno/moedas/saldo");
+        const valor = (data?.disciplinas ?? []).reduce(
+          (acc: number, d: any) => acc + (d.saldo ?? 0),
           0
         );
-      } else if (data && typeof data === "object") {
-        // caso raro: objeto do tipo { total: 90 }
-        const maybeTotal = (data as any).total;
-        if (typeof maybeTotal === "number") {
-          valor = maybeTotal;
-        }
+        setSaldoTotal(valor);
+      } catch (err) {
+        console.error("Erro ao buscar saldo total:", err);
+        setErroSaldo("Não foi possível carregar o saldo de moedas.");
+      } finally {
+        setCarregandoSaldo(false);
       }
-
-      setSaldoTotal(valor);
-      setCarregandoSaldo(false);
     };
 
     carregarSaldoTotal();
   }, [mounted]);
 
-  // Carrega configs de compra da tabela config_compra_pontos (apenas disciplinas do aluno)
+  // Carrega configs de compra (preço/limite por disciplina matriculada)
   useEffect(() => {
     if (!mounted) return;
 
     const carregarConfigs = async () => {
-      const { data, error } = await supabase.rpc(
-        "get_config_compra_pontos_por_aluno"
-      );
-
-      if (error) {
-        console.error("Erro ao buscar configs de compra:", error);
+      try {
+        const data = await api.get("/aluno/moedas/config-precos");
+        setConfigs((data?.disciplinas ?? []) as ConfigCompra[]);
+      } catch (err) {
+        console.error("Erro ao buscar configs de compra:", err);
         setErroConfigs(
           "Não foi possível carregar as disciplinas disponíveis para compra."
         );
+      } finally {
         setCarregandoConfigs(false);
-        return;
       }
-
-      setConfigs((data ?? []) as ConfigCompra[]);
-      setCarregandoConfigs(false);
     };
 
     carregarConfigs();
@@ -189,7 +177,7 @@ export default function ComprarPontosPage() {
   // Junta configs do banco com o meta visual (cores/ícone/slug)
   const disciplinasParaExibir = configs
     .map((conf) => {
-      const codigo = conf.codigo_disciplina.toLowerCase();
+      const codigo = conf.codigo.toLowerCase();
       const meta = DISCIPLINAS_META[codigo];
       if (!meta) return null; // disciplina sem meta visual ainda
 
@@ -197,8 +185,8 @@ export default function ComprarPontosPage() {
         ...meta,
         idDisciplina: conf.id_disciplina,
         codigo,
-        pontos: conf.pontos,
-        precoMoedas: conf.preco_moedas,
+        pontos: conf.pontos_por_compra_max,
+        precoMoedas: conf.preco_moedas_por_ponto,
       };
     })
     .filter(Boolean) as Array<

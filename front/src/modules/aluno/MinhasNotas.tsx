@@ -3,8 +3,7 @@
 import { useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/Card";
 import { BarChart3, Award, TrendingUp, Calendar } from "lucide-react";
-import { supabase } from "@/lib/supabaseClient";
-import { getAlunoFromSession } from "@/lib/getAlunoFromSession";
+import { api } from "@/lib/api";
 
 type NotaFinalDisciplina = {
   id_disciplina: number;
@@ -40,42 +39,22 @@ export default function MinhasNotas() {
         setLoading(true);
         setErro(null);
 
-        // 1) pega id do aluno logado
-        const { idAluno } = await getAlunoFromSession();
+        // A API já resolve o aluno logado (JWT) e traz a disciplina junto
+        const rows = await api.get("/aluno/notas");
 
-        // 2) consulta a view vw_notas_finais_aluno
-        const { data, error } = await supabase
-          .from("vw_notas_finais_aluno")
-          .select(
-            `
-            id_disciplina,
-            nome_disciplina,
-            codigo_disciplina,
-            nota_final,
-            status_final,
-            atualizado_em
-          `,
-          )
-          .eq("id_aluno", idAluno);
-
-        if (error) {
-          console.error(error);
-          throw new Error("Erro ao carregar notas finais.");
-        }
-
-        const rows = (data ?? []) as any[];
-
-        const convertidos: NotaFinalDisciplina[] = rows.map((row) => ({
-          id_disciplina: row.id_disciplina,
-          nome_disciplina: row.nome_disciplina,
-          codigo_disciplina: row.codigo_disciplina,
-          nota_final:
-            row.nota_final !== null && row.nota_final !== undefined
-              ? Number(row.nota_final)
-              : null,
-          status_final: row.status_final,
-          atualizado_em: row.atualizado_em,
-        }));
+        const convertidos: NotaFinalDisciplina[] = (rows ?? []).map(
+          (row: any) => ({
+            id_disciplina: row.id_disciplina,
+            nome_disciplina: row.disciplinas?.nome ?? "Disciplina",
+            codigo_disciplina: row.disciplinas?.codigo ?? null,
+            nota_final:
+              row.nota_final !== null && row.nota_final !== undefined
+                ? Number(row.nota_final)
+                : null,
+            status_final: row.status_final,
+            atualizado_em: row.atualizado_em,
+          }),
+        );
 
         // 3) calcula estatísticas em cima das notas finais (lógica simplificada)
         const totalComNota = convertidos.filter((n) => n.nota_final !== null);

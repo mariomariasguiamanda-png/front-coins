@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/Label";
-import { supabase } from "@/lib/supabaseClient";
+import { api } from "@/lib/api";
 import { HelpCircle, ChevronDown, ChevronUp } from "lucide-react";
 import { useState } from "react";
 
@@ -41,8 +41,6 @@ const faqData = [
 export default function Ajuda() {
   // ==================== ESTADOS ====================
   const [expandedFaq, setExpandedFaq] = useState<number | null>(null);
-  const [nome, setNome] = useState("");
-  const [email, setEmail] = useState("");
   const [assunto, setAssunto] = useState("");
   const [mensagem, setMensagem] = useState("");
   const [files, setFiles] = useState<FileList | null>(null);
@@ -73,81 +71,19 @@ export default function Ajuda() {
         return;
       }
 
-      const { data: userData, error: userError } =
-        await supabase.auth.getUser();
-      if (userError) {
-        console.error(userError);
+      // Uma chamada só: o chamado já sai vinculado ao usuário logado (via JWT)
+      // e os anexos vão junto no mesmo multipart; o e-mail pro suporte é
+      // disparado pela própria API (MailService), sem depender do Resend.
+      const formData = new FormData();
+      formData.append("assunto", assunto);
+      formData.append("mensagem", mensagem);
+      if (files) {
+        Array.from(files).forEach((file) => formData.append("anexos", file));
       }
 
-      const userId = userData?.user?.id ?? null;
+      await api.upload("/suporte/chamados", formData);
 
-      const anexosUrls: string[] = [];
-
-      if (files && files.length > 0) {
-        const bucket = "suporte-anexos";
-        const filesArray = Array.from(files);
-
-        for (const file of filesArray) {
-          const path = `${userId ?? "anon"}/${Date.now()}-${file.name.replace(/\s+/g, "_")}`;
-
-          const { data: uploadData, error: uploadError } =
-            await supabase.storage.from(bucket).upload(path, file);
-
-          if (uploadError) {
-            console.error(uploadError);
-            throw new Error("Erro ao enviar anexos. Tente novamente.");
-          }
-
-          const { data: publicUrlData } = supabase.storage
-            .from(bucket)
-            .getPublicUrl(uploadData!.path);
-
-          if (publicUrlData?.publicUrl) {
-            anexosUrls.push(publicUrlData.publicUrl);
-          }
-        }
-      }
-
-      const { error: insertError } = await supabase
-        .from("suporte_pedidos")
-        .insert({
-          id_usuario: userId,
-          nome: nome || null,
-          email: email || null,
-          assunto,
-          mensagem,
-          anexos: anexosUrls,
-        });
-
-      if (insertError) {
-        console.error(insertError);
-        throw new Error("Erro ao salvar pedido de suporte. Tente novamente.");
-      }
-
-      const resp = await fetch("/api/suporte-email", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          assunto,
-          mensagem,
-          nome,
-          email,
-          anexos: anexosUrls,
-        }),
-      });
-
-      if (!resp.ok) {
-        const data = await resp.json().catch(() => null);
-        console.error("Erro na rota /api/suporte-email:", data);
-        setError(
-          "Seu pedido foi registrado, mas houve um problema ao enviar o e-mail para o suporte."
-        );
-      } else {
-        setSuccess("Sua solicitação de suporte foi enviada com sucesso! 😊");
-      }
-
-      setNome("");
-      setEmail("");
+      setSuccess("Sua solicitação de suporte foi enviada com sucesso! 😊");
       setAssunto("");
       setMensagem("");
       setFiles(null);
@@ -250,29 +186,6 @@ export default function Ajuda() {
               </p>
 
               <div className="space-y-2">
-                <div>
-                  <Label htmlFor="nome">Nome (opcional)</Label>
-                  <Input
-                    id="nome"
-                    className="rounded-2xl mt-1"
-                    value={nome}
-                    onChange={(e) => setNome(e.target.value)}
-                    placeholder="Seu nome"
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="email">E-mail para retorno (opcional)</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    className="rounded-2xl mt-1"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="voce@exemplo.com"
-                  />
-                </div>
-
                 <div>
                   <Label htmlFor="assunto">Assunto</Label>
                   <Input

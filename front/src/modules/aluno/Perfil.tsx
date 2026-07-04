@@ -8,7 +8,8 @@ import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
 import NotificationCard from "@/components/ui/NotificationCard";
 import { User, Camera, Edit, Save, X, LogOut } from "lucide-react";
-import { supabase } from "@/lib/supabaseClient";
+import { api, resolveMediaUrl } from "@/lib/api";
+import { useAuth } from "@/services/auth/AuthContext";
 
 type NotificationType = "success" | "error" | "info";
 
@@ -25,6 +26,7 @@ interface ProfileData {
 
 export default function Perfil() {
   const router = useRouter();
+  const { signOut } = useAuth();
 
   // ========= ESTADOS PRINCIPAIS =========
   const [loading, setLoading] = useState(true);
@@ -44,7 +46,6 @@ export default function Perfil() {
 
   const [originalProfile, setOriginalProfile] = useState<ProfileData | null>(null);
 
-  const [idUsuario, setIdUsuario] = useState<number | null>(null);
   const [isEditing, setIsEditing] = useState(false);
 
   // foto temporária (preview)
@@ -64,17 +65,11 @@ export default function Perfil() {
   }
 
   // ========= LOGOUT =========
-  async function handleLogout() {
-    try {
-      await supabase.auth.signOut();
-    } catch (e) {
-      console.error(e);
-    } finally {
-      router.push("/login");
-    }
+  function handleLogout() {
+    signOut();
   }
 
-  // ========= CARREGAR PERFIL DO SUPABASE =========
+  // ========= CARREGAR PERFIL (a API resolve o aluno logado a partir do JWT) =========
   useEffect(() => {
     let isMounted = true;
 
@@ -82,65 +77,19 @@ export default function Perfil() {
       try {
         setLoading(true);
 
-        // 1) Usuário autenticado (Supabase Auth)
-        const {
-          data: { user },
-          error: authError,
-        } = await supabase.auth.getUser();
-
+        const data = await api.get("/aluno/perfil");
         if (!isMounted) return;
-
-        if (authError) throw authError;
-        if (!user) {
-          router.replace("/login");
-          return;
-        }
-
-        // 2) Buscar dados básicos na tabela "usuarios"
-        const { data: usuario, error: usuarioError } = await supabase
-          .from("usuarios")
-          .select("id_usuario, nome, email, telefone, instituicao")
-          .eq("auth_user_id", user.id)
-          .single();
-
-        if (usuarioError) throw usuarioError;
-
-        setIdUsuario(usuario.id_usuario);
-
-        // 3) Buscar dados acadêmicos na tabela "alunos"
-        const { data: aluno, error: alunoError } = await supabase
-          .from("alunos")
-          .select("matricula, cpf, foto_url, id_turma")
-          .eq("id_usuario", usuario.id_usuario)
-          .maybeSingle();
-
-        if (alunoError) throw alunoError;
-
-        // 4) Buscar nome da turma na tabela "turmas"
-        let nomeTurma = "";
-        if (aluno?.id_turma) {
-          const { data: turma, error: turmaError } = await supabase
-            .from("turmas")
-            .select("nome")
-            .eq("id_turma", aluno.id_turma)
-            .maybeSingle();
-
-          if (turmaError) throw turmaError;
-          nomeTurma = turma?.nome ?? "";
-        }
 
         const loadedProfile: ProfileData = {
-          nome: usuario.nome ?? "",
-          email: usuario.email ?? "",
-          telefone: usuario.telefone ?? "",
-          instituicao: usuario.instituicao ?? "",
-          matricula: aluno?.matricula ?? "",
-          cpf: aluno?.cpf ?? "",
-          turma: nomeTurma,
-          foto_url: aluno?.foto_url ?? null,
+          nome: data.nome ?? "",
+          email: data.email ?? "",
+          telefone: data.telefone ?? "",
+          instituicao: data.instituicao ?? "",
+          matricula: data.matricula ?? "",
+          cpf: data.cpf ?? "",
+          turma: data.turma?.nome ?? "",
+          foto_url: data.foto_url ?? null,
         };
-
-        if (!isMounted) return;
 
         setProfile(loadedProfile);
         setOriginalProfile(loadedProfile);
@@ -178,20 +127,14 @@ export default function Perfil() {
   }
 
   async function handleSaveProfile() {
-    if (!idUsuario) return;
     try {
       setSaving(true);
 
       // Atualiza apenas campos que o aluno PODE editar: nome e telefone
-      const { error: usuariosError } = await supabase
-        .from("usuarios")
-        .update({
-          nome: profile.nome,
-          telefone: profile.telefone,
-        })
-        .eq("id_usuario", idUsuario);
-
-      if (usuariosError) throw usuariosError;
+      await api.patch("/aluno/perfil", {
+        nome: profile.nome,
+        telefone: profile.telefone,
+      });
 
       setOriginalProfile(profile);
       setIsEditing(false);
@@ -226,59 +169,21 @@ export default function Perfil() {
   // ========= FOTO: SALVAR =========
 
   async function handleSavePhoto() {
-    if (!tempPhotoFile || !idUsuario) return;
+    if (!tempPhotoFile) return;
 
     try {
       setUploadingImage(true);
 
-      // verifica se já existe registro na tabela "alunos"
-      const { data: aluno, error: alunoError } = await supabase
-        .from("alunos")
-        .select("id_aluno")
-        .eq("id_usuario", idUsuario)
-        .maybeSingle();
+      const formData = new FormData();
+      formData.append("foto", tempPhotoFile);
 
-      if (alunoError) throw alunoError;
+      const data = await api.upload("/aluno/perfil/foto", formData);
+      const fotoUrl = data.foto_url as string;
 
-      if (!aluno) {
-        showNotificationFn(
-          "Seus dados acadêmicos ainda não foram cadastrados. Peça ao administrador para registrar você antes de salvar a foto.",
-          "error"
-        );
-        return;
-      }
-
-      const file = tempPhotoFile;
-      const fileExt = file.name.split(".").pop();
-      const filePath = `aluno-${idUsuario}-${Date.now()}.${fileExt}`;
-
-      // 1) Upload da imagem no bucket
-      const { error: uploadError } = await supabase.storage
-        .from("alunos-avatars")
-        .upload(filePath, file, {
-          upsert: true,
-        });
-
-      if (uploadError) throw uploadError;
-
-      // 2) Pega URL pública
-      const {
-        data: { publicUrl },
-      } = supabase.storage.from("alunos-avatars").getPublicUrl(filePath);
-
-      // 3) Atualiza APENAS foto_url no registro existente de "alunos"
-      const { error: alunosError } = await supabase
-        .from("alunos")
-        .update({ foto_url: publicUrl })
-        .eq("id_usuario", idUsuario);
-
-      if (alunosError) throw alunosError;
-
-      // 4) Atualiza estado local
-      setProfile((prev) => ({ ...prev, foto_url: publicUrl }));
+      setProfile((prev) => ({ ...prev, foto_url: fotoUrl }));
       if (originalProfile) {
         setOriginalProfile((prev) =>
-          prev ? { ...prev, foto_url: publicUrl } : prev
+          prev ? { ...prev, foto_url: fotoUrl } : prev
         );
       }
 
@@ -345,7 +250,7 @@ export default function Perfil() {
                     />
                   ) : profile.foto_url ? (
                     <img
-                      src={profile.foto_url}
+                      src={resolveMediaUrl(profile.foto_url) ?? undefined}
                       alt="Foto do aluno"
                       className="w-32 h-32 rounded-full object-cover border-4 border-violet-200 shadow-md"
                     />

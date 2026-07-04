@@ -3,7 +3,7 @@ import Image from "next/image";
 import { Roboto } from "next/font/google";
 import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/router";
-import { supabase } from "@/lib/supabaseClient";
+import { api } from "@/lib/api";
 
 const roboto = Roboto({ subsets: ["latin"], weight: ["400", "500", "700"] });
 
@@ -15,25 +15,23 @@ export default function AtualizarSenhaPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [sessionChecked, setSessionChecked] = useState(false);
   const [hasValidSession, setHasValidSession] = useState<boolean | null>(null);
+  const [token, setToken] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
-  // Verifica se existe uma sessão válida (token do link de recuperação)
+  // O link do e-mail traz o token de redefinição na query string (?token=...)
   useEffect(() => {
-    const checkSession = async () => {
-      const { data, error } = await supabase.auth.getSession();
+    if (!router.isReady) return;
 
-      if (error || !data.session) {
-        setHasValidSession(false);
-      } else {
-        setHasValidSession(true);
-      }
-
-      setSessionChecked(true);
-    };
-
-    checkSession();
-  }, []);
+    const queryToken = router.query.token;
+    if (typeof queryToken === "string" && queryToken.length > 0) {
+      setToken(queryToken);
+      setHasValidSession(true);
+    } else {
+      setHasValidSession(false);
+    }
+    setSessionChecked(true);
+  }, [router.isReady, router.query.token]);
 
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -56,18 +54,15 @@ export default function AtualizarSenhaPage() {
       return;
     }
 
+    if (!token) {
+      setErrorMsg("Link inválido ou expirado.");
+      return;
+    }
+
     setIsLoading(true);
 
     try {
-      const { error } = await supabase.auth.updateUser({
-        password,
-      });
-
-      if (error) {
-        console.error("Erro ao atualizar senha:", error);
-        setErrorMsg(error.message || "Erro ao atualizar a senha.");
-        return;
-      }
+      await api.post("/auth/redefinir-senha", { token, nova_senha: password });
 
       setSuccessMsg("Senha atualizada com sucesso! Você já pode fazer login.");
       setPassword("");
@@ -76,9 +71,9 @@ export default function AtualizarSenhaPage() {
       setTimeout(() => {
         router.push("/login");
       }, 2000);
-    } catch (err) {
-      console.error("Erro inesperado:", err);
-      setErrorMsg("Erro inesperado ao atualizar a senha.");
+    } catch (err: any) {
+      console.error("Erro ao atualizar senha:", err);
+      setErrorMsg(err?.message || "Erro ao atualizar a senha.");
     } finally {
       setIsLoading(false);
     }

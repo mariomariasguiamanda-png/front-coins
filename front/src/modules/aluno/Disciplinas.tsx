@@ -20,7 +20,7 @@ import {
   ScrollText,
   Clock,
 } from "lucide-react";
-import { supabase } from "@/lib/supabaseClient";
+import { api } from "@/lib/api";
 
 type IconComponent = React.ComponentType<{ className?: string }>;
 
@@ -142,78 +142,24 @@ const Disciplinas = () => {
   const [loading, setLoading] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
 
-  // Carrega disciplinas + stats reais do aluno logado
+  // Carrega disciplinas + stats reais do aluno logado - a API já resolve
+  // id_aluno a partir do JWT e devolve tudo agregado numa chamada só.
   useEffect(() => {
     async function carregarDisciplinasAluno() {
       try {
         setLoading(true);
         setErro(null);
 
-        // 1. Usuário autenticado (Supabase Auth)
-        const {
-          data: { user },
-          error: authError,
-        } = await supabase.auth.getUser();
+        const rows = await api.get("/aluno/disciplinas");
 
-        if (authError) throw authError;
-        if (!user || !user.id) {
-          setErro("Usuário não autenticado.");
-          setLoading(false);
-          return;
-        }
-
-        // 2. Busca o id_usuario na tabela usuarios via auth_user_id
-        const { data: usuario, error: usuarioError } = await supabase
-          .from("usuarios")
-          .select("id_usuario, email")
-          .eq("auth_user_id", user.id)
-          .single();
-
-        if (usuarioError || !usuario) {
-          setErro("Usuário não encontrado na tabela de usuários.");
-          setLoading(false);
-          return;
-        }
-
-        // 3. Busca o aluno vinculado a esse usuário, com turma
-        const { data: aluno, error: alunoError } = await supabase
-          .from("alunos")
-          .select("id_aluno, id_turma")
-          .eq("id_usuario", usuario.id_usuario)
-          .single();
-
-        if (alunoError || !aluno) {
-          setErro("Aluno não encontrado.");
-          setLoading(false);
-          return;
-        }
-
-        if (!aluno.id_turma) {
-          setErro("Aluno não está vinculado a nenhuma turma.");
-          setLoading(false);
-          return;
-        }
-
-        const idAluno = aluno.id_aluno;
-
-        // 4. Buscar diretamente da view agregada vw_disciplinas_moedas_aluno
-        const { data: vwRows, error: vwError } = await supabase
-          .from("vw_disciplinas_moedas_aluno")
-          .select("*")
-          .eq("id_aluno", idAluno);
-
-        if (vwError) throw vwError;
-
-        if (!vwRows || vwRows.length === 0) {
+        if (!rows || rows.length === 0) {
           setDisciplinas([]);
           setLoading(false);
           return;
         }
 
-        // Monta UI com base na view, usando colunas já agregadas por aluno
-        const disciplinasUI: DisciplinaUI[] = vwRows.map((row: any) => {
-          const nomeDisciplina: string =
-            row.nome_disciplina || row.nome || "Disciplina";
+        const disciplinasUI: DisciplinaUI[] = rows.map((row: any) => {
+          const nomeDisciplina: string = row.nome || "Disciplina";
           const codigoDisciplina: string = row.codigo || "";
 
           const key = normalizarNome(nomeDisciplina);
@@ -227,7 +173,6 @@ const Disciplinas = () => {
             icon: visual.icon,
             cor: visual.cor,
 
-            // agora vem direto da view, já calculado por aluno
             progresso: row.progresso_percent ?? 0,
             moedas_conquistadas: row.moedas_conquistadas ?? 0,
             moedas_totais_disciplina: row.moedas_totais_disciplina ?? 0,
@@ -235,7 +180,7 @@ const Disciplinas = () => {
             atividades: {
               total: row.total_atividades ?? 0,
               concluidas: row.atividades_concluidas ?? 0,
-              pendentes: row.atividades_pendentes ?? 0,
+              pendentes: (row.total_atividades ?? 0) - (row.atividades_concluidas ?? 0),
             },
             resumos: row.total_resumos ?? 0,
             videoaulas: {

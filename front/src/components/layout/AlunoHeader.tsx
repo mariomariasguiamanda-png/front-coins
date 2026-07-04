@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Menu, ChevronLeft } from "lucide-react";
 import { Notifications } from "@/components/ui/Notifications";
 import { useUsuarioLogado } from "@/hooks/useUsuarioLogado";
+import { resolveMediaUrl } from "@/lib/api";
 
 type AlunoHeaderProps = {
   onToggleSidebar?: () => void;
@@ -65,7 +66,7 @@ export default function AlunoHeader({
             </span>
             {fotoUrl ? (
               <img
-                src={fotoUrl}
+                src={resolveMediaUrl(fotoUrl) ?? undefined}
                 alt="Foto do usuário"
                 className="w-10 h-10 rounded-full object-cover border border-gray-300 shadow-sm"
               />

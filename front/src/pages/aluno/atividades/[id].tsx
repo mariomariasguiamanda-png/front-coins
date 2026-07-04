@@ -2,37 +2,34 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
-import { supabase } from "@/lib/supabaseClient";
+import { api } from "@/lib/api";
 import AlunoLayout from "@/components/layout/AlunoLayout";
 import { ArrowLeft, CheckCircle2, Clock, AlertTriangle } from "lucide-react";
 import Modal from "@/components/ui/Modal";
+
+// Questões da atividade (VF + múltipla escolha) - sem gabarito (a API não entrega
+// correta/letra_correta pro papel aluno)
+type Questao = {
+  id_questao: number;
+  enunciado: string;
+  correta?: boolean | null;
+  alternativa_a: string | null;
+  alternativa_b: string | null;
+  alternativa_c: string | null;
+  alternativa_d: string | null;
+  letra_correta?: "A" | "B" | "C" | "D" | null;
+};
 
 type Atividade = {
   id_atividade: number;
   titulo: string;
   descricao: string | null;
   id_disciplina: number;
-};
-
-type ProgressoAtividade = {
-  id_progresso_atividade?: number;
-  id_atividade: number;
-  id_aluno: number;
-  status: "pendente" | "concluida";
+  questoes_atividade: Questao[];
+  status: "pendente" | "entregue" | "corrigida";
   nota: number | null;
-  concluido_em: string | null;
-};
-
-// Questões da atividade (VF + múltipla escolha)
-type Questao = {
-  id_questao: number;
-  enunciado: string;
-  correta: boolean | null; // usado nas questões V/F
-  alternativa_a: string | null;
-  alternativa_b: string | null;
-  alternativa_c: string | null;
-  alternativa_d: string | null;
-  letra_correta: "A" | "B" | "C" | "D" | null; // usado nas de múltipla escolha
+  feedback: string | null;
+  data_entrega: string | null;
 };
 
 // helper: identifica se a questão é Verdadeiro/Falso (sem alternativas)
@@ -47,77 +44,12 @@ const AtividadeDetalhePage = () => {
   const [error, setError] = useState<string | null>(null);
 
   const [atividade, setAtividade] = useState<Atividade | null>(null);
-  const [alunoId, setAlunoId] = useState<number | null>(null);
-
-  const [progresso, setProgresso] = useState<ProgressoAtividade | null>(null);
-  const [notaInput, setNotaInput] = useState<string>("");
   const [questoes, setQuestoes] = useState<Questao[]>([]);
   const [respostas, setRespostas] = useState<Record<number, string | null>>({});
   const [corrigindo, setCorrigindo] = useState(false);
   const [showReenvioModal, setShowReenvioModal] = useState(false);
 
-  // ========= helper: descobrir id_aluno =========
-  const fetchAlunoId = async (): Promise<number | null> => {
-    try {
-      const {
-        data: { user },
-        error: userError,
-      } = await supabase.auth.getUser();
-
-      if (userError) {
-        console.error("Erro ao obter usuário autenticado:", userError);
-        return null;
-      }
-
-      if (!user || !user.id) {
-        console.warn("Nenhum usuário autenticado ou id ausente.");
-        return null;
-      }
-
-      // 1) usuarios
-      const { data: usuario, error: usuarioError } = await supabase
-        .from("usuarios")
-        .select("id_usuario")
-        .eq("auth_user_id", user.id)
-        .maybeSingle();
-
-      if (usuarioError) {
-        console.error("Erro ao buscar usuario em `usuarios`:", usuarioError);
-        return null;
-      }
-
-      if (!usuario) {
-        console.warn(
-          "Nenhum registro encontrado em `usuarios` para esse email."
-        );
-        return null;
-      }
-
-      // 2) alunos
-      const { data: aluno, error: alunoError } = await supabase
-        .from("alunos")
-        .select("id_aluno")
-        .eq("id_usuario", usuario.id_usuario)
-        .maybeSingle();
-
-      if (alunoError) {
-        console.error("Erro ao buscar aluno em `alunos`:", alunoError);
-        return null;
-      }
-
-      if (!aluno) {
-        console.warn("Nenhum aluno associado a esse usuário.");
-        return null;
-      }
-
-      return aluno.id_aluno as number;
-    } catch (err) {
-      console.error("Erro inesperado ao obter id_aluno:", err);
-      return null;
-    }
-  };
-
-  // ========= carregar atividade + progresso =========
+  // ========= carregar atividade (já vem com questões + status/nota/feedback do aluno) =========
   const loadData = async () => {
     if (!id) return;
 
@@ -130,64 +62,10 @@ const AtividadeDetalhePage = () => {
         throw new Error("ID de atividade inválido.");
       }
 
-      // 1) garantir alunoId em memória
-      let alunoIdLocal = alunoId;
-      if (!alunoIdLocal) {
-        alunoIdLocal = await fetchAlunoId();
-        if (!alunoIdLocal) {
-          throw new Error("Não foi possível identificar o aluno logado.");
-        }
-        setAlunoId(alunoIdLocal);
-      }
+      const data: Atividade = await api.get(`/aluno/atividades/${idAtividade}`);
+      setAtividade(data);
 
-      // 2) buscar atividade
-      const { data: atividadeData, error: atividadeError } = await supabase
-        .from("atividades")
-        .select("*")
-        .eq("id_atividade", idAtividade)
-        .maybeSingle();
-
-      if (atividadeError) throw new Error(atividadeError.message);
-      if (!atividadeData) throw new Error("Atividade não encontrada.");
-
-      setAtividade(atividadeData as Atividade);
-
-      // 3) buscar progresso dessa atividade para esse aluno
-      const { data: progData, error: progError } = await supabase
-        .from("progresso_atividades")
-        .select("*")
-        .eq("id_atividade", idAtividade)
-        .eq("id_aluno", alunoIdLocal)
-        .maybeSingle();
-
-      if (progError) {
-        console.error("Erro ao buscar progresso_atividades:", progError);
-      }
-
-      if (progData) {
-        setProgresso(progData as ProgressoAtividade);
-        setNotaInput(
-          progData.nota !== null && progData.nota !== undefined
-            ? String(progData.nota)
-            : ""
-        );
-      } else {
-        setProgresso(null);
-        setNotaInput("");
-      }
-
-      // 4) buscar questões dessa atividade
-      const { data: questoesData, error: questoesError } = await supabase
-        .from("questoes_atividade")
-        .select(
-          "id_questao, enunciado, correta, alternativa_a, alternativa_b, alternativa_c, alternativa_d, letra_correta"
-        )
-        .eq("id_atividade", idAtividade)
-        .order("id_questao", { ascending: true });
-
-      if (questoesError) throw new Error(questoesError.message);
-
-      const qs = (questoesData || []) as Questao[];
+      const qs = data.questoes_atividade ?? [];
       setQuestoes(qs);
 
       // inicia o state de respostas com null (não respondida)
@@ -217,16 +95,15 @@ const AtividadeDetalhePage = () => {
     }));
   };
 
-  // ========= ação: marcar como concluída =========
+  // ========= ação: marcar como concluída (entrega) =========
+  // A nota agora é calculada e validada no servidor (decisão de segurança já
+  // tomada na Fase 1 - o aluno não tem acesso ao gabarito pra calcular sozinho).
   const handleMarcarConcluida = async () => {
     try {
       setError(null);
 
       if (!atividade) return;
-      if (!alunoId) {
-        throw new Error("Aluno não identificado.");
-      }
-      if (progresso?.status === "concluida") {
+      if (atividade.status === "entregue" || atividade.status === "corrigida") {
         setShowReenvioModal(true);
         return;
       }
@@ -250,85 +127,16 @@ const AtividadeDetalhePage = () => {
 
       setCorrigindo(true);
 
-      // Calcula acertos (VF + múltipla escolha)
-      let acertos = 0;
+      const respostasParaEnviar = questoes.map((q) => ({
+        id_questao: String(q.id_questao),
+        resposta: respostas[q.id_questao] as string,
+      }));
 
-      questoes.forEach((q) => {
-        const resp = respostas[q.id_questao];
-        if (!resp) return;
-
-        let acertou = false;
-
-        if (isVFQuestao(q)) {
-          // questão Verdadeiro/Falso: compara "true"/"false" com o gabarito boolean
-          if (q.correta !== null && q.correta !== undefined) {
-            const gabarito = q.correta ? "true" : "false";
-            acertou = resp === gabarito;
-          }
-        } else if (q.letra_correta) {
-          // múltipla escolha: compara letra marcada com letra_correta
-          acertou = resp === q.letra_correta;
-        }
-
-        if (acertou) acertos++;
+      await api.post(`/aluno/atividades/${atividade.id_atividade}/entregar`, {
+        respostas: respostasParaEnviar,
       });
 
-      const total = questoes.length;
-      const notaCalculada =
-        total > 0 ? Number(((acertos / total) * 10).toFixed(2)) : 0;
-
-      // Monta array de respostas para salvar no banco
-      const respostasParaSalvar = questoes.map((q) => {
-        const resp = respostas[q.id_questao];
-
-        let correta = false;
-
-        if (resp) {
-          if (isVFQuestao(q)) {
-            if (q.correta !== null && q.correta !== undefined) {
-              const gabarito = q.correta ? "true" : "false";
-              correta = resp === gabarito;
-            }
-          } else if (q.letra_correta) {
-            correta = resp === q.letra_correta;
-          }
-        }
-
-        return {
-          id_atividade: atividade.id_atividade,
-          id_questao: q.id_questao,
-          id_aluno: alunoId,
-          resposta: resp, // string: "true"/"false"/"A"/"B"/"C"/"D"
-          correta,
-        };
-      });
-
-      // Salva/atualiza respostas do aluno
-      const { error: respError } = await supabase
-        .from("respostas_atividade_aluno")
-        .upsert(respostasParaSalvar, {
-          onConflict: "id_atividade,id_questao,id_aluno",
-        });
-
-      if (respError) throw new Error(respError.message);
-
-      const payload = {
-        id_atividade: atividade.id_atividade,
-        id_aluno: alunoId,
-        status: "concluida" as const,
-        nota: notaCalculada,
-        concluido_em: new Date().toISOString(),
-      };
-
-      const { error: upsertError } = await supabase
-        .from("progresso_atividades")
-        .upsert(payload, {
-          onConflict: "id_atividade,id_aluno",
-        });
-
-      if (upsertError) throw new Error(upsertError.message);
-
-      // Recarrega dados (pra atualizar progresso/nota na tela)
+      // Recarrega dados (pra atualizar status/nota sugerida na tela)
       await loadData();
     } catch (err: any) {
       console.error(err);
@@ -387,7 +195,7 @@ const AtividadeDetalhePage = () => {
     );
   }
 
-  const isConcluida = progresso?.status === "concluida";
+  const isConcluida = atividade.status === "entregue" || atividade.status === "corrigida";
 
   return (
     <AlunoLayout>
@@ -433,10 +241,10 @@ const AtividadeDetalhePage = () => {
                   )}
                   {isConcluida ? "Concluída" : "Pendente"}
                 </span>
-                {progresso?.concluido_em && (
+                {atividade.data_entrega && (
                   <span className="text-[11px] text-gray-500">
                     Concluída em{" "}
-                    {new Date(progresso.concluido_em).toLocaleString("pt-BR")}
+                    {new Date(atividade.data_entrega).toLocaleString("pt-BR")}
                   </span>
                 )}
               </div>
@@ -569,18 +377,20 @@ const AtividadeDetalhePage = () => {
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
               <div className="space-y-1">
                 <p className="text-sm font-medium text-gray-900">
-                  Sua nota nessa atividade (opcional)
+                  Nota da atividade
                 </p>
                 <p className="text-xs text-gray-500">
-                  Você pode registrar a nota que tirou ao marcar como concluída.
+                  {atividade.status === "corrigida"
+                    ? "Nota final registrada pelo professor."
+                    : "Nota sugerida com base nas respostas - o professor pode ajustar ao corrigir."}
                 </p>
               </div>
 
               <div className="flex items-center gap-2">
                 <span className="text-sm text-gray-700">
-                  Nota calculada:{" "}
+                  Nota:{" "}
                   <span className="font-semibold">
-                    {progresso?.nota ?? "—"}
+                    {atividade.nota ?? "—"}
                   </span>
                 </span>
               </div>

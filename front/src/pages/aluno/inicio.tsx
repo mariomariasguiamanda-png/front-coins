@@ -13,7 +13,7 @@ import {
   ChevronUp,
   ChevronDown,
 } from "lucide-react";
-import { supabase } from "@/lib/supabaseClient";
+import { api } from "@/lib/api";
 
 const GraficoMoedas = dynamic(
   () => import("../../components/aluno/GraficoMoedas"),
@@ -55,38 +55,17 @@ type PeriodoFiltro =
   | "esseMes"
   | "todo";
 
+// Formato "achatado" de GET aluno/atividades (já vem com status/nota/disciplinas.nome
+// resolvidos pela própria API, sem precisar de joins manuais no client).
 type ProgressoAtividadeRow = {
+  titulo: string | null;
+  recompensa_moedas: number | null;
+  id_disciplina: number | null;
+  data_criacao: string | null;
+  data_vencimento: string | null;
+  data_entrega: string | null;
   status: string | null;
-  concluido_em: string | null;
-  criado_em: string | null;
-  atividades:
-    | {
-        titulo: string | null;
-        recompensa_moedas: number | null;
-        id_disciplina: number | null;
-        disciplinas:
-          | {
-              nome: string | null;
-            }
-          | {
-              nome: string | null;
-            }[]
-          | null;
-      }
-    | {
-        titulo: string | null;
-        recompensa_moedas: number | null;
-        id_disciplina: number | null;
-        disciplinas:
-          | {
-              nome: string | null;
-            }
-          | {
-              nome: string | null;
-            }[]
-          | null;
-      }[]
-    | null;
+  disciplinas: { nome: string | null } | null;
 };
 
 type FaixaData = {
@@ -160,11 +139,18 @@ const obterFaixaDoPeriodo = (periodo: PeriodoFiltro): FaixaData => {
 const normalizarStatus = (status: string | null | undefined) =>
   (status ?? "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 
+// Vocabulário real da API: pendente | entregue | corrigida (não mais "concluida").
+// "Concluída"/moedas só valem quando o professor corrige (é só aí que a moeda
+// é creditada de verdade em moedas_saldo) - "entregue" ainda está aguardando correção.
 const statusParaExibicao = (status: string | null | undefined) => {
   const normalizado = normalizarStatus(status);
 
-  if (normalizado === "concluida" || normalizado === "concluido") {
+  if (normalizado === "corrigida") {
     return "Concluída";
+  }
+
+  if (normalizado === "entregue") {
+    return "Entregue";
   }
 
   if (normalizado === "pendente") {
@@ -176,25 +162,15 @@ const statusParaExibicao = (status: string | null | undefined) => {
 
 const isConcluida = (status: string | null | undefined) => {
   const normalizado = normalizarStatus(status);
-  return normalizado === "concluida" || normalizado === "concluido";
+  return normalizado === "corrigida";
 };
 
-const obterAtividade = (row: ProgressoAtividadeRow) => {
-  if (!row.atividades) return null;
-  return Array.isArray(row.atividades) ? row.atividades[0] ?? null : row.atividades;
-};
+// Shim: a API já entrega o registro achatado (sem nesting de "atividades"),
+// então o próprio row já contém titulo/recompensa_moedas/id_disciplina.
+const obterAtividade = (row: ProgressoAtividadeRow) => row;
 
 const obterNomeDisciplina = (row: ProgressoAtividadeRow) => {
-  const atividade = obterAtividade(row);
-  const disciplinas = atividade?.disciplinas;
-
-  if (!disciplinas) return "Disciplina";
-
-  if (Array.isArray(disciplinas)) {
-    return disciplinas[0]?.nome ?? "Disciplina";
-  }
-
-  return disciplinas.nome ?? "Disciplina";
+  return row.disciplinas?.nome ?? "Disciplina";
 };
 
 const parseDateAssumingUTC = (val: any): Date | null => {
@@ -207,58 +183,18 @@ const parseDateAssumingUTC = (val: any): Date | null => {
   return Number.isNaN(d.getTime()) ? null : d;
 };
 
+// Data de referência: quando entregue/corrigida, usa a data de entrega; senão,
+// cai pra data de criação da atividade (o mais próximo de "quando isso apareceu pro aluno").
 const obterDataReferencia = (row: ProgressoAtividadeRow) => {
-  const candidates = [
-    row.concluido_em,
-    (row as any).concluido_at,
-    row.criado_em,
-    (row as any).criado_at,
-    (row as any).created_at,
-    (row as any).updated_at,
-  ];
-
-  for (const c of candidates) {
-    const d = parseDateAssumingUTC(c);
-    if (d) return d;
-  }
-
-  return null;
+  return parseDateAssumingUTC(row.data_entrega) ?? parseDateAssumingUTC(row.data_criacao);
 };
 
 const obterPrazoAtividade = (row: ProgressoAtividadeRow) => {
-  const atividade: any = obterAtividade(row);
-  const candidates = [
-    atividade?.prazo,
-    atividade?.prazo_em,
-    atividade?.prazo_at,
-    atividade?.due_date,
-    (row as any).prazo,
-    (row as any).prazo_em,
-  ];
-
-  for (const c of candidates) {
-    const d = parseDateAssumingUTC(c);
-    if (d) return d;
-  }
-
-  return null;
+  return parseDateAssumingUTC(row.data_vencimento);
 };
 
 const obterCriadoEspecifico = (row: ProgressoAtividadeRow) => {
-  const atividade: any = obterAtividade(row);
-  const candidates = [
-    row.criado_em,
-    (row as any).criado_at,
-    atividade?.criado_em,
-    atividade?.created_at,
-  ];
-
-  for (const c of candidates) {
-    const d = parseDateAssumingUTC(c);
-    if (d) return d;
-  }
-
-  return null;
+  return parseDateAssumingUTC(row.data_criacao);
 };
 
 export default function Inicio() {
@@ -284,75 +220,13 @@ export default function Inicio() {
         setLoading(true);
         setError(null);
 
-        // 1) Descobrir usuário autenticado
-        const {
-          data: { user },
-          error: authError,
-        } = await supabase.auth.getUser();
+        // 1) Nome do aluno logado (o backend já resolve tudo a partir do JWT)
+        const me = await api.get("/auth/me");
+        setNomeAluno(me?.nome || null);
 
-        if (authError || !user) {
-          throw new Error("Não foi possível obter o usuário autenticado.");
-        }
-
-        // 2) Buscar id_usuario na tabela usuarios
-        const { data: usuarios, error: usuariosError } = await supabase
-          .from("usuarios")
-          .select("id_usuario")
-          .eq("auth_user_id", user.id)
-          .maybeSingle();
-
-        if (usuariosError || !usuarios) {
-          throw new Error("Usuário não encontrado na tabela usuarios.");
-        }
-
-        const idUsuario = usuarios.id_usuario as number;
-
-        // 3) Buscar id_aluno na tabela alunos
-        const { data: aluno, error: alunoError } = await supabase
-          .from("alunos")
-          .select("id_aluno")
-          .eq("id_usuario", idUsuario)
-          .maybeSingle();
-
-        if (alunoError || !aluno) {
-          throw new Error("Aluno não encontrado na tabela alunos.");
-        }
-
-        const idAluno = aluno.id_aluno as number;
-
-        // 3b) Buscar nome do aluno na tabela usuarios
-        const { data: usuarioNome, error: nomeError } = await supabase
-          .from("usuarios")
-          .select("nome")
-          .eq("id_usuario", idUsuario)
-          .maybeSingle();
-
-        if (!nomeError && usuarioNome) {
-          setNomeAluno(usuarioNome.nome || null);
-        }
-
-        // 4) Buscar base completa para aplicação dos filtros por período
-        // Use a safe select(*) with atividades subselect to avoid DB errors when columns differ
-        const { data: progressoRows, error: progressoError } = await supabase
-          .from("progresso_atividades")
-          .select(
-            `
-            *,
-            atividades (
-              titulo,
-              recompensa_moedas,
-              id_disciplina,
-              disciplinas (
-                nome
-              )
-            )
-          `
-          )
-          .eq("id_aluno", idAluno);
-
-        if (progressoError) throw progressoError;
-
-        setProgressoAtividades((progressoRows as ProgressoAtividadeRow[]) ?? []);
+        // 2) Atividades do aluno, já achatadas com status/nota/disciplinas.nome
+        const atividades = await api.get("/aluno/atividades");
+        setProgressoAtividades((atividades as ProgressoAtividadeRow[]) ?? []);
       } catch (err: any) {
         console.error(err);
         setError(err.message ?? "Erro ao carregar dashboard.");

@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { useRouter } from "next/router";
-import { supabase } from "@/lib/supabaseClient";
+import { api } from "@/lib/api";
 import AlunoLayout from "@/components/layout/AlunoLayout";
 import { Card, CardContent } from "@/components/ui/Card";
 
@@ -50,9 +50,12 @@ const coresByDisciplina: Record<
 };
 
 // Status de conclusão como Sets para lookup O(1) em vez de Array.includes O(n)
-const STATUS_CONCLUIDO_ATV = new Set(["concluida", "concluido", "corrigido", "entregue", "enviado"]);
+// (valores reais da API: atividades pendente/entregue/corrigida, resumos pendente/lido,
+// videoaulas pendente/assistida - "assistida" corrige um bug do front antigo que só
+// reconhecia "assistido", nunca batendo com o valor real gravado no banco)
+const STATUS_CONCLUIDO_ATV = new Set(["concluida", "concluido", "corrigido", "corrigida", "entregue", "enviado"]);
 const STATUS_CONCLUIDO_RES = new Set(["lido", "concluido", "concluida"]);
-const STATUS_CONCLUIDO_VID = new Set(["assistido", "concluido", "concluida"]);
+const STATUS_CONCLUIDO_VID = new Set(["assistido", "assistida", "concluido", "concluida"]);
 
 // Resolve cor e ícone pelo nome da disciplina (fora do componente, puro)
 function resolverCorByNome(nome: string | undefined) {
@@ -104,78 +107,35 @@ export default function AtividadesPage() {
   const [videoaulas, setVideoaulas] = useState<any[]>([]);
   const [disciplinas, setDisciplinas] = useState<any[]>([]);
 
-  const [alunoId, setAlunoId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
 
   // ── Mapa id_disciplina → nome (O(1) lookup no render) ─────────────────────
   const disciplinaMapaNome = useMemo<Record<number, string>>(() => {
     const map: Record<number, string> = {};
-    disciplinas.forEach((d) => { map[d.id_disciplina] = d.disciplina_nome; });
+    disciplinas.forEach((d) => { map[d.id_disciplina] = d.nome; });
     return map;
   }, [disciplinas]);
 
-  // ── 1️⃣ Buscar usuário → aluno → dados iniciais de uma só vez ────────────
+  // ── 1️⃣ Buscar dados do aluno logado - a API resolve id_aluno sozinha a partir do JWT ─
   useEffect(() => {
     const init = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      try {
+        const [disc, atv, res, vid] = await Promise.all([
+          api.get("/aluno/disciplinas"),
+          api.get("/aluno/atividades"),
+          api.get("/aluno/resumos"),
+          api.get("/aluno/videoaulas"),
+        ]);
 
-      const { data: usuario } = await supabase
-        .from("usuarios")
-        .select("id_usuario")
-        .eq("auth_user_id", user.id)
-        .maybeSingle();
-
-      if (!usuario?.id_usuario) return;
-
-      const { data: aluno } = await supabase
-        .from("alunos")
-        .select("id_aluno")
-        .eq("id_usuario", usuario.id_usuario)
-        .maybeSingle();
-
-      if (!aluno?.id_aluno) return;
-
-      const id = aluno.id_aluno;
-      setAlunoId(id);
-
-      // Busca disciplinas + dados do painel em paralelo (economiza 2 round-trips)
-      const [discResult, atvResult, resResult, vidResult] = await Promise.all([
-        supabase
-          .from("vw_disciplinas_unicas_aluno")
-          .select("id_disciplina, disciplina_nome")
-          .eq("id_aluno", id),
-
-        supabase
-          .from("vw_painel_atividades_geral")
-          .select("*")
-          .or(`id_aluno.eq.${id},id_aluno.is.null`),
-
-        supabase
-          .from("resumos")
-          .select("*, disciplinas(nome), progresso_resumos!left(status, lido_em)")
-          .eq("progresso_resumos.id_aluno", id),
-
-        supabase
-          .from("vw_painel_videoaulas_geral")
-          .select("*")
-          .or(`id_aluno.eq.${id},id_aluno.is.null`),
-      ]);
-
-      setDisciplinas(discResult.data || []);
-
-      // Deduplicar atividades com Map (O(n)) em vez de findIndex (O(n²))
-      const atvMap = new Map<number, any>();
-      for (const curr of atvResult.data ?? []) {
-        const existing = atvMap.get(curr.id_atividade);
-        if (!existing || curr.id_aluno) {
-          atvMap.set(curr.id_atividade, curr);
-        }
+        setDisciplinas(disc || []);
+        setAtividades(atv || []);
+        setResumos(res || []);
+        setVideoaulas(vid || []);
+      } catch (err) {
+        console.error("Erro ao carregar painel de desempenho:", err);
+      } finally {
+        setLoading(false);
       }
-      setAtividades(Array.from(atvMap.values()));
-      setResumos(resResult.data || []);
-      setVideoaulas(vidResult.data || []);
-      setLoading(false);
     };
 
     init();
@@ -184,12 +144,10 @@ export default function AtividadesPage() {
   // ── Estatísticas (memo) ───────────────────────────────────────────────────
   const estatisticas = useMemo(() => {
     const concluidas = atividades.filter((a) =>
-      STATUS_CONCLUIDO_ATV.has(a.status_progresso ?? a.status)
+      STATUS_CONCLUIDO_ATV.has(a.status)
     ).length;
 
-    const resumosLidos = resumos.filter(
-      (r) => r.progresso_resumos?.[0]?.status === "lido"
-    ).length;
+    const resumosLidos = resumos.filter((r) => r.status === "lido").length;
 
     return {
       atividadesConcluidas: concluidas,
@@ -204,7 +162,7 @@ export default function AtividadesPage() {
   // ── Listas filtradas (memo, só recalcula quando deps mudam) ──────────────
   const atividadesFiltradas = useMemo(() => {
     return atividades.filter((a) => {
-      const statusAtual = a.status_progresso ?? a.status ?? "pendente";
+      const statusAtual = a.status ?? "pendente";
       const isConcluido = STATUS_CONCLUIDO_ATV.has(statusAtual);
       const sMatch =
         filtroStatus === "todos" ||
@@ -218,10 +176,7 @@ export default function AtividadesPage() {
 
   const resumosFiltrados = useMemo(() => {
     return resumos.filter((r) => {
-      const statusResumo =
-        r.progresso_resumos?.length > 0
-          ? r.progresso_resumos[0]?.status
-          : "pendente";
+      const statusResumo = r.status ?? "pendente";
       const isConcluido = STATUS_CONCLUIDO_RES.has(statusResumo);
       const sMatch =
         filtroStatus === "todos" ||
@@ -235,7 +190,7 @@ export default function AtividadesPage() {
 
   const videoaulasFiltradas = useMemo(() => {
     return videoaulas.filter((v) => {
-      const statusVideo = v.status_progresso ?? "pendente";
+      const statusVideo = v.status ?? "pendente";
       const isConcluido = STATUS_CONCLUIDO_VID.has(statusVideo);
       const sMatch =
         filtroStatus === "todos" ||
@@ -333,7 +288,7 @@ export default function AtividadesPage() {
                   <option value="todas">Todas</option>
                   {disciplinas.map((d) => (
                     <option key={d.id_disciplina} value={d.id_disciplina}>
-                      {d.disciplina_nome}
+                      {d.nome}
                     </option>
                   ))}
                 </select>
@@ -383,16 +338,16 @@ export default function AtividadesPage() {
                 </p>
               ) : (
                 atividadesFiltradas.map((a) => {
-                  const discNome = disciplinaMapaNome[a.id_disciplina];
-                  const discCor = resolverCorByNome(discNome ?? a.disciplina_nome);
-                  const DiscIcon = resolverIconByNome(discNome ?? a.disciplina_nome);
-                  const prazoInfo = formatarPrazo(a.valido_ate);
-                  const status = a.status_progresso ?? "pendente";
+                  const discNome = disciplinaMapaNome[a.id_disciplina] ?? a.disciplinas?.nome;
+                  const discCor = resolverCorByNome(discNome);
+                  const DiscIcon = resolverIconByNome(discNome);
+                  const prazoInfo = formatarPrazo(a.data_vencimento);
+                  const status = a.status ?? "pendente";
                   const isConcluido = STATUS_CONCLUIDO_ATV.has(status);
 
                   return (
                     <Card
-                      key={a.id_progresso_atividade ?? a.id_atividade}
+                      key={a.id_atividade}
                       className="border border-gray-200 hover:shadow-lg transition-all duration-200"
                     >
                       <CardContent className="p-6">
@@ -405,7 +360,7 @@ export default function AtividadesPage() {
                             <div className="flex-1">
                               <div className="flex items-center gap-2 mb-2">
                                 <span className={`text-sm font-medium ${discCor.text}`}>
-                                  {a.disciplina_nome}
+                                  {discNome}
                                 </span>
                                 <span
                                   className={`px-2 py-1 text-xs font-medium rounded-full ${
@@ -419,7 +374,7 @@ export default function AtividadesPage() {
                               </div>
 
                               <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                                {a.atividade_titulo}
+                                {a.titulo}
                               </h3>
 
                               <div className="flex items-center gap-4 text-sm text-gray-600">
@@ -462,11 +417,7 @@ export default function AtividadesPage() {
                   const discNome = disciplinaMapaNome[r.id_disciplina] ?? r.disciplinas?.nome;
                   const discCor = resolverCorByNome(discNome);
                   const DiscIcon = resolverIconByNome(discNome);
-                  const statusResumo =
-                    r.progresso_resumos?.length > 0
-                      ? r.progresso_resumos[0]?.status
-                      : null;
-                  const isLido = statusResumo === "lido";
+                  const isLido = r.status === "lido";
 
                   return (
                     <Card
@@ -524,14 +475,13 @@ export default function AtividadesPage() {
               ) : (
                 videoaulasFiltradas.map((v) => {
                   const discNome =
-                    disciplinaMapaNome[v.id_disciplina] ??
-                    v.videoaulas?.disciplinas?.nome;
+                    disciplinaMapaNome[v.id_disciplina] ?? v.disciplinas?.nome;
                   const discCor = resolverCorByNome(discNome);
                   const DiscIcon = resolverIconByNome(discNome);
 
                   return (
                     <Card
-                      key={v.videoaulas?.id_videoaula ?? v.id_videoaula}
+                      key={v.id_videoaula}
                       className="border border-gray-200 hover:shadow-lg transition"
                     >
                       <CardContent className="p-6">
@@ -542,12 +492,9 @@ export default function AtividadesPage() {
 
                           <div className="flex-1">
                             <p className={`text-sm font-medium ${discCor.text}`}>
-                              {v.videoaulas?.disciplinas?.nome ?? discNome}
+                              {discNome}
                             </p>
-                            <h3 className="text-lg font-semibold">{v.videoaulas?.titulo}</h3>
-                            <p className="text-sm text-gray-600 line-clamp-2">
-                              {v.videoaulas?.descricao}
-                            </p>
+                            <h3 className="text-lg font-semibold">{v.titulo}</h3>
                           </div>
 
                           <button

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
-import { supabase } from "@/lib/supabaseClient";
+import { api } from "@/lib/api";
 import AlunoLayout from "@/components/layout/AlunoLayout";
 import { CheckCircle2, BookOpen, Loader2 } from "lucide-react";
 
@@ -11,9 +11,8 @@ type Resumo = {
   titulo: string;
   conteudo: string | null;
   id_disciplina: number;
-  created_at?: string;
-  updated_at?: string;
-  // se tiver outros campos no futuro (ex: arquivo_url), só adicionar aqui
+  status: "pendente" | "lido";
+  lido_em: string | null;
 };
 
 const ResumoDetalhePage = () => {
@@ -23,44 +22,10 @@ const ResumoDetalhePage = () => {
   const [resumo, setResumo] = useState<Resumo | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  // Progresso do resumo
-  const [alunoId, setAlunoId] = useState<number | null>(null);
   const [statusResumo, setStatusResumo] = useState<"pendente" | "lido">(
     "pendente"
   );
   const [saving, setSaving] = useState(false);
-
-  const fetchAlunoId = async (): Promise<number | null> => {
-    try {
-      const {
-        data: { user },
-        error: userError,
-      } = await supabase.auth.getUser();
-
-      if (userError || !user?.id) return null;
-
-      const { data: usuario, error: usuarioError } = await supabase
-        .from("usuarios")
-        .select("id_usuario")
-        .eq("auth_user_id", user.id)
-        .maybeSingle();
-
-      if (usuarioError || !usuario) return null;
-
-      const { data: aluno, error: alunoError } = await supabase
-        .from("alunos")
-        .select("id_aluno")
-        .eq("id_usuario", usuario.id_usuario)
-        .maybeSingle();
-
-      if (alunoError || !aluno) return null;
-
-      return aluno.id_aluno as number;
-    } catch (err) {
-      console.error("Erro ao obter id_aluno:", err);
-      return null;
-    }
-  };
 
   useEffect(() => {
     const fetchResumo = async () => {
@@ -75,48 +40,10 @@ const ResumoDetalhePage = () => {
           throw new Error("ID de resumo inválido.");
         }
 
-        // 1) Busca o resumo
-        const { data, error } = await supabase
-          .from("resumos")
-          .select("*")
-          .eq("id_resumo", idNumber)
-          .maybeSingle();
-
-        if (error) {
-          throw new Error(error.message);
-        }
-
-        if (!data) {
-          throw new Error("Resumo não encontrado.");
-        }
-
-        setResumo(data as Resumo);
-
-        // 2) Descobre o aluno logado
-        const alunoIdLocal = await fetchAlunoId();
-        if (!alunoIdLocal) {
-          return; // sem aluno -> sem progresso
-        }
-        setAlunoId(alunoIdLocal);
-
-        // 3) Verifica se já existe progresso para esse resumo
-        const { data: prog, error: progError } = await supabase
-          .from("progresso_resumos")
-          .select("status")
-          .eq("id_resumo", idNumber)
-          .eq("id_aluno", alunoIdLocal)
-          .maybeSingle();
-
-        if (progError) {
-          console.warn("Erro ao buscar progresso_resumos:", progError);
-          return;
-        }
-
-        if (prog?.status === "lido") {
-          setStatusResumo("lido");
-        } else {
-          setStatusResumo("pendente");
-        }
+        // A API já resolve o aluno logado (JWT) e devolve status/lido_em junto
+        const data: Resumo = await api.get(`/aluno/resumos/${idNumber}`);
+        setResumo(data);
+        setStatusResumo(data.status === "lido" ? "lido" : "pendente");
       } catch (err: any) {
         setError(err.message ?? "Erro ao carregar o resumo.");
       } finally {
@@ -132,29 +59,14 @@ const ResumoDetalhePage = () => {
   };
 
   const handleMarcarComoLido = async () => {
-    if (!resumo || !alunoId || statusResumo === "lido") return;
+    if (!resumo || statusResumo === "lido") return;
 
     try {
       setSaving(true);
-
-      const { error } = await supabase.from("progresso_resumos").upsert(
-        {
-          id_resumo: resumo.id_resumo,
-          id_aluno: alunoId,
-          status: "lido",
-          lido_em: new Date().toISOString(),
-        },
-        {
-          onConflict: "id_resumo,id_aluno",
-        }
-      );
-
-      if (error) {
-        console.error("Erro ao salvar progresso_resumos:", error);
-        return;
-      }
-
+      await api.post(`/aluno/resumos/${resumo.id_resumo}/concluir`, {});
       setStatusResumo("lido");
+    } catch (err) {
+      console.error("Erro ao marcar resumo como lido:", err);
     } finally {
       setSaving(false);
     }
@@ -233,9 +145,9 @@ const ResumoDetalhePage = () => {
 
               <button
                 onClick={handleMarcarComoLido}
-                disabled={statusResumo === "lido" || !alunoId || saving}
+                disabled={statusResumo === "lido" || saving}
                 className={`inline-flex items-center gap-2 rounded-lg text-sm font-medium px-4 py-2 transition-colors ${
-                  statusResumo === "lido" || !alunoId
+                  statusResumo === "lido"
                     ? "bg-emerald-50 text-emerald-700 cursor-default"
                     : "bg-purple-600 text-white hover:bg-purple-700"
                 }`}
