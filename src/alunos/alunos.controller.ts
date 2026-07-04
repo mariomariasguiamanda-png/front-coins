@@ -1,10 +1,12 @@
-/* eslint-disable @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-argument */
 import { Controller, Get, Param, UseGuards } from '@nestjs/common';
 import { AlunosService } from './alunos.service';
 import { JwtGuard } from '../common/guards/jwt.guard';
+import { RolesGuard } from '../common/guards/roles.guard';
+import { Roles } from '../common/decorators/roles.decorator';
 
 @Controller('alunos')
-@UseGuards(JwtGuard)
+@UseGuards(JwtGuard, RolesGuard)
+@Roles('professor', 'admin')
 export class AlunosController {
   constructor(private readonly alunosService: AlunosService) {}
 

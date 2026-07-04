@@ -1,5 +1,4 @@
-/* eslint-disable @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-argument */
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { DatabaseService } from '../database/database.service';
 
 @Injectable()
@@ -10,15 +9,22 @@ export class DisciplinasService {
     return this.db.disciplinas.findMany();
   }
 
-  async findByAluno(id_aluno: bigint) {
+  async findByAluno(id_aluno: number) {
     const matriculas = await this.db.matriculas_aluno_disciplina.findMany({
       where: { id_aluno },
-      include: { disciplinas: true }
+      include: { disciplinas: true },
     });
-    return matriculas.map(m => ({...m.disciplinas, id_disciplina: Number(m.disciplinas.id_disciplina)}));
+    return matriculas.map((m) => ({
+      ...m.disciplinas,
+      id_disciplina: Number(m.disciplinas.id_disciplina),
+    }));
   }
 
   async findOne(id: bigint) {
-    return this.db.disciplinas.findUnique({ where: { id_disciplina: id } });
+    const disciplina = await this.db.disciplinas.findUnique({
+      where: { id_disciplina: id },
+    });
+    if (!disciplina) throw new NotFoundException('Disciplina não encontrada');
+    return disciplina;
   }
 }

@@ -1,5 +1,4 @@
-/* eslint-disable @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-argument */
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { DatabaseService } from '../database/database.service';
 
 @Injectable()
@@ -11,6 +10,8 @@ export class TurmasService {
   }
 
   async findOne(id: bigint) {
-    return this.db.turmas.findUnique({ where: { id_turma: id } });
+    const turma = await this.db.turmas.findUnique({ where: { id_turma: id } });
+    if (!turma) throw new NotFoundException('Turma não encontrada');
+    return turma;
   }
 }

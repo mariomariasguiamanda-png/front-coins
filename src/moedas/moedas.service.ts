@@ -1,11 +1,12 @@
 import { Injectable, UnprocessableEntityException } from '@nestjs/common';
 import { DatabaseService } from '../database/database.service';
+import type { AuthUser } from '../common/types/auth-user';
 
 @Injectable()
 export class MoedasService {
   constructor(private db: DatabaseService) {}
 
-  async getSaldo(id_aluno: bigint) {
+  async getSaldo(id_aluno: number) {
     const saldos = await this.db.moedas_saldo.findMany({
       where: { id_aluno },
       include: { disciplinas: true },
@@ -19,7 +20,7 @@ export class MoedasService {
     };
   }
 
-  async getExtrato(id_aluno: bigint, id_disciplina: bigint) {
+  async getExtrato(id_aluno: number, id_disciplina: bigint) {
     const transacoes = await this.db.transacoes_moedas.findMany({
       where: { id_aluno, id_disciplina },
       orderBy: { criado_em: 'desc' },
@@ -34,18 +35,33 @@ export class MoedasService {
     };
   }
 
-  // eslint-disable-next-line @typescript-eslint/require-await, @typescript-eslint/no-unused-vars
-  async getRanking(_id_turma: bigint) {
-    // ranking logic simplified
-    return { alunos: [] };
+  async getRanking(id_turma: bigint) {
+    const alunos = await this.db.alunos.findMany({
+      where: { id_turma },
+      include: {
+        usuarios: { select: { nome: true } },
+        moedas_saldo: { select: { saldo: true } },
+      },
+    });
+
+    const ranking = alunos
+      .map((a) => ({
+        id_aluno: Number(a.id_aluno),
+        nome: a.usuarios.nome,
+        saldo_total: a.moedas_saldo.reduce((sum, s) => sum + (s.saldo ?? 0), 0),
+      }))
+      .sort((a, b) => b.saldo_total - a.saldo_total)
+      .map((a, index) => ({ ...a, posicao: index + 1 }));
+
+    return { alunos: ranking };
   }
 
   async comprarPontos(
-    id_aluno: bigint,
+    id_aluno: number,
     id_disciplina: bigint,
     quantidade_pontos: number,
   ) {
-    const PRECO_POR_PONTO = 10; // example cost
+    const PRECO_POR_PONTO = 10; // TODO(Fase 1): ler de config_compra_pontos por disciplina
     const custoTotal = quantidade_pontos * PRECO_POR_PONTO;
 
     return this.db.$transaction(async (tx) => {
@@ -83,6 +99,46 @@ export class MoedasService {
       });
 
       return { saldo_anterior: saldoRecord.saldo, saldo_novo: novoSaldo.saldo };
+    });
+  }
+
+  async ajuste(
+    id_aluno: bigint,
+    id_disciplina: bigint,
+    quantidade: number,
+    motivo: string,
+    admin: AuthUser,
+  ) {
+    return this.db.$transaction(async (tx) => {
+      const saldoRecord = await tx.moedas_saldo.findUnique({
+        where: { id_aluno_id_disciplina: { id_aluno, id_disciplina } },
+      });
+
+      if (quantidade < 0 && (saldoRecord?.saldo ?? 0) < Math.abs(quantidade)) {
+        throw new UnprocessableEntityException('Saldo insuficiente para o ajuste');
+      }
+
+      const novoSaldo = await tx.moedas_saldo.upsert({
+        where: { id_aluno_id_disciplina: { id_aluno, id_disciplina } },
+        create: { id_aluno, id_disciplina, saldo: Math.max(quantidade, 0) },
+        update: { saldo: { increment: quantidade } },
+      });
+
+      const transacao = await tx.transacoes_moedas.create({
+        data: {
+          id_aluno,
+          id_disciplina,
+          tipo: 'ajuste_admin',
+          quantidade,
+          criado_por_usuario_id: admin.sub,
+          descricao: motivo,
+        },
+      });
+
+      return {
+        id_transacao: Number(transacao.id_transacao),
+        saldo_novo: novoSaldo.saldo,
+      };
     });
   }
 }

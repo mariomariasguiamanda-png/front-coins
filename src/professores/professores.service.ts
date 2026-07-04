@@ -1,5 +1,4 @@
-/* eslint-disable @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-argument */
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { DatabaseService } from '../database/database.service';
 
 @Injectable()
@@ -11,6 +10,10 @@ export class ProfessoresService {
   }
 
   async findOne(id: bigint) {
-    return this.db.professores.findUnique({ where: { id_professor: id } });
+    const professor = await this.db.professores.findUnique({
+      where: { id_professor: id },
+    });
+    if (!professor) throw new NotFoundException('Professor não encontrado');
+    return professor;
   }
 }

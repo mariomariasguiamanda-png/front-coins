@@ -1,16 +1,17 @@
-/* eslint-disable @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unused-vars */
 import {
   Injectable,
   CanActivate,
   ExecutionContext,
   UnauthorizedException,
 } from '@nestjs/common';
+import { Request } from 'express';
 import * as jwt from 'jsonwebtoken';
+import type { AuthUser } from '../types/auth-user';
 
 @Injectable()
 export class JwtGuard implements CanActivate {
   canActivate(context: ExecutionContext): boolean {
-    const request = context.switchToHttp().getRequest();
+    const request = context.switchToHttp().getRequest<Request & { user: AuthUser }>();
     const authHeader = request.headers.authorization;
 
     if (!authHeader) {
@@ -24,10 +25,10 @@ export class JwtGuard implements CanActivate {
     }
 
     try {
-      const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret');
+      const decoded = jwt.verify(token, process.env.JWT_SECRET as string) as unknown as AuthUser;
       request.user = decoded;
       return true;
-    } catch (err) {
+    } catch {
       throw new UnauthorizedException('Token inválido ou expirado');
     }
   }

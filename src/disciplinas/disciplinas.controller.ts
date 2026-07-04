@@ -1,10 +1,13 @@
-/* eslint-disable @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-argument */
-import { Controller, Get, Param, Req, UseGuards } from '@nestjs/common';
+import { Controller, Get, Param, UseGuards } from '@nestjs/common';
 import { DisciplinasService } from './disciplinas.service';
 import { JwtGuard } from '../common/guards/jwt.guard';
+import { RolesGuard } from '../common/guards/roles.guard';
+import { Roles } from '../common/decorators/roles.decorator';
+import { CurrentUser } from '../common/decorators/current-user.decorator';
+import type { AuthUser } from '../common/types/auth-user';
 
 @Controller()
-@UseGuards(JwtGuard)
+@UseGuards(JwtGuard, RolesGuard)
 export class DisciplinasController {
   constructor(private readonly disciplinasService: DisciplinasService) {}
 
@@ -14,8 +17,9 @@ export class DisciplinasController {
   }
 
   @Get('aluno/disciplinas')
-  findByAluno(@Req() req: any) {
-    return this.disciplinasService.findByAluno(req.user.sub);
+  @Roles('aluno')
+  findByAluno(@CurrentUser() user: AuthUser) {
+    return this.disciplinasService.findByAluno(user.id_aluno as number);
   }
 
   @Get('disciplinas/:id')
