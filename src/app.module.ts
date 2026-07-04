@@ -1,4 +1,6 @@
 import { Module } from '@nestjs/common';
+import { join } from 'path';
+import { ServeStaticModule } from '@nestjs/serve-static';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { DatabaseModule } from './database/database.module';
@@ -12,9 +14,14 @@ import { ProfessoresModule } from './professores/professores.module';
 import { TurmasModule } from './turmas/turmas.module';
 import { ResumosModule } from './resumos/resumos.module';
 import { VideoaulasModule } from './videoaulas/videoaulas.module';
+import { PerfilModule } from './perfil/perfil.module';
 
 @Module({
   imports: [
+    ServeStaticModule.forRoot({
+      rootPath: join(__dirname, '..', 'uploads'),
+      serveRoot: '/uploads',
+    }),
     DatabaseModule,
     AuthModule,
     MoedasModule,
@@ -26,6 +33,7 @@ import { VideoaulasModule } from './videoaulas/videoaulas.module';
     TurmasModule,
     ResumosModule,
     VideoaulasModule,
+    PerfilModule,
   ],
   controllers: [AppController],
   providers: [AppService],

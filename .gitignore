@@ -56,3 +56,7 @@ pids
 report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 
 /generated/prisma
+
+# arquivos enviados por usuários (fotos de perfil etc.)
+/uploads/**
+!/uploads/**/.gitkeep
