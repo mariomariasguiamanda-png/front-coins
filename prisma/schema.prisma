@@ -6,6 +6,19 @@ datasource db {
   provider = "postgresql"
 }
 
+model logs_auditoria {
+  id_log     BigInt    @id @default(autoincrement())
+  id_usuario BigInt?
+  acao       String    @db.VarChar(255)
+  detalhes   String?
+  ip_address String?   @db.VarChar(50)
+  criado_em  DateTime? @default(now()) @db.Timestamptz(6)
+  usuarios   usuarios? @relation(fields: [id_usuario], references: [id_usuario], onDelete: SetNull, onUpdate: NoAction)
+
+  @@index([id_usuario], map: "idx_logs_auditoria_usuario")
+  @@index([criado_em(sort: Desc)], map: "idx_logs_auditoria_criado_em")
+}
+
 model aluno_atividade {
   id             BigInt     @id @default(autoincrement())
   id_aluno       BigInt
@@ -272,6 +285,7 @@ model usuarios {
   sessoes               sessoes[]
   suporte_chamados      suporte_chamados[]
   transacoes_moedas     transacoes_moedas[]
+  logs_auditoria        logs_auditoria[]
 
   @@index([email], map: "idx_usuarios_email")
   @@index([tipo_usuario], map: "idx_usuarios_tipo")

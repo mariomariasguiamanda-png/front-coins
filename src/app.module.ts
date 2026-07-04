@@ -20,6 +20,7 @@ import { DesempenhoModule } from './desempenho/desempenho.module';
 import { UsuariosModule } from './usuarios/usuarios.module';
 import { MatriculasModule } from './matriculas/matriculas.module';
 import { SuporteModule } from './suporte/suporte.module';
+import { LogsModule } from './logs/logs.module';
 
 @Module({
   imports: [
@@ -44,6 +45,7 @@ import { SuporteModule } from './suporte/suporte.module';
     UsuariosModule,
     MatriculasModule,
     SuporteModule,
+    LogsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
