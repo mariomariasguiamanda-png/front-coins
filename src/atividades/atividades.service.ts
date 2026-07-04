@@ -5,12 +5,155 @@ import {
 } from '@nestjs/common';
 import { DatabaseService } from '../database/database.service';
 import { EntregarAtividadeDto } from './dto/entregar-atividade.dto';
+import { CreateAtividadeDto } from './dto/create-atividade.dto';
+import { UpdateAtividadeDto } from './dto/update-atividade.dto';
+import { CreateQuestaoDto } from './dto/create-questao.dto';
+import { UpdateQuestaoDto } from './dto/update-questao.dto';
 import type { AuthUser } from '../common/types/auth-user';
 import type { questoes_atividade } from '@prisma/client';
 
 @Injectable()
 export class AtividadesService {
   constructor(private db: DatabaseService) {}
+
+  private async verificarProfessorLecionaDisciplina(
+    id_professor: number,
+    id_disciplina: bigint,
+  ) {
+    const vinculo = await this.db.professor_disciplina.findUnique({
+      where: { id_professor_id_disciplina: { id_professor, id_disciplina } },
+    });
+    if (!vinculo) {
+      throw new ForbiddenException('Você não leciona essa disciplina');
+    }
+  }
+
+  private async buscarAtividadeDoProfessor(id_atividade: bigint, id_professor: number) {
+    const atividade = await this.db.atividades.findUnique({ where: { id_atividade } });
+    if (!atividade) throw new NotFoundException('Atividade não encontrada');
+    if (Number(atividade.id_professor) !== id_professor) {
+      throw new ForbiddenException('Esta atividade não pertence a você');
+    }
+    return atividade;
+  }
+
+  async findByProfessor(id_professor: number, id_disciplina?: bigint) {
+    const atividades = await this.db.atividades.findMany({
+      where: {
+        id_professor,
+        ...(id_disciplina !== undefined ? { id_disciplina } : {}),
+      },
+      include: {
+        disciplinas: { select: { nome: true } },
+        _count: { select: { aluno_atividade: true, questoes_atividade: true } },
+      },
+      orderBy: { data_criacao: 'desc' },
+    });
+    return atividades;
+  }
+
+  async findEntregas(id_atividade: bigint, id_professor: number) {
+    await this.buscarAtividadeDoProfessor(id_atividade, id_professor);
+
+    return this.db.aluno_atividade.findMany({
+      where: { id_atividade },
+      include: {
+        alunos: { select: { matricula: true, usuarios: { select: { nome: true } } } },
+      },
+      orderBy: { data_entrega: 'desc' },
+    });
+  }
+
+  async createAtividade(dto: CreateAtividadeDto, professor: AuthUser) {
+    const id_disciplina = BigInt(dto.id_disciplina);
+    await this.verificarProfessorLecionaDisciplina(
+      professor.id_professor as number,
+      id_disciplina,
+    );
+
+    return this.db.atividades.create({
+      data: {
+        id_disciplina,
+        id_professor: professor.id_professor as number,
+        titulo: dto.titulo,
+        descricao: dto.descricao,
+        recompensa_moedas: dto.recompensa_moedas,
+        tipo: dto.tipo,
+        data_vencimento: dto.data_vencimento ? new Date(dto.data_vencimento) : undefined,
+      },
+    });
+  }
+
+  async updateAtividade(id_atividade: bigint, dto: UpdateAtividadeDto, professor: AuthUser) {
+    await this.buscarAtividadeDoProfessor(id_atividade, professor.id_professor as number);
+
+    return this.db.atividades.update({
+      where: { id_atividade },
+      data: {
+        titulo: dto.titulo,
+        descricao: dto.descricao,
+        recompensa_moedas: dto.recompensa_moedas,
+        tipo: dto.tipo,
+        data_vencimento: dto.data_vencimento ? new Date(dto.data_vencimento) : undefined,
+        ativo: dto.ativo,
+      },
+    });
+  }
+
+  async removeAtividade(id_atividade: bigint, professor: AuthUser) {
+    await this.buscarAtividadeDoProfessor(id_atividade, professor.id_professor as number);
+    return this.db.atividades.update({ where: { id_atividade }, data: { ativo: false } });
+  }
+
+  async createQuestao(id_atividade: bigint, dto: CreateQuestaoDto, professor: AuthUser) {
+    await this.buscarAtividadeDoProfessor(id_atividade, professor.id_professor as number);
+
+    let ordem = dto.ordem;
+    if (ordem === undefined) {
+      const ultima = await this.db.questoes_atividade.findFirst({
+        where: { id_atividade },
+        orderBy: { ordem: 'desc' },
+      });
+      ordem = (ultima?.ordem ?? 0) + 1;
+    }
+
+    return this.db.questoes_atividade.create({
+      data: {
+        id_atividade,
+        tipo: dto.tipo,
+        enunciado: dto.enunciado,
+        correta: dto.correta,
+        alternativa_a: dto.alternativa_a,
+        alternativa_b: dto.alternativa_b,
+        alternativa_c: dto.alternativa_c,
+        alternativa_d: dto.alternativa_d,
+        letra_correta: dto.letra_correta,
+        ordem,
+      },
+    });
+  }
+
+  private async buscarQuestaoDoProfessor(id_questao: bigint, id_professor: number) {
+    const questao = await this.db.questoes_atividade.findUnique({
+      where: { id_questao },
+      include: { atividades: true },
+    });
+    if (!questao) throw new NotFoundException('Questão não encontrada');
+    if (Number(questao.atividades.id_professor) !== id_professor) {
+      throw new ForbiddenException('Esta questão não pertence a você');
+    }
+    return questao;
+  }
+
+  async updateQuestao(id_questao: bigint, dto: UpdateQuestaoDto, professor: AuthUser) {
+    await this.buscarQuestaoDoProfessor(id_questao, professor.id_professor as number);
+    return this.db.questoes_atividade.update({ where: { id_questao }, data: dto });
+  }
+
+  async removeQuestao(id_questao: bigint, professor: AuthUser) {
+    await this.buscarQuestaoDoProfessor(id_questao, professor.id_professor as number);
+    return this.db.questoes_atividade.delete({ where: { id_questao } });
+  }
 
   async findByAluno(id_aluno: number) {
     const matriculas = await this.db.matriculas_aluno_disciplina.findMany({
