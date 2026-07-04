@@ -29,6 +29,7 @@ model alunos {
   matricula                   String                        @unique @db.VarChar(50)
   data_nascimento             DateTime?                     @db.Date
   endereco                    String?
+  foto_url                    String?                       @db.VarChar(500)
   criado_em                   DateTime?                     @default(now()) @db.Timestamptz(6)
   aluno_atividade             aluno_atividade[]
   turmas                      turmas?                       @relation(fields: [id_turma], references: [id_turma], onUpdate: NoAction)
@@ -38,26 +39,31 @@ model alunos {
   moedas_saldo                moedas_saldo[]
   notas_finais                notas_finais[]
   transacoes_moedas           transacoes_moedas[]
+  respostas_atividade_aluno   respostas_atividade_aluno[]
+  aluno_resumo                aluno_resumo[]
+  aluno_videoaula             aluno_videoaula[]
 
   @@index([id_turma], map: "idx_alunos_id_turma")
   @@index([id_usuario], map: "idx_alunos_id_usuario")
 }
 
 model atividades {
-  id_atividade      BigInt              @id @default(autoincrement())
-  id_disciplina     BigInt
-  id_professor      BigInt
-  titulo            String              @db.VarChar(255)
-  descricao         String?
-  recompensa_moedas Int?                @default(0)
-  tipo              String?             @db.VarChar(50)
-  data_criacao      DateTime?           @default(now()) @db.Timestamptz(6)
-  data_vencimento   DateTime?           @db.Timestamptz(6)
-  ativo             Boolean?            @default(true)
-  aluno_atividade   aluno_atividade[]
-  disciplinas       disciplinas         @relation(fields: [id_disciplina], references: [id_disciplina], onDelete: Cascade, onUpdate: NoAction)
-  professores       professores         @relation(fields: [id_professor], references: [id_professor], onDelete: SetNull, onUpdate: NoAction)
-  transacoes_moedas transacoes_moedas[]
+  id_atividade              BigInt                      @id @default(autoincrement())
+  id_disciplina             BigInt
+  id_professor              BigInt
+  titulo                    String                      @db.VarChar(255)
+  descricao                 String?
+  recompensa_moedas         Int?                        @default(0)
+  tipo                      String?                     @db.VarChar(50)
+  data_criacao              DateTime?                   @default(now()) @db.Timestamptz(6)
+  data_vencimento           DateTime?                   @db.Timestamptz(6)
+  ativo                     Boolean?                    @default(true)
+  aluno_atividade           aluno_atividade[]
+  disciplinas               disciplinas                 @relation(fields: [id_disciplina], references: [id_disciplina], onDelete: Cascade, onUpdate: NoAction)
+  professores               professores                 @relation(fields: [id_professor], references: [id_professor], onDelete: SetNull, onUpdate: NoAction)
+  transacoes_moedas         transacoes_moedas[]
+  questoes_atividade        questoes_atividade[]
+  respostas_atividade_aluno respostas_atividade_aluno[]
 
   @@index([id_disciplina], map: "idx_atividades_disciplina")
   @@index([data_vencimento], map: "idx_atividades_vencimento")
@@ -97,6 +103,7 @@ model disciplinas {
   resumos                     resumos[]
   transacoes_moedas           transacoes_moedas[]
   videoaulas                  videoaulas[]
+  config_compra_pontos        config_compra_pontos?
 
   @@index([codigo], map: "idx_disciplinas_codigo")
 }
@@ -175,15 +182,16 @@ model professores {
 }
 
 model resumos {
-  id_resumo     BigInt      @id @default(autoincrement())
+  id_resumo     BigInt         @id @default(autoincrement())
   id_disciplina BigInt
   id_professor  BigInt
-  titulo        String      @db.VarChar(255)
+  titulo        String         @db.VarChar(255)
   conteudo      String?
-  data_criacao  DateTime?   @default(now()) @db.Timestamptz(6)
-  ativo         Boolean?    @default(true)
-  disciplinas   disciplinas @relation(fields: [id_disciplina], references: [id_disciplina], onDelete: Cascade, onUpdate: NoAction)
-  professores   professores @relation(fields: [id_professor], references: [id_professor], onDelete: SetNull, onUpdate: NoAction)
+  data_criacao  DateTime?      @default(now()) @db.Timestamptz(6)
+  ativo         Boolean?       @default(true)
+  disciplinas   disciplinas    @relation(fields: [id_disciplina], references: [id_disciplina], onDelete: Cascade, onUpdate: NoAction)
+  professores   professores    @relation(fields: [id_professor], references: [id_professor], onDelete: SetNull, onUpdate: NoAction)
+  aluno_resumo  aluno_resumo[]
 }
 
 model sessoes {
@@ -266,14 +274,85 @@ model usuarios {
 }
 
 model videoaulas {
-  id_videoaula     BigInt      @id @default(autoincrement())
+  id_videoaula     BigInt            @id @default(autoincrement())
   id_disciplina    BigInt
   id_professor     BigInt
-  titulo           String      @db.VarChar(255)
-  url_video        String?     @db.VarChar(500)
+  titulo           String            @db.VarChar(255)
+  url_video        String?           @db.VarChar(500)
   duracao_segundos Int?
-  data_criacao     DateTime?   @default(now()) @db.Timestamptz(6)
-  ativo            Boolean?    @default(true)
-  disciplinas      disciplinas @relation(fields: [id_disciplina], references: [id_disciplina], onDelete: Cascade, onUpdate: NoAction)
-  professores      professores @relation(fields: [id_professor], references: [id_professor], onDelete: SetNull, onUpdate: NoAction)
+  data_criacao     DateTime?         @default(now()) @db.Timestamptz(6)
+  ativo            Boolean?          @default(true)
+  disciplinas      disciplinas       @relation(fields: [id_disciplina], references: [id_disciplina], onDelete: Cascade, onUpdate: NoAction)
+  professores      professores       @relation(fields: [id_professor], references: [id_professor], onDelete: SetNull, onUpdate: NoAction)
+  aluno_videoaula  aluno_videoaula[]
+}
+
+model questoes_atividade {
+  id_questao                BigInt                      @id @default(autoincrement())
+  id_atividade              BigInt
+  tipo                      String                      @db.VarChar(20) // 'vf' | 'multipla'
+  enunciado                 String
+  alternativa_a             String?                     @db.VarChar(500)
+  alternativa_b             String?                     @db.VarChar(500)
+  alternativa_c             String?                     @db.VarChar(500)
+  alternativa_d             String?                     @db.VarChar(500)
+  letra_correta             String?                     @db.VarChar(1) // 'A' | 'B' | 'C' | 'D', usada quando tipo = 'multipla'
+  correta                   Boolean? // usada quando tipo = 'vf'
+  ordem                     Int?                        @default(0)
+  criado_em                 DateTime?                   @default(now()) @db.Timestamptz(6)
+  atividades                atividades                  @relation(fields: [id_atividade], references: [id_atividade], onDelete: Cascade, onUpdate: NoAction)
+  respostas_atividade_aluno respostas_atividade_aluno[]
+
+  @@index([id_atividade], map: "idx_questoes_atividade")
+}
+
+model respostas_atividade_aluno {
+  id                 BigInt             @id @default(autoincrement())
+  id_atividade       BigInt
+  id_questao         BigInt
+  id_aluno           BigInt
+  resposta           String
+  correta            Boolean?
+  criado_em          DateTime?          @default(now()) @db.Timestamptz(6)
+  atividades         atividades         @relation(fields: [id_atividade], references: [id_atividade], onDelete: Cascade, onUpdate: NoAction)
+  questoes_atividade questoes_atividade @relation(fields: [id_questao], references: [id_questao], onDelete: Cascade, onUpdate: NoAction)
+  alunos             alunos             @relation(fields: [id_aluno], references: [id_aluno], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([id_atividade, id_questao, id_aluno])
+}
+
+model aluno_resumo {
+  id        BigInt    @id @default(autoincrement())
+  id_aluno  BigInt
+  id_resumo BigInt
+  status    String?   @default("pendente") @db.VarChar(20) // 'pendente' | 'lido'
+  lido_em   DateTime? @db.Timestamptz(6)
+  criado_em DateTime? @default(now()) @db.Timestamptz(6)
+  alunos    alunos    @relation(fields: [id_aluno], references: [id_aluno], onDelete: Cascade, onUpdate: NoAction)
+  resumos   resumos   @relation(fields: [id_resumo], references: [id_resumo], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([id_aluno, id_resumo])
+}
+
+model aluno_videoaula {
+  id                   BigInt     @id @default(autoincrement())
+  id_aluno             BigInt
+  id_videoaula         BigInt
+  status               String?    @default("pendente") @db.VarChar(20) // 'pendente' | 'assistida'
+  percentual_assistido Int?       @default(0)
+  assistido_em         DateTime?  @db.Timestamptz(6)
+  criado_em            DateTime?  @default(now()) @db.Timestamptz(6)
+  alunos               alunos     @relation(fields: [id_aluno], references: [id_aluno], onDelete: Cascade, onUpdate: NoAction)
+  videoaulas           videoaulas @relation(fields: [id_videoaula], references: [id_videoaula], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([id_aluno, id_videoaula])
+}
+
+model config_compra_pontos {
+  id                     BigInt      @id @default(autoincrement())
+  id_disciplina          BigInt      @unique
+  pontos_por_compra_max  Int?        @default(10)
+  preco_moedas_por_ponto Int?        @default(10)
+  atualizado_em          DateTime?   @default(now()) @db.Timestamptz(6)
+  disciplinas            disciplinas @relation(fields: [id_disciplina], references: [id_disciplina], onDelete: Cascade, onUpdate: NoAction)
 }
