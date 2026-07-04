@@ -1,17 +1,33 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { DatabaseService } from '../database/database.service';
+import { MailService } from '../common/mail/mail.service';
 import { CreateChamadoDto } from './dto/create-chamado.dto';
 import { ResponderChamadoDto } from './dto/responder-chamado.dto';
 import { UpdateStatusChamadoDto } from './dto/update-status-chamado.dto';
 
 @Injectable()
 export class SuporteService {
-  constructor(private db: DatabaseService) {}
+  constructor(
+    private db: DatabaseService,
+    private mailService: MailService,
+  ) {}
 
-  async criarChamado(id_usuario: number, dto: CreateChamadoDto) {
-    return this.db.suporte_chamados.create({
-      data: { id_usuario, assunto: dto.assunto, mensagem: dto.mensagem },
+  async criarChamado(id_usuario: number, dto: CreateChamadoDto, anexos: string[] = []) {
+    const chamado = await this.db.suporte_chamados.create({
+      data: { id_usuario, assunto: dto.assunto, mensagem: dto.mensagem, anexos },
+      include: { usuarios: { select: { nome: true, email: true } } },
     });
+
+    await this.mailService.sendNovoChamadoSuporte({
+      id_chamado: chamado.id_chamado,
+      assunto: chamado.assunto,
+      mensagem: chamado.mensagem,
+      usuarioNome: chamado.usuarios.nome,
+      usuarioEmail: chamado.usuarios.email,
+      anexos,
+    });
+
+    return chamado;
   }
 
   async findMeusChamados(id_usuario: number) {

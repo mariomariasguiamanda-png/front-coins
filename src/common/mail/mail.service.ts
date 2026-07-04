@@ -38,4 +38,34 @@ export class MailService {
       html: `<p>Você solicitou a redefinição de senha.</p><p><a href="${resetUrl}">Clique aqui para criar uma nova senha</a>. O link expira em 1 hora.</p><p>Se você não solicitou isso, ignore este e-mail.</p>`,
     });
   }
+
+  async sendNovoChamadoSuporte(chamado: {
+    id_chamado: bigint;
+    assunto: string | null;
+    mensagem: string | null;
+    usuarioNome: string;
+    usuarioEmail: string;
+    anexos: string[];
+  }) {
+    const transporter = this.getTransporter();
+    const destino = process.env.SUPPORT_EMAIL ?? process.env.SMTP_FROM ?? 'suporte@coins.local';
+
+    const resumo = `Chamado #${Number(chamado.id_chamado)} de ${chamado.usuarioNome} (${chamado.usuarioEmail}): ${chamado.assunto ?? '(sem assunto)'}`;
+
+    if (!transporter) {
+      this.logger.warn(`SMTP não configurado. ${resumo} — ${chamado.mensagem}`);
+      return;
+    }
+
+    const anexosHtml = chamado.anexos.length
+      ? `<p>Anexos: ${chamado.anexos.map((a) => `<a href="${a}">${a}</a>`).join(', ')}</p>`
+      : '';
+
+    await transporter.sendMail({
+      from: process.env.SMTP_FROM ?? 'coins@no-reply.local',
+      to: destino,
+      subject: `Novo chamado de suporte #${Number(chamado.id_chamado)}`,
+      html: `<p><strong>De:</strong> ${chamado.usuarioNome} (${chamado.usuarioEmail})</p><p><strong>Assunto:</strong> ${chamado.assunto ?? '(sem assunto)'}</p><p>${chamado.mensagem}</p>${anexosHtml}`,
+    });
+  }
 }
