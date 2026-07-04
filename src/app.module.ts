@@ -19,6 +19,7 @@ import { NotificacoesModule } from './notificacoes/notificacoes.module';
 import { DesempenhoModule } from './desempenho/desempenho.module';
 import { UsuariosModule } from './usuarios/usuarios.module';
 import { MatriculasModule } from './matriculas/matriculas.module';
+import { SuporteModule } from './suporte/suporte.module';
 
 @Module({
   imports: [
@@ -42,6 +43,7 @@ import { MatriculasModule } from './matriculas/matriculas.module';
     DesempenhoModule,
     UsuariosModule,
     MatriculasModule,
+    SuporteModule,
   ],
   controllers: [AppController],
   providers: [AppService],
