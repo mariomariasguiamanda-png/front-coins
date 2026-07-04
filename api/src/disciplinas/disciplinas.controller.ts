@@ -33,6 +33,12 @@ export class DisciplinasController {
     return this.disciplinasService.findByAluno(user.id_aluno as number);
   }
 
+  @Get('aluno/disciplinas/:id')
+  @Roles('aluno')
+  findOneByAluno(@Param('id') id: string, @CurrentUser() user: AuthUser) {
+    return this.disciplinasService.findOneByAluno(user.id_aluno as number, BigInt(id));
+  }
+
   @Get('disciplinas/:id')
   findOne(@Param('id') id: string) {
     return this.disciplinasService.findOne(BigInt(id));
