@@ -204,9 +204,26 @@ export class AtividadesService {
             letra_correta: podeVerGabarito,
           },
         },
+        ...(user.tipo_usuario === 'aluno'
+          ? { aluno_atividade: { where: { id_aluno: user.id_aluno as number } } }
+          : {}),
       },
     });
     if (!atividade) throw new NotFoundException('Atividade não encontrada');
+
+    if (user.tipo_usuario === 'aluno') {
+      const progresso = (atividade as typeof atividade & { aluno_atividade?: any[] })
+        .aluno_atividade?.[0];
+      return {
+        ...atividade,
+        status: progresso?.status ?? 'pendente',
+        nota: progresso?.nota ?? null,
+        feedback: progresso?.feedback ?? null,
+        data_entrega: progresso?.data_entrega ?? null,
+        aluno_atividade: undefined,
+      };
+    }
+
     return atividade;
   }
 
