@@ -54,6 +54,30 @@ export class MoedasService {
     };
   }
 
+  async getConfigPrecos(id_aluno: number) {
+    const matriculas = await this.db.matriculas_aluno_disciplina.findMany({
+      where: { id_aluno },
+      include: { disciplinas: { select: { id_disciplina: true, codigo: true, nome: true } } },
+    });
+
+    const configs = await Promise.all(
+      matriculas.map(async (m) => {
+        const { pontos_por_compra_max, preco_moedas_por_ponto } = await this.getPrecoPontos(
+          m.disciplinas.id_disciplina,
+        );
+        return {
+          id_disciplina: Number(m.disciplinas.id_disciplina),
+          codigo: m.disciplinas.codigo,
+          nome: m.disciplinas.nome,
+          pontos_por_compra_max,
+          preco_moedas_por_ponto,
+        };
+      }),
+    );
+
+    return { disciplinas: configs };
+  }
+
   async getSaldo(id_aluno: number) {
     const saldos = await this.db.moedas_saldo.findMany({
       where: { id_aluno },
@@ -96,6 +120,7 @@ export class MoedasService {
       .map((a) => ({
         id_aluno: Number(a.id_aluno),
         nome: a.usuarios.nome,
+        foto_url: a.foto_url,
         saldo_total: a.moedas_saldo.reduce((sum, s) => sum + (s.saldo ?? 0), 0),
       }))
       .sort((a, b) => b.saldo_total - a.saldo_total)
