@@ -41,6 +41,12 @@ export class MoedasController {
     return this.moedasService.getRanking(BigInt(turmaId));
   }
 
+  @Get('aluno/moedas/preco-pontos')
+  @Roles('aluno')
+  getPrecoPontos(@Query('disciplina') disciplinaId: string) {
+    return this.moedasService.getPrecoPontos(BigInt(disciplinaId));
+  }
+
   @Post('admin/moedas/ajuste')
   @Roles('admin')
   ajuste(@Body() body: AjusteMoedasDto, @CurrentUser() user: AuthUser) {

@@ -2,9 +2,24 @@ import { Injectable, UnprocessableEntityException } from '@nestjs/common';
 import { DatabaseService } from '../database/database.service';
 import type { AuthUser } from '../common/types/auth-user';
 
+const DEFAULT_PONTOS_POR_COMPRA_MAX = 10;
+const DEFAULT_PRECO_MOEDAS_POR_PONTO = 10;
+
 @Injectable()
 export class MoedasService {
   constructor(private db: DatabaseService) {}
+
+  async getPrecoPontos(id_disciplina: bigint) {
+    const config = await this.db.config_compra_pontos.findUnique({
+      where: { id_disciplina },
+    });
+
+    return {
+      id_disciplina: Number(id_disciplina),
+      pontos_por_compra_max: config?.pontos_por_compra_max ?? DEFAULT_PONTOS_POR_COMPRA_MAX,
+      preco_moedas_por_ponto: config?.preco_moedas_por_ponto ?? DEFAULT_PRECO_MOEDAS_POR_PONTO,
+    };
+  }
 
   async getSaldo(id_aluno: number) {
     const saldos = await this.db.moedas_saldo.findMany({
@@ -61,8 +76,16 @@ export class MoedasService {
     id_disciplina: bigint,
     quantidade_pontos: number,
   ) {
-    const PRECO_POR_PONTO = 10; // TODO(Fase 1): ler de config_compra_pontos por disciplina
-    const custoTotal = quantidade_pontos * PRECO_POR_PONTO;
+    const { pontos_por_compra_max, preco_moedas_por_ponto } =
+      await this.getPrecoPontos(id_disciplina);
+
+    if (quantidade_pontos > pontos_por_compra_max) {
+      throw new UnprocessableEntityException(
+        `Máximo de ${pontos_por_compra_max} pontos por compra`,
+      );
+    }
+
+    const custoTotal = quantidade_pontos * preco_moedas_por_ponto;
 
     return this.db.$transaction(async (tx) => {
       const saldoRecord = await tx.moedas_saldo.findUnique({
