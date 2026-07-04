@@ -7,16 +7,17 @@ datasource db {
 }
 
 model aluno_atividade {
-  id           BigInt     @id @default(autoincrement())
-  id_aluno     BigInt
-  id_atividade BigInt
-  status       String?    @default("pendente") @db.VarChar(50)
-  data_entrega DateTime?  @db.Timestamptz(6)
-  nota         Decimal?   @db.Decimal(5, 2)
-  feedback     String?
-  criado_em    DateTime?  @default(now()) @db.Timestamptz(6)
-  alunos       alunos     @relation(fields: [id_aluno], references: [id_aluno], onDelete: Cascade, onUpdate: NoAction)
-  atividades   atividades @relation(fields: [id_atividade], references: [id_atividade], onDelete: Cascade, onUpdate: NoAction)
+  id             BigInt     @id @default(autoincrement())
+  id_aluno       BigInt
+  id_atividade   BigInt
+  status         String?    @default("pendente") @db.VarChar(50)
+  data_entrega   DateTime?  @db.Timestamptz(6)
+  nota           Decimal?   @db.Decimal(5, 2)
+  feedback       String?
+  resposta_texto String?
+  criado_em      DateTime?  @default(now()) @db.Timestamptz(6)
+  alunos         alunos     @relation(fields: [id_aluno], references: [id_aluno], onDelete: Cascade, onUpdate: NoAction)
+  atividades     atividades @relation(fields: [id_atividade], references: [id_atividade], onDelete: Cascade, onUpdate: NoAction)
 
   @@unique([id_aluno, id_atividade])
   @@index([status], map: "idx_aluno_atividade_status")

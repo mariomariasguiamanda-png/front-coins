@@ -6,6 +6,7 @@ import {
 import { DatabaseService } from '../database/database.service';
 import { EntregarAtividadeDto } from './dto/entregar-atividade.dto';
 import type { AuthUser } from '../common/types/auth-user';
+import type { questoes_atividade } from '@prisma/client';
 
 @Injectable()
 export class AtividadesService {
@@ -38,20 +39,104 @@ export class AtividadesService {
     }));
   }
 
-  async findOne(id: bigint) {
+  async findOne(id: bigint, user: AuthUser) {
+    const podeVerGabarito = user.tipo_usuario === 'professor';
+
     const atividade = await this.db.atividades.findUnique({
       where: { id_atividade: id },
+      include: {
+        questoes_atividade: {
+          orderBy: { ordem: 'asc' },
+          select: {
+            id_questao: true,
+            tipo: true,
+            enunciado: true,
+            alternativa_a: true,
+            alternativa_b: true,
+            alternativa_c: true,
+            alternativa_d: true,
+            ordem: true,
+            correta: podeVerGabarito,
+            letra_correta: podeVerGabarito,
+          },
+        },
+      },
     });
     if (!atividade) throw new NotFoundException('Atividade não encontrada');
     return atividade;
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  async entregar(id_atividade: bigint, id_aluno: number, _dto: EntregarAtividadeDto) {
+  private avaliarResposta(
+    questao: Pick<questoes_atividade, 'tipo' | 'correta' | 'letra_correta'>,
+    respostaBruta: string,
+  ): boolean | null {
+    const resposta = respostaBruta.trim().toLowerCase();
+
+    if (questao.tipo === 'vf') {
+      if (questao.correta === null) return null;
+      const verdadeiro = ['true', 'v', 'verdadeiro', '1'].includes(resposta);
+      const falso = ['false', 'f', 'falso', '0'].includes(resposta);
+      if (!verdadeiro && !falso) return null;
+      return verdadeiro === questao.correta;
+    }
+
+    if (questao.tipo === 'multipla') {
+      if (!questao.letra_correta) return null;
+      return resposta.toUpperCase() === questao.letra_correta.toUpperCase();
+    }
+
+    return null;
+  }
+
+  async entregar(id_atividade: bigint, id_aluno: number, dto: EntregarAtividadeDto) {
     const atividade = await this.db.atividades.findUnique({
       where: { id_atividade },
+      include: { questoes_atividade: true },
     });
     if (!atividade) throw new NotFoundException('Atividade não encontrada');
+
+    let notaSugerida: number | null = null;
+
+    if (dto.respostas && dto.respostas.length > 0) {
+      const questoesPorId = new Map(
+        atividade.questoes_atividade.map((q) => [q.id_questao.toString(), q]),
+      );
+      let acertos = 0;
+      let avaliadas = 0;
+
+      const operacoes = dto.respostas.map((r) => {
+        const questao = questoesPorId.get(r.id_questao);
+        const correta = questao ? this.avaliarResposta(questao, r.resposta) : null;
+        if (correta !== null) {
+          avaliadas += 1;
+          if (correta) acertos += 1;
+        }
+
+        return this.db.respostas_atividade_aluno.upsert({
+          where: {
+            id_atividade_id_questao_id_aluno: {
+              id_atividade,
+              id_questao: BigInt(r.id_questao),
+              id_aluno,
+            },
+          },
+          create: {
+            id_atividade,
+            id_questao: BigInt(r.id_questao),
+            id_aluno,
+            resposta: r.resposta,
+            correta,
+          },
+          update: { resposta: r.resposta, correta },
+        });
+      });
+
+      await this.db.$transaction(operacoes);
+
+      if (avaliadas > 0) {
+        notaSugerida = Math.round((acertos / avaliadas) * 1000) / 100;
+      }
+    }
 
     return this.db.aluno_atividade.upsert({
       where: { id_aluno_id_atividade: { id_aluno, id_atividade } },
@@ -60,10 +145,14 @@ export class AtividadesService {
         id_aluno,
         status: 'entregue',
         data_entrega: new Date(),
+        nota: notaSugerida,
+        resposta_texto: dto.resposta_texto,
       },
       update: {
         status: 'entregue',
         data_entrega: new Date(),
+        nota: notaSugerida,
+        resposta_texto: dto.resposta_texto,
       },
     });
   }

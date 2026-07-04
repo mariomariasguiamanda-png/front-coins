@@ -10,9 +10,23 @@ import { NotasModule } from './notas/notas.module';
 import { AlunosModule } from './alunos/alunos.module';
 import { ProfessoresModule } from './professores/professores.module';
 import { TurmasModule } from './turmas/turmas.module';
+import { ResumosModule } from './resumos/resumos.module';
+import { VideoaulasModule } from './videoaulas/videoaulas.module';
 
 @Module({
-  imports: [DatabaseModule, AuthModule, MoedasModule, DisciplinasModule, AtividadesModule, NotasModule, AlunosModule, ProfessoresModule, TurmasModule],
+  imports: [
+    DatabaseModule,
+    AuthModule,
+    MoedasModule,
+    DisciplinasModule,
+    AtividadesModule,
+    NotasModule,
+    AlunosModule,
+    ProfessoresModule,
+    TurmasModule,
+    ResumosModule,
+    VideoaulasModule,
+  ],
   controllers: [AppController],
   providers: [AppService],
 })

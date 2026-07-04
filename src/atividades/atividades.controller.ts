@@ -21,8 +21,8 @@ export class AtividadesController {
 
   @Get('aluno/atividades/:id')
   @Roles('aluno', 'professor')
-  findOne(@Param('id') id: string) {
-    return this.atividadesService.findOne(BigInt(id));
+  findOne(@Param('id') id: string, @CurrentUser() user: AuthUser) {
+    return this.atividadesService.findOne(BigInt(id), user);
   }
 
   @Post('aluno/atividades/:id/entregar')
