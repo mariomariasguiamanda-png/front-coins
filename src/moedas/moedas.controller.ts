@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Body, UseGuards, Query } from '@nestjs/common';
+import { Controller, Get, Post, Put, Param, Body, UseGuards, Query } from '@nestjs/common';
 import { MoedasService } from './moedas.service';
 import { JwtGuard } from '../common/guards/jwt.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
@@ -64,5 +64,37 @@ export class MoedasController {
       body.motivo,
       user,
     );
+  }
+
+  @Get('admin/moedas/saldos')
+  @Roles('admin')
+  getSaldosGerais() {
+    return this.moedasService.getSaldosGerais();
+  }
+
+  @Get('admin/moedas/transacoes')
+  @Roles('admin')
+  getTransacoesGerais(
+    @Query('aluno') alunoId?: string,
+    @Query('disciplina') disciplinaId?: string,
+    @Query('tipo') tipo?: string,
+  ) {
+    return this.moedasService.getTransacoesGerais({
+      id_aluno: alunoId ? BigInt(alunoId) : undefined,
+      id_disciplina: disciplinaId ? BigInt(disciplinaId) : undefined,
+      tipo,
+    });
+  }
+
+  @Get('admin/compras')
+  @Roles('admin')
+  getComprasGerais(@Query('status') status?: string) {
+    return this.moedasService.getComprasGerais(status);
+  }
+
+  @Post('admin/compras/:id/cancelar')
+  @Roles('admin')
+  cancelarCompra(@Param('id') id: string, @CurrentUser() user: AuthUser) {
+    return this.moedasService.cancelarCompra(BigInt(id), user);
   }
 }

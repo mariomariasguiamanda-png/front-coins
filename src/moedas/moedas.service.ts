@@ -197,4 +197,101 @@ export class MoedasService {
       };
     });
   }
+
+  async getSaldosGerais() {
+    const alunos = await this.db.alunos.findMany({
+      include: {
+        usuarios: { select: { nome: true } },
+        turmas: { select: { nome: true } },
+        moedas_saldo: { include: { disciplinas: { select: { nome: true } } } },
+      },
+    });
+
+    return alunos.map((a) => ({
+      id_aluno: Number(a.id_aluno),
+      nome: a.usuarios.nome,
+      matricula: a.matricula,
+      turma: a.turmas?.nome ?? null,
+      saldo_total: a.moedas_saldo.reduce((sum, s) => sum + (s.saldo ?? 0), 0),
+      por_disciplina: a.moedas_saldo.map((s) => ({
+        id_disciplina: Number(s.id_disciplina),
+        nome: s.disciplinas.nome,
+        saldo: s.saldo,
+      })),
+    }));
+  }
+
+  async getTransacoesGerais(filtros: {
+    id_aluno?: bigint;
+    id_disciplina?: bigint;
+    tipo?: string;
+  }) {
+    const transacoes = await this.db.transacoes_moedas.findMany({
+      where: {
+        id_aluno: filtros.id_aluno,
+        id_disciplina: filtros.id_disciplina,
+        tipo: filtros.tipo,
+      },
+      include: {
+        alunos: { select: { matricula: true, usuarios: { select: { nome: true } } } },
+        disciplinas: { select: { nome: true } },
+      },
+      orderBy: { criado_em: 'desc' },
+      take: 200,
+    });
+    return transacoes;
+  }
+
+  async getComprasGerais(status?: string) {
+    const compras = await this.db.compras_pontos.findMany({
+      where: { status },
+      include: {
+        alunos: { select: { matricula: true, usuarios: { select: { nome: true } } } },
+        disciplinas: { select: { nome: true } },
+      },
+      orderBy: { criado_em: 'desc' },
+      take: 200,
+    });
+    return compras;
+  }
+
+  async cancelarCompra(id_compra: bigint, admin: AuthUser) {
+    const compra = await this.db.compras_pontos.findUnique({ where: { id_compra } });
+    if (!compra) throw new UnprocessableEntityException('Compra não encontrada');
+    if (compra.status === 'cancelada') {
+      throw new UnprocessableEntityException('Compra já está cancelada');
+    }
+
+    return this.db.$transaction(async (tx) => {
+      await tx.compras_pontos.update({ where: { id_compra }, data: { status: 'cancelada' } });
+
+      await tx.moedas_saldo.upsert({
+        where: {
+          id_aluno_id_disciplina: {
+            id_aluno: compra.id_aluno,
+            id_disciplina: compra.id_disciplina,
+          },
+        },
+        create: {
+          id_aluno: compra.id_aluno,
+          id_disciplina: compra.id_disciplina,
+          saldo: compra.custo_em_moedas,
+        },
+        update: { saldo: { increment: compra.custo_em_moedas } },
+      });
+
+      const transacao = await tx.transacoes_moedas.create({
+        data: {
+          id_aluno: compra.id_aluno,
+          id_disciplina: compra.id_disciplina,
+          tipo: 'ajuste_admin',
+          quantidade: compra.custo_em_moedas,
+          criado_por_usuario_id: admin.sub,
+          descricao: `Estorno da compra #${Number(id_compra)} (cancelada pelo admin)`,
+        },
+      });
+
+      return { id_compra: Number(id_compra), id_transacao: Number(transacao.id_transacao) };
+    });
+  }
 }
