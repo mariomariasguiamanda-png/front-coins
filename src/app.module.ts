@@ -15,6 +15,7 @@ import { TurmasModule } from './turmas/turmas.module';
 import { ResumosModule } from './resumos/resumos.module';
 import { VideoaulasModule } from './videoaulas/videoaulas.module';
 import { PerfilModule } from './perfil/perfil.module';
+import { NotificacoesModule } from './notificacoes/notificacoes.module';
 
 @Module({
   imports: [
@@ -34,6 +35,7 @@ import { PerfilModule } from './perfil/perfil.module';
     ResumosModule,
     VideoaulasModule,
     PerfilModule,
+    NotificacoesModule,
   ],
   controllers: [AppController],
   providers: [AppService],
