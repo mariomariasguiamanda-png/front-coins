@@ -155,7 +155,7 @@ export class AtividadesService {
     return this.db.questoes_atividade.delete({ where: { id_questao } });
   }
 
-  async findByAluno(id_aluno: number) {
+  async findByAluno(id_aluno: number, id_disciplina?: bigint) {
     const matriculas = await this.db.matriculas_aluno_disciplina.findMany({
       where: { id_aluno },
       select: { id_disciplina: true },
@@ -163,9 +163,15 @@ export class AtividadesService {
     const idsDisciplinas = matriculas.map((m) => m.id_disciplina);
 
     if (idsDisciplinas.length === 0) return [];
+    if (id_disciplina !== undefined && !idsDisciplinas.some((id) => id === id_disciplina)) {
+      return [];
+    }
 
     const atividades = await this.db.atividades.findMany({
-      where: { id_disciplina: { in: idsDisciplinas }, ativo: true },
+      where: {
+        id_disciplina: id_disciplina !== undefined ? id_disciplina : { in: idsDisciplinas },
+        ativo: true,
+      },
       include: {
         aluno_atividade: { where: { id_aluno } },
         disciplinas: { select: { nome: true } },

@@ -29,8 +29,11 @@ export class AtividadesController {
 
   @Get('aluno/atividades')
   @Roles('aluno')
-  findByAluno(@CurrentUser() user: AuthUser) {
-    return this.atividadesService.findByAluno(user.id_aluno as number);
+  findByAluno(@CurrentUser() user: AuthUser, @Query('disciplina') disciplinaId?: string) {
+    return this.atividadesService.findByAluno(
+      user.id_aluno as number,
+      disciplinaId ? BigInt(disciplinaId) : undefined,
+    );
   }
 
   @Get('aluno/atividades/:id')
