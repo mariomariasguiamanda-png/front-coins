@@ -48,6 +48,12 @@ export class MoedasController {
     return this.moedasService.getPrecoPontos(BigInt(disciplinaId));
   }
 
+  @Get('aluno/moedas/config-precos')
+  @Roles('aluno')
+  getConfigPrecos(@CurrentUser() user: AuthUser) {
+    return this.moedasService.getConfigPrecos(user.id_aluno as number);
+  }
+
   @Put('professor/moedas/config-preco')
   @Roles('professor')
   setConfigPreco(@Body() body: ConfigPrecoDto, @CurrentUser() user: AuthUser) {
