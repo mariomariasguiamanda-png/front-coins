@@ -1,5 +1,7 @@
 import { Injectable, UnprocessableEntityException } from '@nestjs/common';
 import { DatabaseService } from '../database/database.service';
+import { ProfessorDisciplinaService } from '../common/services/professor-disciplina.service';
+import { ConfigPrecoDto } from './dto/config-preco.dto';
 import type { AuthUser } from '../common/types/auth-user';
 
 const DEFAULT_PONTOS_POR_COMPRA_MAX = 10;
@@ -7,7 +9,38 @@ const DEFAULT_PRECO_MOEDAS_POR_PONTO = 10;
 
 @Injectable()
 export class MoedasService {
-  constructor(private db: DatabaseService) {}
+  constructor(
+    private db: DatabaseService,
+    private professorDisciplinaService: ProfessorDisciplinaService,
+  ) {}
+
+  async setConfigPreco(dto: ConfigPrecoDto, professor: AuthUser) {
+    const id_disciplina = BigInt(dto.id_disciplina);
+    await this.professorDisciplinaService.verificar(
+      professor.id_professor as number,
+      id_disciplina,
+    );
+
+    const config = await this.db.config_compra_pontos.upsert({
+      where: { id_disciplina },
+      create: {
+        id_disciplina,
+        pontos_por_compra_max: dto.pontos_por_compra_max ?? DEFAULT_PONTOS_POR_COMPRA_MAX,
+        preco_moedas_por_ponto: dto.preco_moedas_por_ponto ?? DEFAULT_PRECO_MOEDAS_POR_PONTO,
+      },
+      update: {
+        pontos_por_compra_max: dto.pontos_por_compra_max,
+        preco_moedas_por_ponto: dto.preco_moedas_por_ponto,
+        atualizado_em: new Date(),
+      },
+    });
+
+    return {
+      id_disciplina: Number(config.id_disciplina),
+      pontos_por_compra_max: config.pontos_por_compra_max,
+      preco_moedas_por_ponto: config.preco_moedas_por_ponto,
+    };
+  }
 
   async getPrecoPontos(id_disciplina: bigint) {
     const config = await this.db.config_compra_pontos.findUnique({

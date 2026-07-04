@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, UseGuards, Query } from '@nestjs/common';
+import { Controller, Get, Post, Put, Body, UseGuards, Query } from '@nestjs/common';
 import { MoedasService } from './moedas.service';
 import { JwtGuard } from '../common/guards/jwt.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
@@ -7,6 +7,7 @@ import { CurrentUser } from '../common/decorators/current-user.decorator';
 import type { AuthUser } from '../common/types/auth-user';
 import { ComprarPontosDto } from './dto/comprar-pontos.dto';
 import { AjusteMoedasDto } from './dto/ajuste-moedas.dto';
+import { ConfigPrecoDto } from './dto/config-preco.dto';
 
 @Controller()
 @UseGuards(JwtGuard, RolesGuard)
@@ -45,6 +46,12 @@ export class MoedasController {
   @Roles('aluno')
   getPrecoPontos(@Query('disciplina') disciplinaId: string) {
     return this.moedasService.getPrecoPontos(BigInt(disciplinaId));
+  }
+
+  @Put('professor/moedas/config-preco')
+  @Roles('professor')
+  setConfigPreco(@Body() body: ConfigPrecoDto, @CurrentUser() user: AuthUser) {
+    return this.moedasService.setConfigPreco(body, user);
   }
 
   @Post('admin/moedas/ajuste')
