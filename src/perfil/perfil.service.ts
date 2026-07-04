@@ -26,6 +26,23 @@ export class PerfilService {
     };
   }
 
+  async getPerfilProfessor(id_usuario: number) {
+    const usuario = await this.db.usuarios.findUnique({
+      where: { id_usuario },
+      include: { professores: true },
+    });
+    if (!usuario) throw new NotFoundException('Usuário não encontrado');
+
+    return {
+      id_usuario: Number(usuario.id_usuario),
+      nome: usuario.nome,
+      email: usuario.email,
+      telefone: usuario.telefone,
+      especialidade: usuario.professores?.especialidade ?? null,
+      foto_url: usuario.professores?.foto_url ?? null,
+    };
+  }
+
   async updatePerfil(id_usuario: number, dto: UpdatePerfilDto) {
     const usuario = await this.db.usuarios.update({
       where: { id_usuario },
@@ -45,5 +62,13 @@ export class PerfilService {
       data: { foto_url: fotoUrl },
     });
     return { foto_url: aluno.foto_url };
+  }
+
+  async updateFotoProfessor(id_professor: number, fotoUrl: string) {
+    const professor = await this.db.professores.update({
+      where: { id_professor },
+      data: { foto_url: fotoUrl },
+    });
+    return { foto_url: professor.foto_url };
   }
 }

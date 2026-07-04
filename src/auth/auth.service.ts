@@ -125,7 +125,10 @@ export class AuthService {
   async getMe(authUser: AuthUser) {
     const user = await this.db.usuarios.findUnique({
       where: { id_usuario: authUser.sub },
-      include: { alunos: { select: { foto_url: true } } },
+      include: {
+        alunos: { select: { foto_url: true } },
+        professores: { select: { foto_url: true } },
+      },
     });
     if (!user) throw new UnauthorizedException('Usuário não encontrado');
 
@@ -134,7 +137,7 @@ export class AuthService {
       nome: user.nome,
       email: user.email,
       tipo_usuario: user.tipo_usuario,
-      foto_url: user.alunos?.foto_url ?? null,
+      foto_url: user.alunos?.foto_url ?? user.professores?.foto_url ?? null,
     };
   }
 
