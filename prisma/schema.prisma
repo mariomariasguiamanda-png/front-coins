@@ -44,6 +44,7 @@ model alunos {
   data_nascimento             DateTime?                     @db.Date
   endereco                    String?
   foto_url                    String?                       @db.VarChar(500)
+  cpf                         String?                       @db.VarChar(20)
   criado_em                   DateTime?                     @default(now()) @db.Timestamptz(6)
   aluno_atividade             aluno_atividade[]
   turmas                      turmas?                       @relation(fields: [id_turma], references: [id_turma], onUpdate: NoAction)
@@ -56,6 +57,7 @@ model alunos {
   respostas_atividade_aluno   respostas_atividade_aluno[]
   aluno_resumo                aluno_resumo[]
   aluno_videoaula             aluno_videoaula[]
+  agenda_estudos              agenda_estudos[]
 
   @@index([id_turma], map: "idx_alunos_id_turma")
   @@index([id_usuario], map: "idx_alunos_id_usuario")
@@ -118,6 +120,7 @@ model disciplinas {
   transacoes_moedas           transacoes_moedas[]
   videoaulas                  videoaulas[]
   config_compra_pontos        config_compra_pontos?
+  agenda_estudos              agenda_estudos[]
 
   @@index([codigo], map: "idx_disciplinas_codigo")
 }
@@ -167,6 +170,10 @@ model notificacoes {
   mensagem       String?
   lida           Boolean?  @default(false)
   criado_em      DateTime? @default(now()) @db.Timestamptz(6)
+  titulo         String?   @db.VarChar(255)
+  tipo           String?   @db.VarChar(50)
+  categoria      String?   @db.VarChar(50)
+  disciplina     String?   @db.VarChar(255)
   usuarios       usuarios  @relation(fields: [id_usuario], references: [id_usuario], onDelete: Cascade, onUpdate: NoAction)
 
   @@index([id_usuario, lida], map: "idx_notificacoes_usuario")
@@ -231,6 +238,7 @@ model suporte_chamados {
   resposta      String?
   criado_em     DateTime? @default(now()) @db.Timestamptz(6)
   respondido_em DateTime? @db.Timestamptz(6)
+  anexos        String[]
   usuarios      usuarios  @relation(fields: [id_usuario], references: [id_usuario], onDelete: NoAction, onUpdate: NoAction)
 
   @@index([status], map: "idx_chamados_status")
@@ -277,6 +285,7 @@ model usuarios {
   status                String?             @default("ativo") @db.VarChar(50)
   reset_token_hash      String?             @db.VarChar(255)
   reset_token_expira_em DateTime?           @db.Timestamptz(6)
+  instituicao           String?             @db.VarChar(255)
   criado_em             DateTime?           @default(now()) @db.Timestamptz(6)
   atualizado_em         DateTime?           @default(now()) @db.Timestamptz(6)
   alunos                alunos?
@@ -364,6 +373,24 @@ model aluno_videoaula {
   videoaulas           videoaulas @relation(fields: [id_videoaula], references: [id_videoaula], onDelete: Cascade, onUpdate: NoAction)
 
   @@unique([id_aluno, id_videoaula])
+}
+
+model agenda_estudos {
+  id_evento     BigInt      @id @default(autoincrement())
+  id_aluno      BigInt
+  titulo        String      @db.VarChar(255)
+  data_estudo   DateTime    @db.Date
+  assunto       String?     @db.VarChar(255)
+  tipo          String      @db.VarChar(20) // 'revision' | 'study' | 'exam'
+  concluido     Boolean?    @default(false)
+  link_type     String?     @db.VarChar(20) // 'atividade' | 'resumo'
+  disciplina_id BigInt?
+  item_id       BigInt?
+  criado_em     DateTime?   @default(now()) @db.Timestamptz(6)
+  alunos        alunos      @relation(fields: [id_aluno], references: [id_aluno], onDelete: Cascade, onUpdate: NoAction)
+  disciplinas   disciplinas? @relation(fields: [disciplina_id], references: [id_disciplina], onDelete: SetNull, onUpdate: NoAction)
+
+  @@index([id_aluno, data_estudo], map: "idx_agenda_estudos_aluno")
 }
 
 model config_compra_pontos {
