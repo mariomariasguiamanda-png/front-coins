@@ -220,8 +220,23 @@ export class AtividadesService {
     if (user.tipo_usuario === 'aluno') {
       const progresso = (atividade as typeof atividade & { aluno_atividade?: any[] })
         .aluno_atividade?.[0];
+
+      // Respostas que o próprio aluno já marcou (pra reexibir depois de entregue/
+      // corrigida - sem isso a tela "esquecia" o que ele tinha escolhido).
+      const respostasDoAluno = await this.db.respostas_atividade_aluno.findMany({
+        where: { id_atividade: id, id_aluno: user.id_aluno as number },
+        select: { id_questao: true, resposta: true },
+      });
+      const mapaRespostas = new Map(
+        respostasDoAluno.map((r) => [String(r.id_questao), r.resposta]),
+      );
+
       return {
         ...atividade,
+        questoes_atividade: atividade.questoes_atividade.map((q) => ({
+          ...q,
+          resposta_aluno: mapaRespostas.get(String(q.id_questao)) ?? null,
+        })),
         status: progresso?.status ?? 'pendente',
         nota: progresso?.nota ?? null,
         feedback: progresso?.feedback ?? null,
