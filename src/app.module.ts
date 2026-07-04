@@ -18,6 +18,7 @@ import { PerfilModule } from './perfil/perfil.module';
 import { NotificacoesModule } from './notificacoes/notificacoes.module';
 import { DesempenhoModule } from './desempenho/desempenho.module';
 import { UsuariosModule } from './usuarios/usuarios.module';
+import { MatriculasModule } from './matriculas/matriculas.module';
 
 @Module({
   imports: [
@@ -40,6 +41,7 @@ import { UsuariosModule } from './usuarios/usuarios.module';
     NotificacoesModule,
     DesempenhoModule,
     UsuariosModule,
+    MatriculasModule,
   ],
   controllers: [AppController],
   providers: [AppService],
