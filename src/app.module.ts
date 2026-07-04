@@ -17,6 +17,7 @@ import { VideoaulasModule } from './videoaulas/videoaulas.module';
 import { PerfilModule } from './perfil/perfil.module';
 import { NotificacoesModule } from './notificacoes/notificacoes.module';
 import { DesempenhoModule } from './desempenho/desempenho.module';
+import { UsuariosModule } from './usuarios/usuarios.module';
 
 @Module({
   imports: [
@@ -38,6 +39,7 @@ import { DesempenhoModule } from './desempenho/desempenho.module';
     PerfilModule,
     NotificacoesModule,
     DesempenhoModule,
+    UsuariosModule,
   ],
   controllers: [AppController],
   providers: [AppService],
