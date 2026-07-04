@@ -1,12 +1,10 @@
 "use client";
 
-import AlunoLayout from "@/components/layout/AlunoLayout";
+import { getAlunoLayout } from "@/components/layout/AlunoLayout";
 import Perfil from "@/modules/aluno/Perfil";
+import type { NextPageWithLayout } from "@/pages/_app";
 
-export default function PerfilPage() {
-  return (
-    <AlunoLayout>
-      <Perfil />
-    </AlunoLayout>
-  );
-}
+const PerfilPage: NextPageWithLayout = () => <Perfil />;
+PerfilPage.getLayout = getAlunoLayout;
+
+export default PerfilPage;

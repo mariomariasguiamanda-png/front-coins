@@ -3,8 +3,10 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { useRouter } from "next/router";
 import { api } from "@/lib/api";
-import AlunoLayout from "@/components/layout/AlunoLayout";
+import { getAlunoLayout } from "@/components/layout/AlunoLayout";
 import { Card, CardContent } from "@/components/ui/Card";
+import { Skeleton } from "@/components/ui/Skeleton";
+import type { NextPageWithLayout } from "@/pages/_app";
 
 import {
   Activity,
@@ -95,7 +97,7 @@ function formatarPrazo(prazo: string | null) {
 
 // ─────────────────────────────────────────────────────────────────────────────
 
-export default function AtividadesPage() {
+const AtividadesPage: NextPageWithLayout = () => {
   const router = useRouter();
 
   const [activeTab, setActiveTab] = useState<"atividades" | "resumos" | "videoaulas">("atividades");
@@ -210,16 +212,45 @@ export default function AtividadesPage() {
   // ─────────────────────────────────────────────────────────────────────────
   if (loading) {
     return (
-      <AlunoLayout>
-        <div className="text-center py-20">
-          <p className="text-lg text-gray-600">Carregando atividades...</p>
+      <div className="space-y-6">
+        <div className="flex items-center gap-3">
+          <Skeleton className="h-12 w-12 rounded-xl" />
+          <Skeleton className="h-7 w-56" />
         </div>
-      </AlunoLayout>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {[1, 2].map((i) => (
+            <Card key={i} className="border border-gray-200">
+              <CardContent className="p-4 flex items-center justify-between">
+                <div className="space-y-2">
+                  <Skeleton className="h-3 w-16" />
+                  <Skeleton className="h-6 w-10" />
+                </div>
+                <Skeleton className="h-8 w-8 rounded-full" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+        <Skeleton className="h-16 w-full rounded-xl" />
+        <div className="grid gap-4">
+          {[1, 2, 3].map((i) => (
+            <Card key={i} className="border border-gray-200">
+              <CardContent className="p-6 flex items-start gap-4">
+                <Skeleton className="h-11 w-11 rounded-lg" />
+                <div className="flex-1 space-y-2">
+                  <Skeleton className="h-4 w-24" />
+                  <Skeleton className="h-5 w-48" />
+                  <Skeleton className="h-3 w-32" />
+                </div>
+                <Skeleton className="h-9 w-20 rounded-lg" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
     );
   }
 
   return (
-    <AlunoLayout>
       <div className="space-y-6">
         {/* Cabeçalho */}
         <div className="flex items-center gap-3">
@@ -515,6 +546,9 @@ export default function AtividadesPage() {
           )}
         </div>
       </div>
-    </AlunoLayout>
   );
-}
+};
+
+AtividadesPage.getLayout = getAlunoLayout;
+
+export default AtividadesPage;

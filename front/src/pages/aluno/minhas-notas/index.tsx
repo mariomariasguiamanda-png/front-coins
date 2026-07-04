@@ -1,12 +1,10 @@
 "use client";
 
-import AlunoLayout from "@/components/layout/AlunoLayout";
+import { getAlunoLayout } from "@/components/layout/AlunoLayout";
 import MinhasNotas from "@/modules/aluno/MinhasNotas";
+import type { NextPageWithLayout } from "@/pages/_app";
 
-export default function MinhasNotasPage() {
-  return (
-    <AlunoLayout>
-      <MinhasNotas />
-    </AlunoLayout>
-  );
-}
+const MinhasNotasPage: NextPageWithLayout = () => <MinhasNotas />;
+MinhasNotasPage.getLayout = getAlunoLayout;
+
+export default MinhasNotasPage;

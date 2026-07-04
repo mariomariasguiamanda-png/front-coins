@@ -1,12 +1,10 @@
 "use client";
 
-import AlunoLayout from "@/components/layout/AlunoLayout";
+import { getAlunoLayout } from "@/components/layout/AlunoLayout";
 import Ajuda from "@/modules/aluno/Ajuda";
+import type { NextPageWithLayout } from "@/pages/_app";
 
-export default function AjudaPage() {
-  return (
-    <AlunoLayout>
-      <Ajuda />
-    </AlunoLayout>
-  );
-}
+const AjudaPage: NextPageWithLayout = () => <Ajuda />;
+AjudaPage.getLayout = getAlunoLayout;
+
+export default AjudaPage;

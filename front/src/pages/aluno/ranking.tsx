@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import AlunoLayout from "@/components/layout/AlunoLayout";
+import { getAlunoLayout } from "@/components/layout/AlunoLayout";
 import { Card, CardContent } from "@/components/ui/Card";
+import { Skeleton } from "@/components/ui/Skeleton";
 import { Button } from "@/components/ui/Button";
 import {
   Trophy,
@@ -13,6 +14,7 @@ import {
   Users,
 } from "lucide-react";
 import { api, resolveMediaUrl } from "@/lib/api";
+import type { NextPageWithLayout } from "@/pages/_app";
 
 type RankingAluno = {
   id_aluno: number;
@@ -23,7 +25,7 @@ type RankingAluno = {
 
 type RankingAlunoWithPos = RankingAluno & { posicao: number };
 
-export default function RankingPage() {
+const RankingPage: NextPageWithLayout = () => {
   const [showFullRanking, setShowFullRanking] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [ranking, setRanking] = useState<RankingAlunoWithPos[]>([]);
@@ -85,23 +87,38 @@ export default function RankingPage() {
 
   if (loading) {
     return (
-      <AlunoLayout>
-        <div className="page-enter flex items-center justify-center h-full">
-          <p className="text-sm text-gray-500">
-            Carregando ranking da turma...
-          </p>
+      <div className="page-enter space-y-6">
+        <div className="flex items-center gap-3">
+          <Skeleton className="h-9 w-9 rounded-lg" />
+          <div className="space-y-2">
+            <Skeleton className="h-6 w-40" />
+            <Skeleton className="h-3 w-56" />
+          </div>
         </div>
-      </AlunoLayout>
+        <Card className="rounded-2xl bg-white border border-gray-200">
+          <CardContent className="p-6 space-y-3">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="flex items-center gap-3 p-4">
+                <Skeleton className="h-8 w-8 rounded-full" />
+                <Skeleton className="h-10 w-10 rounded-full" />
+                <div className="flex-1 space-y-2">
+                  <Skeleton className="h-4 w-32" />
+                  <Skeleton className="h-3 w-24" />
+                </div>
+                <Skeleton className="h-4 w-16" />
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      </div>
     );
   }
 
   if (error) {
     return (
-      <AlunoLayout>
-        <div className="page-enter flex items-center justify-center h-full">
-          <p className="text-sm text-red-500">{error}</p>
-        </div>
-      </AlunoLayout>
+      <div className="page-enter flex items-center justify-center h-full">
+        <p className="text-sm text-red-500">{error}</p>
+      </div>
     );
   }
 
@@ -110,7 +127,6 @@ export default function RankingPage() {
   const displayedRanking = showFullRanking ? ranking : topRanking;
 
   return (
-    <AlunoLayout>
       <div className="page-enter space-y-6">
         <div className="flex items-center gap-3">
           <div className="p-2 rounded-lg bg-gradient-to-br from-amber-500 to-amber-600 bg-opacity-10">
@@ -304,6 +320,9 @@ export default function RankingPage() {
           </CardContent>
         </Card>
       </div>
-    </AlunoLayout>
   );
-}
+};
+
+RankingPage.getLayout = getAlunoLayout;
+
+export default RankingPage;

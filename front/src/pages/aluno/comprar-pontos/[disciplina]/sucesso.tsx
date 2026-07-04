@@ -2,9 +2,10 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
-import AlunoLayout from "@/components/layout/AlunoLayout";
+import { getAlunoLayout } from "@/components/layout/AlunoLayout";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
+import type { NextPageWithLayout } from "@/pages/_app";
 import {
   Calculator,
   BookOpen,
@@ -118,7 +119,7 @@ const FallingCoin = ({
   );
 };
 
-export default function CompraSucesso() {
+const CompraSucesso: NextPageWithLayout = () => {
   const router = useRouter();
   const { disciplina, pontos, total, saldoAntes, saldoDepois } = router.query;
   const [showCoins, setShowCoins] = useState(false);
@@ -155,18 +156,16 @@ export default function CompraSucesso() {
 
   if (!disciplinaData || !pontos || !total) {
     return (
-      <AlunoLayout>
         <div className="text-center py-20">
           <h1 className="text-2xl font-bold text-gray-900">Dados inválidos</h1>
         </div>
-      </AlunoLayout>
     );
   }
 
   const IconComponent = disciplinaData.icon;
 
   return (
-    <AlunoLayout>
+    <>
       {/* Animação de moedas caindo */}
       {showCoins && (
         <div className="fixed inset-0 pointer-events-none z-50">
@@ -334,6 +333,10 @@ export default function CompraSucesso() {
           </p>
         </div>
       </div>
-    </AlunoLayout>
+    </>
   );
-}
+};
+
+CompraSucesso.getLayout = getAlunoLayout;
+
+export default CompraSucesso;

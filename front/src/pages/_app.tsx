@@ -1,4 +1,6 @@
 import type { AppProps } from "next/app";
+import type { NextPage } from "next";
+import type { ReactElement, ReactNode } from "react";
 import Head from "next/head";
 import "@/styles/globals.css";
 import { ThemeProvider } from "@/contexts/ThemeContext";
@@ -7,6 +9,18 @@ import { Roboto } from "next/font/google";
 import Router from "next/router";
 import { useEffect } from "react";
 import { Toaster } from "sonner";
+
+// Layout persistente (https://nextjs.org/docs/pages/building-your-application/routing/pages-and-layouts#with-typescript):
+// páginas que exportam getLayout mantêm o MESMO componente de layout montado
+// entre navegações (sidebar/header não remontam, não re-buscam dados a cada
+// clique) - só o conteúdo da página troca.
+export type NextPageWithLayout<P = {}, IP = P> = NextPage<P, IP> & {
+  getLayout?: (page: ReactElement) => ReactNode;
+};
+
+type AppPropsWithLayout = AppProps & {
+  Component: NextPageWithLayout;
+};
 
 const roboto = Roboto({ subsets: ["latin"], weight: ["400", "500", "700"] });
 
@@ -31,7 +45,9 @@ if (process.env.NODE_ENV !== "production") {
   });
 }
 
-export default function MyApp({ Component, pageProps }: AppProps) {
+export default function MyApp({ Component, pageProps }: AppPropsWithLayout) {
+  const getLayout = Component.getLayout ?? ((page) => page);
+
   return (
     <ThemeProvider>
       <AuthProvider>
@@ -40,7 +56,7 @@ export default function MyApp({ Component, pageProps }: AppProps) {
           <title>Coins for Study</title>
         </Head>
         <div className={roboto.className}>
-          <Component {...pageProps} />
+          {getLayout(<Component {...pageProps} />)}
           <Toaster position="top-right" richColors closeButton />
         </div>
       </AuthProvider>

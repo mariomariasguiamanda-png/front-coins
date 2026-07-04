@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
-import AlunoLayout from "../../components/layout/AlunoLayout";
+import { getAlunoLayout } from "../../components/layout/AlunoLayout";
 import { Card, CardContent } from "../../components/ui/Card";
+import type { NextPageWithLayout } from "@/pages/_app";
 import {
   TrendingUp,
   Award,
@@ -197,7 +198,7 @@ const obterCriadoEspecifico = (row: ProgressoAtividadeRow) => {
   return parseDateAssumingUTC(row.data_criacao);
 };
 
-export default function Inicio() {
+const Inicio: NextPageWithLayout = () => {
   const [loading, setLoading] = useState(true);
   const [mounted, setMounted] = useState(false);
   const [expandirDificuldades, setExpandirDificuldades] = useState(false);
@@ -390,7 +391,6 @@ export default function Inicio() {
   
 
   return (
-    <AlunoLayout>
       <div className="space-y-6">
         <div>
           <h1 className="text-3xl font-bold text-violet-700">
@@ -865,6 +865,9 @@ export default function Inicio() {
           </CardContent>
         </Card>
       </div>
-    </AlunoLayout>
   );
-}
+};
+
+Inicio.getLayout = getAlunoLayout;
+
+export default Inicio;

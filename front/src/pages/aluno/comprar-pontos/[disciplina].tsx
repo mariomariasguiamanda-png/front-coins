@@ -2,10 +2,11 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
-import AlunoLayout from "@/components/layout/AlunoLayout";
+import { getAlunoLayout } from "@/components/layout/AlunoLayout";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { BackButton } from "@/components/ui/BackButton";
+import type { NextPageWithLayout } from "@/pages/_app";
 import {
   Calculator,
   BookOpen,
@@ -111,7 +112,7 @@ type ConfigDisciplina = {
   preco_moedas_por_ponto: number;
 };
 
-export default function ComprarPontosDisciplina() {
+const ComprarPontosDisciplina: NextPageWithLayout = () => {
   const router = useRouter();
   const { disciplina } = router.query;
 
@@ -191,13 +192,11 @@ export default function ComprarPontosDisciplina() {
 
   if (!disciplinaData) {
     return (
-      <AlunoLayout>
         <div className="text-center py-20">
           <h1 className="text-2xl font-bold text-gray-900">
             Disciplina não encontrada
           </h1>
         </div>
-      </AlunoLayout>
     );
   }
 
@@ -228,7 +227,6 @@ export default function ComprarPontosDisciplina() {
   };
 
   return (
-    <AlunoLayout>
       <div className="page-enter space-y-6 max-w-2xl mx-auto">
         {/* Header com botão voltar */}
         <div className="flex items-center gap-4">
@@ -361,6 +359,9 @@ export default function ComprarPontosDisciplina() {
           </CardContent>
         </Card>
       </div>
-    </AlunoLayout>
   );
-}
+};
+
+ComprarPontosDisciplina.getLayout = getAlunoLayout;
+
+export default ComprarPontosDisciplina;

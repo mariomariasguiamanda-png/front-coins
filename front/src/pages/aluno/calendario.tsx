@@ -1,12 +1,10 @@
 "use client";
 
-import AlunoLayout from "@/components/layout/AlunoLayout";
+import { getAlunoLayout } from "@/components/layout/AlunoLayout";
 import Frequencia from "@/modules/aluno/AgendaEstudos";
+import type { NextPageWithLayout } from "@/pages/_app";
 
-export default function CalendarioPage() {
-  return (
-    <AlunoLayout>
-      <Frequencia />
-    </AlunoLayout>
-  );
-}
+const CalendarioPage: NextPageWithLayout = () => <Frequencia />;
+CalendarioPage.getLayout = getAlunoLayout;
+
+export default CalendarioPage;

@@ -1,6 +1,6 @@
 "use client";
 
-import { ReactNode, useState } from "react";
+import { ReactElement, ReactNode, useState } from "react";
 import { useRouter } from "next/router";
 import { Roboto } from "next/font/google";
 import {
@@ -130,4 +130,12 @@ export default function AlunoLayout({ children }: AlunoLayoutProps) {
       </div>
     </div>
   );
+}
+
+// Layout persistente: usado via `Page.getLayout = getAlunoLayout` nas páginas
+// de /aluno/*, pra manter o mesmo AlunoLayout (header/sidebar) montado entre
+// navegações em vez de remontar (e re-buscar /auth/me, /aluno/notificacoes
+// etc.) a cada troca de aba.
+export function getAlunoLayout(page: ReactElement) {
+  return <AlunoLayout>{page}</AlunoLayout>;
 }

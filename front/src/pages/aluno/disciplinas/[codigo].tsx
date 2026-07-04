@@ -3,8 +3,10 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import { api } from "@/lib/api";
-import AlunoLayout from "@/components/layout/AlunoLayout";
+import { getAlunoLayout } from "@/components/layout/AlunoLayout";
 import Modal from "@/components/ui/Modal";
+import { Skeleton } from "@/components/ui/Skeleton";
+import type { NextPageWithLayout } from "@/pages/_app";
 import {
   CheckCircle2,
   Clock,
@@ -104,7 +106,7 @@ type ModalFiltro = "todos" | "pendentes" | "concluidos";
 
 const ITEMS_PER_PAGE = 6;
 
-const DisciplinaDetalhePage = () => {
+const DisciplinaDetalhePage: NextPageWithLayout = () => {
   const router = useRouter();
   const { codigo, tema } = router.query;
 
@@ -151,9 +153,10 @@ const DisciplinaDetalhePage = () => {
       const codigoStr = String(codigo); // ex: "MAT" ou o id numérico
       const isNumeric = /^\d+$/.test(codigoStr);
 
-      // 1. Resolver a disciplina (por código ou por id) na lista pública
+      // 1. Resolver o id da disciplina (por código ou por id) na lista pública
+      // (tabela pequena, sem stats agregadas - barato mesmo sendo a lista toda)
       const todasDisciplinas = await api.get("/disciplinas");
-      const disciplinaEncontrada = isNumeric
+      const disciplinaResolvida = isNumeric
         ? todasDisciplinas.find(
             (d: any) => Number(d.id_disciplina) === Number(codigoStr),
           )
@@ -162,38 +165,33 @@ const DisciplinaDetalhePage = () => {
               (d.codigo || "").toLowerCase() === codigoStr.toLowerCase(),
           );
 
-      if (!disciplinaEncontrada) {
+      if (!disciplinaResolvida) {
         throw new Error("Disciplina não encontrada.");
       }
 
-      setDisciplina(disciplinaEncontrada);
-      const idDisciplina = disciplinaEncontrada.id_disciplina;
+      const idDisciplina = disciplinaResolvida.id_disciplina;
 
-      // 2. Materiais da disciplina (já filtrados e com status/progresso do aluno)
-      // + totais/meta que a antiga view dava, agora vindos de GET aluno/disciplinas
-      const [minhasDisciplinas, atividadesData, resumosData, videoaulasData] =
+      // 2. Stats + materiais dessa disciplina só - GET aluno/disciplinas/:id
+      // evita recalcular o progresso de TODAS as disciplinas matriculadas
+      // só pra exibir uma.
+      const [statsDisciplina, atividadesData, resumosData, videoaulasData] =
         await Promise.all([
-          api.get("/aluno/disciplinas"),
+          api.get(`/aluno/disciplinas/${idDisciplina}`),
           api.get(`/aluno/atividades?disciplina=${idDisciplina}`),
           api.get(`/aluno/resumos?disciplina=${idDisciplina}`),
           api.get(`/aluno/videoaulas?disciplina=${idDisciplina}`),
         ]);
 
+      setDisciplina(statsDisciplina);
       setAtividades(atividadesData || []);
       setResumos(resumosData || []);
       setVideoaulas(videoaulasData || []);
 
-      const statsDisciplina = (minhasDisciplinas || []).find(
-        (d: any) => Number(d.id_disciplina) === Number(idDisciplina),
-      );
-
-      if (statsDisciplina) {
-        setMetaMoedas(statsDisciplina.moedas_totais_disciplina ?? 0);
-        setMoedasConquistadas(statsDisciplina.moedas_conquistadas ?? 0);
-        setAtividadesConcluidas(statsDisciplina.atividades_concluidas ?? 0);
-        setVideosAssistidos(statsDisciplina.videoaulas_assistidas ?? 0);
-        setResumosLidos(statsDisciplina.resumos_lidos ?? 0);
-      }
+      setMetaMoedas(statsDisciplina.moedas_totais_disciplina ?? 0);
+      setMoedasConquistadas(statsDisciplina.moedas_conquistadas ?? 0);
+      setAtividadesConcluidas(statsDisciplina.atividades_concluidas ?? 0);
+      setVideosAssistidos(statsDisciplina.videoaulas_assistidas ?? 0);
+      setResumosLidos(statsDisciplina.resumos_lidos ?? 0);
     } catch (err: any) {
       setError(err.message || "Erro ao carregar os dados da disciplina");
     } finally {
@@ -208,29 +206,60 @@ const DisciplinaDetalhePage = () => {
 
   if (loading) {
     return (
-      <AlunoLayout>
-        <div className="px-8 py-6 text-sm text-gray-600">
-          Carregando dados da disciplina...
+        <div className="px-8 py-6 space-y-10">
+          <Skeleton className="h-8 w-24 rounded-full" />
+
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 space-y-4">
+            <div className="flex items-center justify-between">
+              <Skeleton className="h-7 w-48" />
+              <Skeleton className="h-6 w-40 rounded-full" />
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-4">
+              {[1, 2, 3, 4].map((i) => (
+                <div
+                  key={i}
+                  className="rounded-xl border border-gray-100 p-4 flex flex-col items-center gap-2"
+                >
+                  <Skeleton className="h-3 w-16" />
+                  <Skeleton className="h-8 w-14" />
+                  <Skeleton className="h-3 w-20" />
+                </div>
+              ))}
+            </div>
+            <div className="space-y-3 mt-4">
+              {[1, 2, 3].map((i) => (
+                <Skeleton key={i} className="h-2 w-full rounded-full" />
+              ))}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {[1, 2, 3].map((i) => (
+              <div
+                key={i}
+                className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 space-y-3"
+              >
+                <Skeleton className="h-4 w-24" />
+                <Skeleton className="h-3 w-full" />
+                <Skeleton className="h-9 w-full rounded-lg mt-2" />
+              </div>
+            ))}
+          </div>
         </div>
-      </AlunoLayout>
     );
   }
 
   if (error) {
     return (
-      <AlunoLayout>
         <div className="px-8 py-6 text-sm text-red-500">Erro: {error}</div>
-      </AlunoLayout>
     );
   }
 
   if (!disciplina) {
     return (
-      <AlunoLayout>
         <div className="px-8 py-6 text-sm text-gray-600">
           Nenhuma disciplina encontrada.
         </div>
-      </AlunoLayout>
     );
   }
 
@@ -424,7 +453,7 @@ const DisciplinaDetalhePage = () => {
 
   // ====== Render ======
   return (
-    <AlunoLayout>
+    <>
       <div className="px-8 py-6 space-y-10">
         {/* Botão Voltar */}
         <div>
@@ -829,8 +858,10 @@ const DisciplinaDetalhePage = () => {
           </div>
         </Modal>
       )}
-    </AlunoLayout>
+    </>
   );
 };
+
+DisciplinaDetalhePage.getLayout = getAlunoLayout;
 
 export default DisciplinaDetalhePage;

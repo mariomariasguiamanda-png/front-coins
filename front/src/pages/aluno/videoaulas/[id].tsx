@@ -3,8 +3,10 @@
 import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/router";
 import { api } from "@/lib/api";
-import AlunoLayout from "@/components/layout/AlunoLayout";
+import { getAlunoLayout } from "@/components/layout/AlunoLayout";
+import { Skeleton } from "@/components/ui/Skeleton";
 import { CheckCircle2, PlayCircle, Loader2, Sparkles } from "lucide-react";
+import type { NextPageWithLayout } from "@/pages/_app";
 
 type Videoaula = {
   id_videoaula: number;
@@ -248,7 +250,7 @@ const VideoPlayer = ({ url, title, onComplete }: VideoPlayerProps) => {
   );
 };
 
-const VideoaulaDetalhePage = () => {
+const VideoaulaDetalhePage: NextPageWithLayout = () => {
   const router = useRouter();
   const { id } = router.query;
 
@@ -319,29 +321,41 @@ const VideoaulaDetalhePage = () => {
 
   if (loading) {
     return (
-      <AlunoLayout>
-        <div className="px-8 py-6 text-sm text-gray-600">
-          Carregando videoaula...
+      <div className="px-8 py-6 max-w-5xl space-y-6">
+        <div className="flex items-center justify-between gap-4">
+          <div className="space-y-2">
+            <Skeleton className="h-7 w-64" />
+            <Skeleton className="h-3 w-24" />
+            <Skeleton className="h-5 w-32 rounded-full" />
+          </div>
+          <div className="flex gap-2">
+            <Skeleton className="h-9 w-20 rounded-lg" />
+            <Skeleton className="h-9 w-44 rounded-lg" />
+          </div>
         </div>
-      </AlunoLayout>
+        <Skeleton className="aspect-video w-full rounded-xl" />
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 space-y-3">
+          <Skeleton className="h-4 w-40" />
+          <Skeleton className="h-3 w-full" />
+          <Skeleton className="h-3 w-2/3" />
+        </div>
+      </div>
     );
   }
 
   if (error || !videoaula) {
     return (
-      <AlunoLayout>
-        <div className="px-8 py-6 space-y-4">
-          <p className="text-sm text-red-500">
-            {error || "Videoaula não encontrada."}
-          </p>
-          <button
-            onClick={handleVoltar}
-            className="inline-flex items-center rounded-lg bg-purple-600 text-white text-sm font-medium px-4 py-2 hover:bg-purple-700 transition-colors"
-          >
-            Voltar
-          </button>
-        </div>
-      </AlunoLayout>
+      <div className="px-8 py-6 space-y-4">
+        <p className="text-sm text-red-500">
+          {error || "Videoaula não encontrada."}
+        </p>
+        <button
+          onClick={handleVoltar}
+          className="inline-flex items-center rounded-lg bg-purple-600 text-white text-sm font-medium px-4 py-2 hover:bg-purple-700 transition-colors"
+        >
+          Voltar
+        </button>
+      </div>
     );
   }
 
@@ -349,7 +363,7 @@ const VideoaulaDetalhePage = () => {
   const isFileVideo = videoType === "file";
 
   return (
-    <AlunoLayout>
+    <>
       {/* Toast de moedas */}
       {toastMessage && (
         <div className="fixed right-6 top-20 z-40">
@@ -478,8 +492,10 @@ const VideoaulaDetalhePage = () => {
           </p>
         </div>
       </div>
-    </AlunoLayout>
+    </>
   );
 };
+
+VideoaulaDetalhePage.getLayout = getAlunoLayout;
 
 export default VideoaulaDetalhePage;

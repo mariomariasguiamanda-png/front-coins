@@ -1,12 +1,10 @@
 "use client";
 
-import AlunoLayout from "@/components/layout/AlunoLayout";
+import { getAlunoLayout } from "@/components/layout/AlunoLayout";
 import Disciplinas from "@/modules/aluno/Disciplinas";
+import type { NextPageWithLayout } from "@/pages/_app";
 
-export default function DisciplinasPage() {
-  return (
-    <AlunoLayout>
-      <Disciplinas />
-    </AlunoLayout>
-  );
-}
+const DisciplinasPage: NextPageWithLayout = () => <Disciplinas />;
+DisciplinasPage.getLayout = getAlunoLayout;
+
+export default DisciplinasPage;

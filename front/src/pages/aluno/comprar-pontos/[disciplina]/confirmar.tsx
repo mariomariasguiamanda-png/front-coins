@@ -2,10 +2,11 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
-import AlunoLayout from "@/components/layout/AlunoLayout";
+import { getAlunoLayout } from "@/components/layout/AlunoLayout";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { BackButton } from "@/components/ui/BackButton";
+import type { NextPageWithLayout } from "@/pages/_app";
 import {
   Calculator,
   BookOpen,
@@ -102,7 +103,7 @@ type ConfigDisciplina = {
   codigo: string;
 };
 
-export default function ConfirmarCompra() {
+const ConfirmarCompra: NextPageWithLayout = () => {
   const router = useRouter();
   const { disciplina, pontos, total } = router.query;
 
@@ -183,11 +184,9 @@ export default function ConfirmarCompra() {
 
   if (!disciplinaData || !pontos || !total) {
     return (
-      <AlunoLayout>
         <div className="text-center py-20">
           <h1 className="text-2xl font-bold text-gray-900">Dados inválidos</h1>
         </div>
-      </AlunoLayout>
     );
   }
 
@@ -236,7 +235,6 @@ export default function ConfirmarCompra() {
   };
 
   return (
-    <AlunoLayout>
       <div className="page-enter space-y-6 max-w-2xl mx-auto">
         {/* Header com botão voltar */}
         <div className="flex items-center gap-4 mb-6">
@@ -372,6 +370,9 @@ export default function ConfirmarCompra() {
           </CardContent>
         </Card>
       </div>
-    </AlunoLayout>
   );
-}
+};
+
+ConfirmarCompra.getLayout = getAlunoLayout;
+
+export default ConfirmarCompra;

@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
-import AlunoLayout from "@/components/layout/AlunoLayout";
+import { getAlunoLayout } from "@/components/layout/AlunoLayout";
 import { Card, CardContent } from "@/components/ui/Card";
+import type { NextPageWithLayout } from "@/pages/_app";
 import {
   Calculator,
   BookOpen,
@@ -103,7 +104,7 @@ type ConfigCompra = {
   preco_moedas_por_ponto: number;
 };
 
-export default function ComprarPontosPage() {
+const ComprarPontosPage: NextPageWithLayout = () => {
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
 
@@ -199,7 +200,6 @@ export default function ComprarPontosPage() {
   >;
 
   return (
-    <AlunoLayout>
       <div className="page-enter space-y-6">
         {/* Header */}
         <div className="text-center space-y-2">
@@ -294,6 +294,9 @@ export default function ComprarPontosPage() {
             })}
         </div>
       </div>
-    </AlunoLayout>
   );
-}
+};
+
+ComprarPontosPage.getLayout = getAlunoLayout;
+
+export default ComprarPontosPage;

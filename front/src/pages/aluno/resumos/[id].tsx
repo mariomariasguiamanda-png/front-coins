@@ -3,8 +3,10 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import { api } from "@/lib/api";
-import AlunoLayout from "@/components/layout/AlunoLayout";
+import { getAlunoLayout } from "@/components/layout/AlunoLayout";
+import { Skeleton } from "@/components/ui/Skeleton";
 import { CheckCircle2, BookOpen, Loader2 } from "lucide-react";
+import type { NextPageWithLayout } from "@/pages/_app";
 
 type Resumo = {
   id_resumo: number;
@@ -15,7 +17,7 @@ type Resumo = {
   lido_em: string | null;
 };
 
-const ResumoDetalhePage = () => {
+const ResumoDetalhePage: NextPageWithLayout = () => {
   const router = useRouter();
   const { id } = router.query;
 
@@ -74,34 +76,46 @@ const ResumoDetalhePage = () => {
 
   if (loading) {
     return (
-      <AlunoLayout>
-        <div className="px-8 py-6 text-sm text-gray-600">
-          Carregando resumo...
+      <div className="px-8 py-6 flex justify-center">
+        <div className="w-full max-w-3xl space-y-6">
+          <div className="flex items-center justify-between gap-4">
+            <div className="space-y-2">
+              <Skeleton className="h-7 w-64" />
+              <Skeleton className="h-3 w-24" />
+              <Skeleton className="h-5 w-28 rounded-full" />
+            </div>
+            <div className="flex gap-2">
+              <Skeleton className="h-9 w-20 rounded-lg" />
+              <Skeleton className="h-9 w-40 rounded-lg" />
+            </div>
+          </div>
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 space-y-3">
+            <Skeleton className="h-3 w-full" />
+            <Skeleton className="h-3 w-full" />
+            <Skeleton className="h-3 w-2/3" />
+          </div>
         </div>
-      </AlunoLayout>
+      </div>
     );
   }
 
   if (error || !resumo) {
     return (
-      <AlunoLayout>
-        <div className="px-8 py-6 space-y-4">
-          <p className="text-sm text-red-500">
-            {error || "Resumo não encontrado."}
-          </p>
-          <button
-            onClick={handleVoltar}
-            className="inline-flex items-center rounded-lg bg-purple-600 text-white text-sm font-medium px-4 py-2 hover:bg-purple-700 transition-colors"
-          >
-            Voltar
-          </button>
-        </div>
-      </AlunoLayout>
+      <div className="px-8 py-6 space-y-4">
+        <p className="text-sm text-red-500">
+          {error || "Resumo não encontrado."}
+        </p>
+        <button
+          onClick={handleVoltar}
+          className="inline-flex items-center rounded-lg bg-purple-600 text-white text-sm font-medium px-4 py-2 hover:bg-purple-700 transition-colors"
+        >
+          Voltar
+        </button>
+      </div>
     );
   }
 
   return (
-    <AlunoLayout>
       <div className="px-8 py-6 flex justify-center">
         <div className="w-full max-w-3xl space-y-6">
           {/* Cabeçalho */}
@@ -186,8 +200,9 @@ const ResumoDetalhePage = () => {
           </div>
         </div>
       </div>
-    </AlunoLayout>
   );
 };
+
+ResumoDetalhePage.getLayout = getAlunoLayout;
 
 export default ResumoDetalhePage;
