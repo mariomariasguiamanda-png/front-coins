@@ -26,7 +26,10 @@ import { AgendaEstudosModule } from './agenda-estudos/agenda-estudos.module';
 @Module({
   imports: [
     ServeStaticModule.forRoot({
-      rootPath: join(__dirname, '..', 'uploads'),
+      // process.cwd() (raiz do projeto), não __dirname: __dirname aponta pra
+      // dist/src em runtime, então join(__dirname, '..', 'uploads') resolvia
+      // pra dist/uploads (inexistente) em vez da pasta uploads/ real na raiz.
+      rootPath: join(process.cwd(), 'uploads'),
       serveRoot: '/uploads',
     }),
     DatabaseModule,
