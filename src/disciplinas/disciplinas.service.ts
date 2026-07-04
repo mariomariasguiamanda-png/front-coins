@@ -1,5 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { DatabaseService } from '../database/database.service';
+import { CreateDisciplinaDto } from './dto/create-disciplina.dto';
+import { UpdateDisciplinaDto } from './dto/update-disciplina.dto';
 
 @Injectable()
 export class DisciplinasService {
@@ -78,5 +80,19 @@ export class DisciplinasService {
     });
     if (!disciplina) throw new NotFoundException('Disciplina não encontrada');
     return disciplina;
+  }
+
+  async create(dto: CreateDisciplinaDto) {
+    return this.db.disciplinas.create({ data: dto });
+  }
+
+  async update(id: bigint, dto: UpdateDisciplinaDto) {
+    await this.findOne(id);
+    return this.db.disciplinas.update({ where: { id_disciplina: id }, data: dto });
+  }
+
+  async remove(id: bigint) {
+    await this.findOne(id);
+    return this.db.disciplinas.update({ where: { id_disciplina: id }, data: { ativo: false } });
   }
 }
