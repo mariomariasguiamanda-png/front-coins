@@ -62,7 +62,12 @@ export class VideoaulasService {
 
     const concluida = percentual_assistido >= PERCENTUAL_CONCLUSAO;
 
-    return this.db.aluno_videoaula.upsert({
+    const existente = await this.db.aluno_videoaula.findUnique({
+      where: { id_aluno_id_videoaula: { id_aluno, id_videoaula } },
+    });
+    const jaEstavaConcluida = existente?.status === 'assistida';
+
+    const registro = await this.db.aluno_videoaula.upsert({
       where: { id_aluno_id_videoaula: { id_aluno, id_videoaula } },
       create: {
         id_aluno,
@@ -77,6 +82,32 @@ export class VideoaulasService {
         assistido_em: concluida ? new Date() : undefined,
       },
     });
+
+    // Credita moedas só na primeira vez que a videoaula é concluída - sem
+    // essa checagem, reassistir ou reenviar o mesmo progresso creditaria de
+    // novo a cada chamada.
+    const recompensa = videoaula.recompensa_moedas ?? 0;
+    if (concluida && !jaEstavaConcluida && recompensa > 0) {
+      await this.db.moedas_saldo.upsert({
+        where: {
+          id_aluno_id_disciplina: { id_aluno, id_disciplina: videoaula.id_disciplina },
+        },
+        create: { id_aluno, id_disciplina: videoaula.id_disciplina, saldo: recompensa },
+        update: { saldo: { increment: recompensa } },
+      });
+
+      await this.db.transacoes_moedas.create({
+        data: {
+          id_aluno,
+          id_disciplina: videoaula.id_disciplina,
+          tipo: 'credito_videoaula',
+          quantidade: recompensa,
+          descricao: `Recompensa por assistir a videoaula "${videoaula.titulo}"`,
+        },
+      });
+    }
+
+    return registro;
   }
 
   async findByProfessor(id_professor: number) {
@@ -139,6 +170,7 @@ export class VideoaulasService {
         descricao: dto.descricao,
         url_video: dto.url_video,
         duracao_segundos: dto.duracao_segundos,
+        recompensa_moedas: dto.recompensa_moedas ?? 0,
       },
     });
   }

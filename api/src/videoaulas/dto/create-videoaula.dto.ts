@@ -20,4 +20,9 @@ export class CreateVideoaulaDto {
   @IsInt()
   @Min(0)
   duracao_segundos?: number;
+
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  recompensa_moedas?: number;
 }

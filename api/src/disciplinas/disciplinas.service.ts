@@ -58,6 +58,7 @@ export class DisciplinasService {
         by: ['id_disciplina'],
         where: { id_disciplina: { in: ids }, ativo: true },
         _count: { _all: true },
+        _sum: { recompensa_moedas: true },
       }),
       this.db.aluno_atividade.findMany({
         where: { id_aluno, status: 'corrigida', atividades: { id_disciplina: { in: ids } } },
@@ -91,8 +92,11 @@ export class DisciplinasService {
     const mapTotalAtividades = new Map(
       atividadesPorDisciplina.map((a) => [String(a.id_disciplina), a._count._all]),
     );
-    const mapSomaRecompensa = new Map(
+    const mapSomaRecompensaAtividades = new Map(
       atividadesPorDisciplina.map((a) => [String(a.id_disciplina), a._sum.recompensa_moedas ?? 0]),
+    );
+    const mapSomaRecompensaVideoaulas = new Map(
+      videoaulasPorDisciplina.map((v) => [String(v.id_disciplina), v._sum.recompensa_moedas ?? 0]),
     );
     const mapTotalResumos = new Map(
       resumosPorDisciplina.map((r) => [String(r.id_disciplina), r._count._all]),
@@ -120,7 +124,8 @@ export class DisciplinasService {
       stats.set(idStr, {
         progresso_percent: totalItens > 0 ? Math.round((itensConcluidos / totalItens) * 100) : 0,
         moedas_conquistadas: mapSaldo.get(idStr) ?? 0,
-        moedas_totais_disciplina: mapSomaRecompensa.get(idStr) ?? 0,
+        moedas_totais_disciplina:
+          (mapSomaRecompensaAtividades.get(idStr) ?? 0) + (mapSomaRecompensaVideoaulas.get(idStr) ?? 0),
         total_atividades: totalAtividades,
         atividades_concluidas: atividadesConcluidas,
         total_resumos: totalResumos,

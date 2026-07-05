@@ -532,6 +532,8 @@ export class AtividadesService {
         tipo: 'success',
         categoria: 'nota',
         disciplina: atividade.disciplinas.nome,
+        referencia_tipo: 'atividade',
+        referencia_id: id_atividade,
       });
     }
 

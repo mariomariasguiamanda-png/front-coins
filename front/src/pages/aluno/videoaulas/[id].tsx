@@ -16,6 +16,7 @@ type Videoaula = {
   id_disciplina: number;
   status: "pendente" | "assistida";
   percentual_assistido: number;
+  recompensa_moedas: number | null;
 };
 
 // Detecta tipo do vídeo com base na URL
@@ -307,7 +308,11 @@ const VideoaulaDetalhePage: NextPageWithLayout = () => {
 
       setStatusVideo("assistida");
       setPercentualAssistido(100);
-      setToastMessage("+80 moedas adicionadas 🎉");
+
+      const recompensa = videoaula.recompensa_moedas ?? 0;
+      setToastMessage(
+        recompensa > 0 ? `+${recompensa} moedas adicionadas 🎉` : "Videoaula concluída! ✅"
+      );
 
       setTimeout(() => {
         setToastMessage(null);
@@ -471,8 +476,8 @@ const VideoaulaDetalhePage: NextPageWithLayout = () => {
             </p>
           )}
           <p className="text-[11px] text-gray-400 mt-1">
-            Dica: assista até o final para garantir o registro de progresso e
-            receber moedas em versões futuras da plataforma.
+            Dica: assista até o final para garantir o registro de progresso
+            {(videoaula.recompensa_moedas ?? 0) > 0 ? " e receber suas moedas." : "."}
           </p>
         </div>
 
@@ -481,15 +486,27 @@ const VideoaulaDetalhePage: NextPageWithLayout = () => {
           <h2 className="text-sm font-semibold text-gray-800">
             Progresso e recompensas
           </h2>
-          <p className="text-sm text-gray-500">
-            Ao finalizar esta videoaula, seu progresso é registrado
-            automaticamente e as moedas correspondentes são adicionadas ao seu
-            dashboard da disciplina.
-          </p>
-          <p className="text-[11px] text-gray-400 mt-1">
-            Dica: assista até o final sem pular trechos para garantir que o
-            sistema reconheça a conclusão e libere as moedas corretamente.
-          </p>
+          {(videoaula.recompensa_moedas ?? 0) > 0 ? (
+            <>
+              <p className="text-sm text-gray-500">
+                Esta videoaula vale{" "}
+                <span className="font-semibold text-purple-700">
+                  {videoaula.recompensa_moedas} moeda{videoaula.recompensa_moedas === 1 ? "" : "s"}
+                </span>
+                . Ao assistir pelo menos 90% do vídeo, seu progresso é registrado
+                automaticamente e as moedas são creditadas no seu saldo da disciplina.
+              </p>
+              <p className="text-[11px] text-gray-400 mt-1">
+                Dica: assista até o final sem pular trechos para garantir que o
+                sistema reconheça a conclusão e libere as moedas corretamente.
+              </p>
+            </>
+          ) : (
+            <p className="text-sm text-gray-500">
+              Esta videoaula não vale moedas. Seu progresso ainda é registrado
+              automaticamente ao assistir.
+            </p>
+          )}
         </div>
       </div>
     </>

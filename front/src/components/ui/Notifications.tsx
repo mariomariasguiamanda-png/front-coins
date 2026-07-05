@@ -10,8 +10,10 @@ import {
   Award,
   Clock,
   Settings,
+  History,
 } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
+import { useRouter } from "next/router";
 import {
   useAlunoNotifications,
   type Notification,
@@ -22,6 +24,7 @@ export type { Notification };
 export function Notifications() {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const router = useRouter();
 
   const {
     notifications,
@@ -105,6 +108,16 @@ export function Notifications() {
     return colors[discipline || ""] || "text-violet-600";
   };
 
+  const handleClickNotification = (notification: Notification) => {
+    if (!notification.read) {
+      markAsRead(notification.id);
+    }
+    if (notification.link) {
+      setIsOpen(false);
+      router.push(notification.link);
+    }
+  };
+
   return (
     <div className="relative" ref={dropdownRef}>
       {/* Botão de Notificações */}
@@ -176,21 +189,22 @@ export function Notifications() {
               notifications.map((notification) => (
                 <div
                   key={notification.id}
-                  onClick={() =>
-                    !notification.read && markAsRead(notification.id)
-                  }
-                  className={`p-4 border-b border-gray-100 hover:bg-gray-50 transition cursor-pointer ${
+                  onClick={() => handleClickNotification(notification)}
+                  className={`relative p-4 border-b border-gray-100 transition cursor-pointer ${
                     !notification.read
-                      ? "bg-violet-50 border-l-4 border-l-violet-500"
-                      : ""
+                      ? "bg-violet-50 border-l-4 border-l-violet-500 hover:bg-violet-100"
+                      : "opacity-60 hover:opacity-100 hover:bg-gray-50"
                   }`}
                 >
                   <div className="flex items-start gap-3">
                     <div
-                      className={`h-10 w-10 rounded-lg flex items-center justify-center flex-shrink-0 ${getIconColor(
+                      className={`relative h-10 w-10 rounded-lg flex items-center justify-center flex-shrink-0 ${getIconColor(
                         notification.type
                       )}`}
                     >
+                      {!notification.read && (
+                        <span className="absolute inset-0 rounded-lg animate-ping bg-current opacity-20" />
+                      )}
                       {getNotificationIcon(notification.category)}
                     </div>
                     <div className="flex-1 min-w-0">
@@ -199,16 +213,23 @@ export function Notifications() {
                           className={`font-semibold text-sm ${
                             !notification.read
                               ? "text-gray-900"
-                              : "text-gray-700"
+                              : "text-gray-500"
                           }`}
                         >
                           {notification.title}
                         </h4>
                         {!notification.read && (
-                          <div className="w-2 h-2 bg-violet-500 rounded-full"></div>
+                          <span className="relative flex h-2 w-2">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-violet-500 opacity-75"></span>
+                            <span className="relative inline-flex rounded-full h-2 w-2 bg-violet-600"></span>
+                          </span>
                         )}
                       </div>
-                      <p className="text-sm text-gray-600 mb-2">
+                      <p
+                        className={`text-sm mb-2 ${
+                          !notification.read ? "text-gray-600" : "text-gray-500"
+                        }`}
+                      >
                         {notification.message}
                       </p>
                       <div className="flex items-center justify-between text-xs">
@@ -228,6 +249,20 @@ export function Notifications() {
                 </div>
               ))
             )}
+          </div>
+
+          {/* Footer - ver histórico completo */}
+          <div className="border-t border-gray-100 p-3 bg-gray-50">
+            <button
+              onClick={() => {
+                setIsOpen(false);
+                router.push("/aluno/notificacoes");
+              }}
+              className="w-full flex items-center justify-center gap-2 text-sm font-medium text-violet-700 hover:text-violet-900 transition py-1"
+            >
+              <History className="h-4 w-4" />
+              Ver histórico completo
+            </button>
           </div>
         </div>
       )}

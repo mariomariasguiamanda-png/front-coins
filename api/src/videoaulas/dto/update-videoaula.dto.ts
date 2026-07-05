@@ -20,6 +20,11 @@ export class UpdateVideoaulaDto {
   duracao_segundos?: number;
 
   @IsOptional()
+  @IsInt()
+  @Min(0)
+  recompensa_moedas?: number;
+
+  @IsOptional()
   @IsBoolean()
   ativo?: boolean;
 }

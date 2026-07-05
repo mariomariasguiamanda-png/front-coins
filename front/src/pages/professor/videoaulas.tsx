@@ -22,6 +22,7 @@ type VideoLesson = {
   createdAt: string;
   views: number;
   durationSegundos: number;
+  coins: number;
   studentsWatched: StudentView[];
 };
 
@@ -45,6 +46,7 @@ export default function VideoaulasPage() {
           createdAt: v.data_criacao,
           views: v.views,
           durationSegundos: v.duracao_segundos ?? 0,
+          coins: v.recompensa_moedas ?? 0,
           studentsWatched: v.studentsWatched ?? [],
         }))
       );
@@ -72,6 +74,7 @@ export default function VideoaulasPage() {
     id_disciplina: string;
     url_video?: string;
     duracao_segundos?: number;
+    recompensa_moedas?: number;
   }) => {
     await api.post("/professor/videoaulas", dados);
     await carregarVideoaulas();
@@ -79,7 +82,13 @@ export default function VideoaulasPage() {
 
   const handleEditLesson = async (
     id: string,
-    dados: { titulo: string; descricao: string; url_video?: string; duracao_segundos?: number }
+    dados: {
+      titulo: string;
+      descricao: string;
+      url_video?: string;
+      duracao_segundos?: number;
+      recompensa_moedas?: number;
+    }
   ) => {
     await api.patch(`/professor/videoaulas/${id}`, dados);
     await carregarVideoaulas();

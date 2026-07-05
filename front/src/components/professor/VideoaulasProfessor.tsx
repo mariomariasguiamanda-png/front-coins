@@ -36,6 +36,7 @@ import {
   BarChart3,
   CheckCircle2,
   BookOpen,
+  Coins,
 } from "lucide-react";
 import { useState } from "react";
 
@@ -58,6 +59,7 @@ interface VideoLesson {
   createdAt: string;
   views: number;
   durationSegundos: number;
+  coins: number;
   studentsWatched: StudentView[];
 }
 
@@ -75,10 +77,17 @@ interface VideoaulasProfessorProps {
     id_disciplina: string;
     url_video?: string;
     duracao_segundos?: number;
+    recompensa_moedas?: number;
   }) => Promise<void>;
   onEditLesson: (
     id: string,
-    dados: { titulo: string; descricao: string; url_video?: string; duracao_segundos?: number }
+    dados: {
+      titulo: string;
+      descricao: string;
+      url_video?: string;
+      duracao_segundos?: number;
+      recompensa_moedas?: number;
+    }
   ) => Promise<void>;
   onDeleteLesson: (id: string) => Promise<void>;
 }
@@ -248,6 +257,7 @@ export function VideoaulasProfessor({
                 id_disciplina: formData.get('id_disciplina') as string,
                 url_video: (formData.get('url_video') as string) || undefined,
                 duracao_segundos: parseDuration((formData.get('duracao') as string) ?? ""),
+                recompensa_moedas: Number(formData.get('recompensa_moedas')) || 0,
               });
               setShowCreateForm(false);
             }}>
@@ -316,6 +326,21 @@ export function VideoaulasProfessor({
                   />
                   <p className="text-xs text-gray-500 mt-1">Formato minutos:segundos</p>
                 </div>
+              </div>
+
+              <div>
+                <Label className="text-sm font-medium text-gray-700">Moedas por assistir (opcional)</Label>
+                <Input
+                  name="recompensa_moedas"
+                  type="number"
+                  min={0}
+                  defaultValue={0}
+                  placeholder="0"
+                  className="rounded-xl mt-1 max-w-[160px]"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Deixe 0 se essa videoaula não deve valer moedas. O aluno recebe ao assistir pelo menos 90% do vídeo.
+                </p>
               </div>
 
               <div className="flex gap-2 pt-4 border-t">
@@ -428,6 +453,12 @@ export function VideoaulasProfessor({
                       <Eye className="h-4 w-4" />
                       <span>{lesson.views}</span>
                     </div>
+                    {lesson.coins > 0 && (
+                      <div className="flex items-center gap-1.5 text-amber-600">
+                        <Coins className="h-4 w-4" />
+                        <span>{lesson.coins}</span>
+                      </div>
+                    )}
                     <div className="flex items-center gap-1.5 ml-auto">
                       <Clock className="h-4 w-4" />
                       <span>{new Date(lesson.createdAt).toLocaleDateString('pt-BR')}</span>
@@ -520,6 +551,7 @@ export function VideoaulasProfessor({
                 descricao: formData.get('descricao') as string,
                 url_video: (formData.get('url_video') as string) || undefined,
                 duracao_segundos: parseDuration((formData.get('duracao') as string) ?? ""),
+                recompensa_moedas: Number(formData.get('recompensa_moedas')) || 0,
               });
               setEditingLesson(null);
             }}>
@@ -563,6 +595,18 @@ export function VideoaulasProfessor({
                     className="rounded-xl mt-1"
                   />
                 </div>
+              </div>
+
+              <div>
+                <Label className="text-sm font-medium text-gray-700">Moedas por assistir (opcional)</Label>
+                <Input
+                  name="recompensa_moedas"
+                  type="number"
+                  min={0}
+                  defaultValue={editingLesson.coins}
+                  className="rounded-xl mt-1 max-w-[160px]"
+                />
+                <p className="text-xs text-gray-500 mt-1">Deixe 0 se essa videoaula não deve valer moedas.</p>
               </div>
 
               <div className="flex gap-2 pt-4 border-t">
