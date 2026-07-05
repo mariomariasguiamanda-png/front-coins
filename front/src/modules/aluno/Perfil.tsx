@@ -1,15 +1,26 @@
 "use client";
 
-import React, { useState, useEffect, ChangeEvent } from "react";
+import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardContent } from "@/components/ui/Card";
-import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
 import NotificationCard from "@/components/ui/NotificationCard";
-import { User, Camera, Edit, Save, X, LogOut } from "lucide-react";
+import {
+  User,
+  Mail,
+  Phone,
+  School,
+  IdCard,
+  Users,
+  Coins,
+  Lock,
+  Eye,
+  EyeOff,
+} from "lucide-react";
 import { api, resolveMediaUrl } from "@/lib/api";
 import { useAuth } from "@/services/auth/AuthContext";
+import { ProfileHero, type ProfileStat } from "@/components/perfil/ProfileHero";
 
 type NotificationType = "success" | "error" | "info";
 
@@ -22,16 +33,16 @@ interface ProfileData {
   cpf: string;
   turma: string;
   foto_url: string | null;
+  total_moedas_historico: number;
 }
 
 export default function Perfil() {
   const router = useRouter();
   const { signOut, refresh } = useAuth();
 
-  // ========= ESTADOS PRINCIPAIS =========
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [uploadingImage, setUploadingImage] = useState(false);
+  const [uploadingFoto, setUploadingFoto] = useState(false);
 
   const [profile, setProfile] = useState<ProfileData>({
     nome: "",
@@ -42,21 +53,21 @@ export default function Perfil() {
     cpf: "",
     turma: "",
     foto_url: null,
+    total_moedas_historico: 0,
   });
 
   const [originalProfile, setOriginalProfile] = useState<ProfileData | null>(null);
-
   const [isEditing, setIsEditing] = useState(false);
 
-  // foto temporária (preview)
-  const [tempPhotoFile, setTempPhotoFile] = useState<File | null>(null);
-  const [tempPhotoPreview, setTempPhotoPreview] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
+  const [senhaAtual, setSenhaAtual] = useState("");
+  const [senhaNova, setSenhaNova] = useState("");
+  const [senhaConfirmacao, setSenhaConfirmacao] = useState("");
+  const [erroSenha, setErroSenha] = useState<string | null>(null);
 
-  // ========= NOTIFICAÇÕES =========
   const [showNotification, setShowNotification] = useState(false);
   const [notificationMessage, setNotificationMessage] = useState("");
-  const [notificationType, setNotificationType] =
-    useState<NotificationType>("info");
+  const [notificationType, setNotificationType] = useState<NotificationType>("info");
 
   function showNotificationFn(message: string, type: NotificationType) {
     setNotificationMessage(message);
@@ -64,12 +75,6 @@ export default function Perfil() {
     setShowNotification(true);
   }
 
-  // ========= LOGOUT =========
-  function handleLogout() {
-    signOut();
-  }
-
-  // ========= CARREGAR PERFIL (a API resolve o aluno logado a partir do JWT) =========
   useEffect(() => {
     let isMounted = true;
 
@@ -89,6 +94,7 @@ export default function Perfil() {
           cpf: data.cpf ?? "",
           turma: data.turma?.nome ?? "",
           foto_url: data.foto_url ?? null,
+          total_moedas_historico: data.total_moedas_historico ?? 0,
         };
 
         setProfile(loadedProfile);
@@ -116,34 +122,52 @@ export default function Perfil() {
     };
   }, [router]);
 
-  // ========= HANDLERS =========
-
-  function handleChange(
-    e: React.ChangeEvent<HTMLInputElement>,
-    field: keyof ProfileData
-  ) {
-    const value = e.target.value;
+  function handleChange(field: "nome" | "telefone", value: string) {
     setProfile((prev) => ({ ...prev, [field]: value }));
   }
 
-  async function handleSaveProfile() {
+  function limparCamposSenha() {
+    setSenhaAtual("");
+    setSenhaNova("");
+    setSenhaConfirmacao("");
+    setErroSenha(null);
+  }
+
+  async function handleSave() {
     const nomeAparado = profile.nome.trim();
     if (!nomeAparado) {
-      showNotificationFn("O nome não pode ficar em branco.", "error");
+      setErroSenha("O nome não pode ficar em branco.");
       return;
     }
 
     try {
       setSaving(true);
 
-      // Atualiza apenas campos que o aluno PODE editar: nome e telefone
       await api.patch("/aluno/perfil", {
         nome: nomeAparado,
         telefone: profile.telefone,
       });
 
+      if (senhaAtual || senhaNova || senhaConfirmacao) {
+        if (senhaNova.length < 6) {
+          setErroSenha("A nova senha precisa de pelo menos 6 caracteres");
+          setSaving(false);
+          return;
+        }
+        if (senhaNova !== senhaConfirmacao) {
+          setErroSenha("As senhas não coincidem");
+          setSaving(false);
+          return;
+        }
+        await api.patch("/aluno/perfil/senha", {
+          senha_atual: senhaAtual,
+          senha_nova: senhaNova,
+        });
+        limparCamposSenha();
+      }
+
       setProfile((prev) => ({ ...prev, nome: nomeAparado }));
-      setOriginalProfile({ ...profile, nome: nomeAparado });
+      setOriginalProfile((prev) => (prev ? { ...prev, nome: nomeAparado } : prev));
       setIsEditing(false);
 
       // Atualiza nome exibido no header (AuthContext) sem precisar recarregar a página
@@ -152,67 +176,43 @@ export default function Perfil() {
       showNotificationFn("Dados atualizados com sucesso!", "success");
     } catch (error: any) {
       console.error(error);
-      showNotificationFn("Erro ao salvar alterações.", "error");
+      setErroSenha(error?.message ?? "Erro ao salvar alterações.");
     } finally {
       setSaving(false);
     }
   }
 
-  function handleCancelEdit() {
+  function handleCancel() {
     if (originalProfile) {
       setProfile(originalProfile);
     }
+    limparCamposSenha();
     setIsEditing(false);
   }
 
-  // ========= FOTO: SELEÇÃO (preview) =========
-
   const TAMANHO_MAX_FOTO = 5 * 1024 * 1024; // 5MB
 
-  async function handleImageChange(e: ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
+  async function handleUploadFoto(file: File) {
     if (!file.type.startsWith("image/")) {
       showNotificationFn("Selecione um arquivo de imagem válido.", "error");
-      e.target.value = "";
       return;
     }
-
     if (file.size > TAMANHO_MAX_FOTO) {
       showNotificationFn("A foto deve ter no máximo 5MB.", "error");
-      e.target.value = "";
       return;
     }
 
-    setTempPhotoFile(file);
-    const previewUrl = URL.createObjectURL(file);
-    setTempPhotoPreview(previewUrl);
-  }
-
-  // ========= FOTO: SALVAR =========
-
-  async function handleSavePhoto() {
-    if (!tempPhotoFile) return;
-
     try {
-      setUploadingImage(true);
+      setUploadingFoto(true);
 
       const formData = new FormData();
-      formData.append("foto", tempPhotoFile);
+      formData.append("foto", file);
 
       const data = await api.upload("/aluno/perfil/foto", formData);
       const fotoUrl = data.foto_url as string;
 
       setProfile((prev) => ({ ...prev, foto_url: fotoUrl }));
-      if (originalProfile) {
-        setOriginalProfile((prev) =>
-          prev ? { ...prev, foto_url: fotoUrl } : prev
-        );
-      }
-
-      setTempPhotoFile(null);
-      setTempPhotoPreview(null);
+      setOriginalProfile((prev) => (prev ? { ...prev, foto_url: fotoUrl } : prev));
 
       // Atualiza foto exibida no header (AuthContext) sem precisar recarregar a página
       refresh();
@@ -222,11 +222,9 @@ export default function Perfil() {
       console.error(error);
       showNotificationFn("Erro ao salvar a foto.", "error");
     } finally {
-      setUploadingImage(false);
+      setUploadingFoto(false);
     }
   }
-
-  // ========= UI =========
 
   if (loading) {
     return (
@@ -236,228 +234,183 @@ export default function Perfil() {
     );
   }
 
+  const stats: ProfileStat[] = [
+    { label: "Turma", value: profile.turma || "Sem turma", icon: Users, color: "blue" },
+    { label: "Matrícula", value: profile.matricula || "-", icon: IdCard, color: "violet" },
+    { label: "Moedas Totais", value: profile.total_moedas_historico, icon: Coins, color: "amber" },
+  ];
+
   return (
     <div className="page-enter min-h-screen bg-violet-50 p-6">
       <div className="max-w-6xl mx-auto space-y-6">
-        {/* HEADER */}
-        <header className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="p-3 bg-gradient-to-br from-violet-500 to-violet-600 rounded-xl">
-              <User className="h-6 w-6 text-white" />
-            </div>
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">Meu Perfil</h1>
-              <p className="text-gray-600">
-                Veja e atualize seus dados pessoais.
-              </p>
-            </div>
-          </div>
+        <ProfileHero
+          nomeCompleto={profile.nome}
+          subtitulo="Aluno(a)"
+          fotoUrl={resolveMediaUrl(profile.foto_url)}
+          onUploadFoto={handleUploadFoto}
+          uploadingFoto={uploadingFoto}
+          isEditing={isEditing}
+          onEdit={() => setIsEditing(true)}
+          onSave={handleSave}
+          onCancel={handleCancel}
+          saving={saving}
+          onSignOut={signOut}
+          stats={stats}
+        />
 
-          <Button
-            variant="outline"
-            className="rounded-2xl flex items-center gap-2 border-red-200 text-red-600 hover:bg-red-50"
-            onClick={handleLogout}
-          >
-            <LogOut className="w-4 h-4" />
-            Sair
-          </Button>
-        </header>
+        <div className="grid gap-6 lg:grid-cols-2">
+          {/* Dados Institucionais */}
+          <Card className="rounded-xl shadow-sm">
+            <CardContent className="p-6">
+              <div className="mb-6 flex items-center gap-3">
+                <div className="h-10 w-10 rounded-lg bg-blue-100 flex items-center justify-center">
+                  <School className="h-5 w-5 text-blue-600" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-semibold text-gray-900">Dados Institucionais</h2>
+                  <p className="text-sm text-gray-500">
+                    Informações gerenciadas pela instituição, não editáveis
+                  </p>
+                </div>
+              </div>
 
-        <main className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* CARD AVATAR */}
-          <aside className="md:col-span-1">
-            <Card className="rounded-2xl">
-              <CardContent className="p-6 flex flex-col items-center gap-4">
-                <div className="relative">
-                  {tempPhotoPreview ? (
-                    <img
-                      src={tempPhotoPreview}
-                      alt="Pré-visualização da foto"
-                      className="w-32 h-32 rounded-full object-cover border-4 border-violet-200 shadow-md"
-                    />
-                  ) : profile.foto_url ? (
-                    <img
-                      src={resolveMediaUrl(profile.foto_url) ?? undefined}
-                      alt="Foto do aluno"
-                      className="w-32 h-32 rounded-full object-cover border-4 border-violet-200 shadow-md"
-                    />
-                  ) : (
-                    <div className="w-32 h-32 rounded-full bg-violet-500 flex items-center justify-center border-4 border-violet-200 shadow-md">
-                      <User className="w-16 h-16 text-white" />
-                    </div>
-                  )}
+              <div className="space-y-4">
+                <div>
+                  <Label className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                    <Mail className="h-4 w-4 text-gray-500" />
+                    E-mail
+                  </Label>
+                  <Input value={profile.email} disabled className="rounded-xl mt-1 bg-gray-50" />
+                </div>
 
-                  <label
-                    htmlFor="avatar-upload"
-                    aria-label="Alterar foto de perfil"
-                    className="absolute bottom-0 right-0 bg-white rounded-full p-2 shadow-md cursor-pointer hover:bg-violet-50 hover:border-violet-400 border border-transparent transition"
-                  >
-                    <Camera className="w-4 h-4 text-violet-600" />
-                  </label>
-                  <input
-                    id="avatar-upload"
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={handleImageChange}
-                    disabled={uploadingImage}
+                <div>
+                  <Label className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                    <School className="h-4 w-4 text-gray-500" />
+                    Instituição
+                  </Label>
+                  <Input value={profile.instituicao} disabled className="rounded-xl mt-1 bg-gray-50" />
+                </div>
+
+                <div>
+                  <Label className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                    <IdCard className="h-4 w-4 text-gray-500" />
+                    Matrícula
+                  </Label>
+                  <Input value={profile.matricula} disabled className="rounded-xl mt-1 bg-gray-50" />
+                </div>
+
+                <div>
+                  <Label className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                    <IdCard className="h-4 w-4 text-gray-500" />
+                    CPF
+                  </Label>
+                  <Input value={profile.cpf} disabled className="rounded-xl mt-1 bg-gray-50" />
+                </div>
+
+                <div>
+                  <Label className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                    <Users className="h-4 w-4 text-gray-500" />
+                    Turma
+                  </Label>
+                  <Input value={profile.turma} disabled className="rounded-xl mt-1 bg-gray-50" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Dados Pessoais Editáveis */}
+          <Card className={`rounded-xl shadow-sm ${isEditing ? "border-2 border-violet-300" : ""}`}>
+            <CardContent className="p-6">
+              <div className="mb-6 flex items-center gap-3">
+                <div className="h-10 w-10 rounded-lg bg-violet-100 flex items-center justify-center">
+                  <User className="h-5 w-5 text-violet-600" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-semibold text-gray-900">Dados Pessoais</h2>
+                  <p className="text-sm text-gray-500">Informações editáveis</p>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <Label className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                    <User className="h-4 w-4 text-gray-500" />
+                    Nome completo
+                  </Label>
+                  <Input
+                    value={profile.nome}
+                    onChange={(e) => handleChange("nome", e.target.value)}
+                    disabled={!isEditing}
+                    className={`rounded-xl mt-1 ${!isEditing ? "bg-gray-50" : ""}`}
                   />
                 </div>
 
-                <p className="text-sm text-muted-foreground text-center">
-                  {uploadingImage
-                    ? "Salvando foto..."
-                    : tempPhotoFile
-                    ? "Veja a pré-visualização e clique em Salvar foto."
-                    : "Clique no ícone de câmera para selecionar uma foto."}
-                </p>
+                <div>
+                  <Label className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                    <Phone className="h-4 w-4 text-gray-500" />
+                    Celular
+                  </Label>
+                  <Input
+                    value={profile.telefone}
+                    onChange={(e) => handleChange("telefone", e.target.value)}
+                    disabled={!isEditing}
+                    className={`rounded-xl mt-1 ${!isEditing ? "bg-gray-50" : ""}`}
+                    placeholder="+55 49 90000-0000"
+                  />
+                </div>
 
-                <Button
-                  className="mt-2 rounded-2xl w-full"
-                  disabled={!tempPhotoFile || uploadingImage}
-                  onClick={handleSavePhoto}
-                >
-                  {uploadingImage
-                    ? "Salvando foto..."
-                    : tempPhotoFile
-                    ? "Salvar foto"
-                    : "Escolha uma foto para salvar"}
-                </Button>
-              </CardContent>
-            </Card>
-          </aside>
-
-          {/* CARD ÚNICO: DADOS */}
-          <section className="md:col-span-2">
-            <Card className="rounded-2xl">
-              <CardContent className="p-6 space-y-4">
-                <div className="flex items-center justify-between mb-2">
-                  <div>
-                    <h2 className="text-lg font-semibold text-gray-900">
-                      Dados
-                    </h2>
-                    <p className="text-xs text-muted-foreground">
-                      Alguns dados são gerenciados pela instituição e não podem
-                      ser alterados pelo aluno.
-                    </p>
-                  </div>
-
-                  {!isEditing ? (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="rounded-2xl flex items-center gap-2"
-                      onClick={() => setIsEditing(true)}
-                    >
-                      <Edit className="w-4 h-4" />
-                      Editar
-                    </Button>
-                  ) : (
-                    <div className="flex gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="rounded-2xl flex items-center gap-2"
-                        onClick={handleCancelEdit}
-                        disabled={saving}
-                      >
-                        <X className="w-4 h-4" />
-                        Cancelar
-                      </Button>
-                      <Button
-                        size="sm"
-                        className="rounded-2xl flex items-center gap-2"
-                        onClick={handleSaveProfile}
-                        disabled={saving}
-                      >
-                        <Save className="w-4 h-4" />
-                        {saving ? "Salvando..." : "Salvar"}
-                      </Button>
+                <div>
+                  <Label className="text-sm font-medium text-gray-700 flex items-center gap-2 mb-2">
+                    <Lock className="h-4 w-4 text-gray-500" />
+                    Alterar Senha
+                  </Label>
+                  <div className="space-y-3">
+                    <div className="relative">
+                      <Input
+                        type={showPassword ? "text" : "password"}
+                        placeholder="Senha atual"
+                        value={senhaAtual}
+                        onChange={(e) => setSenhaAtual(e.target.value)}
+                        disabled={!isEditing}
+                        className={`rounded-xl ${!isEditing ? "bg-gray-50" : ""}`}
+                      />
+                      {isEditing && (
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword(!showPassword)}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                        >
+                          {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        </button>
+                      )}
                     </div>
-                  )}
-                </div>
-
-                <div className="grid md:grid-cols-2 gap-4">
-                  {/* Nome (editável) */}
-                  <div>
-                    <Label>Nome completo</Label>
-                    <Input
-                      className="rounded-2xl"
-                      value={profile.nome}
-                      onChange={(e) => handleChange(e, "nome")}
-                      disabled={!isEditing}
-                    />
-                  </div>
-
-                  {/* E-mail (sempre READONLY) */}
-                  <div>
-                    <Label>E-mail</Label>
-                    <Input
-                      className="rounded-2xl bg-muted/60"
-                      value={profile.email}
-                      disabled
-                    />
-                  </div>
-
-                  {/* Celular (editável) */}
-                  <div>
-                    <Label>Celular</Label>
-                    <Input
-                      className="rounded-2xl"
-                      placeholder="+55 49 90000-0000"
-                      value={profile.telefone}
-                      onChange={(e) => handleChange(e, "telefone")}
-                      disabled={!isEditing}
-                    />
-                  </div>
-
-                  {/* Instituição (sempre somente leitura → admin-only) */}
-                  <div>
-                    <Label>Instituição</Label>
-                    <Input
-                      className="rounded-2xl bg-muted/60"
-                      value={profile.instituicao}
-                      disabled
-                    />
-                  </div>
-
-                  {/* Matrícula (somente leitura) */}
-                  <div>
-                    <Label>Matrícula</Label>
-                    <Input
-                      className="rounded-2xl bg-muted/60"
-                      value={profile.matricula}
-                      disabled
-                    />
-                  </div>
-
-                  {/* CPF (somente leitura) */}
-                  <div>
-                    <Label>CPF</Label>
-                    <Input
-                      className="rounded-2xl bg-muted/60"
-                      value={profile.cpf}
-                      disabled
-                    />
-                  </div>
-
-                  {/* Turma (somente leitura) */}
-                  <div>
-                    <Label>Turma</Label>
-                    <Input
-                      className="rounded-2xl bg-muted/60"
-                      value={profile.turma}
-                      disabled
-                    />
+                    {isEditing && (
+                      <>
+                        <Input
+                          type={showPassword ? "text" : "password"}
+                          placeholder="Nova senha"
+                          value={senhaNova}
+                          onChange={(e) => setSenhaNova(e.target.value)}
+                          className="rounded-xl"
+                        />
+                        <Input
+                          type={showPassword ? "text" : "password"}
+                          placeholder="Confirmar nova senha"
+                          value={senhaConfirmacao}
+                          onChange={(e) => setSenhaConfirmacao(e.target.value)}
+                          className="rounded-xl"
+                        />
+                      </>
+                    )}
+                    {erroSenha && <p className="text-sm text-red-600">{erroSenha}</p>}
                   </div>
                 </div>
-              </CardContent>
-            </Card>
-          </section>
-        </main>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
 
-      {/* NOTIFICAÇÕES */}
       <NotificationCard
         show={showNotification}
         onClose={() => setShowNotification(false)}

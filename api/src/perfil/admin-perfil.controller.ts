@@ -23,20 +23,20 @@ import { AlterarSenhaDto } from './dto/alterar-senha.dto';
 
 const EXTENSOES_PERMITIDAS = ['.jpg', '.jpeg', '.png', '.webp'];
 
-@Controller('aluno/perfil')
+@Controller('adm/perfil')
 @UseGuards(JwtGuard, RolesGuard)
-@Roles('aluno')
-export class PerfilController {
+@Roles('admin')
+export class AdminPerfilController {
   constructor(private readonly perfilService: PerfilService) {}
 
   @Get()
   getPerfil(@CurrentUser() user: AuthUser) {
-    return this.perfilService.getPerfil(user.sub);
+    return this.perfilService.getPerfilAdmin(user.sub);
   }
 
   @Patch()
   updatePerfil(@CurrentUser() user: AuthUser, @Body() body: UpdatePerfilDto) {
-    return this.perfilService.updatePerfil(user.sub, body);
+    return this.perfilService.updatePerfilAdmin(user.sub, body);
   }
 
   @Patch('senha')
@@ -52,7 +52,7 @@ export class PerfilController {
         filename: (req, file, callback) => {
           const user = (req as unknown as { user: AuthUser }).user;
           const ext = extname(file.originalname).toLowerCase();
-          callback(null, `aluno-${user.id_aluno}-${Date.now()}${ext}`);
+          callback(null, `admin-${user.sub}-${Date.now()}${ext}`);
         },
       }),
       limits: { fileSize: 5 * 1024 * 1024 },
@@ -72,6 +72,6 @@ export class PerfilController {
   ) {
     if (!file) throw new BadRequestException('Nenhum arquivo enviado');
     const fotoUrl = `/uploads/avatars/${file.filename}`;
-    return this.perfilService.updateFoto(user.id_aluno as number, fotoUrl);
+    return this.perfilService.updateFotoAdmin(user.sub, fotoUrl);
   }
 }

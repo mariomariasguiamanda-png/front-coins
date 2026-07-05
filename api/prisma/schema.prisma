@@ -175,6 +175,8 @@ model notificacoes {
   tipo           String?   @db.VarChar(50)
   categoria      String?   @db.VarChar(50)
   disciplina     String?   @db.VarChar(255)
+  referencia_tipo String?  @db.VarChar(30) // 'atividade' | 'agenda_estudo' | 'resumo' | 'videoaula' - usado pro front saber pra onde redirecionar ao clicar
+  referencia_id   BigInt?
   usuarios       usuarios  @relation(fields: [id_usuario], references: [id_usuario], onDelete: Cascade, onUpdate: NoAction)
 
   @@index([id_usuario, lida], map: "idx_notificacoes_usuario")
@@ -291,6 +293,7 @@ model usuarios {
   reset_token_hash      String?             @db.VarChar(255)
   reset_token_expira_em DateTime?           @db.Timestamptz(6)
   instituicao           String?             @db.VarChar(255)
+  foto_url              String?             @db.VarChar(500)
   criado_em             DateTime?           @default(now()) @db.Timestamptz(6)
   atualizado_em         DateTime?           @default(now()) @db.Timestamptz(6)
   alunos                alunos?
@@ -306,15 +309,16 @@ model usuarios {
 }
 
 model videoaulas {
-  id_videoaula     BigInt            @id @default(autoincrement())
-  id_disciplina    BigInt
-  id_professor     BigInt
-  titulo           String            @db.VarChar(255)
-  descricao        String?
-  url_video        String?           @db.VarChar(500)
-  duracao_segundos Int?
-  data_criacao     DateTime?         @default(now()) @db.Timestamptz(6)
-  ativo            Boolean?          @default(true)
+  id_videoaula      BigInt            @id @default(autoincrement())
+  id_disciplina     BigInt
+  id_professor      BigInt
+  titulo            String            @db.VarChar(255)
+  descricao         String?
+  url_video         String?           @db.VarChar(500)
+  duracao_segundos  Int?
+  recompensa_moedas Int?              @default(0)
+  data_criacao      DateTime?         @default(now()) @db.Timestamptz(6)
+  ativo             Boolean?          @default(true)
   disciplinas      disciplinas       @relation(fields: [id_disciplina], references: [id_disciplina], onDelete: Cascade, onUpdate: NoAction)
   professores      professores       @relation(fields: [id_professor], references: [id_professor], onDelete: SetNull, onUpdate: NoAction)
   aluno_videoaula  aluno_videoaula[]

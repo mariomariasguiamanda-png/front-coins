@@ -19,6 +19,7 @@ export interface Notification {
   discipline?: string;
   time: string;
   read: boolean;
+  link: string | null;
   icon?: React.ReactNode;
 }
 
@@ -32,7 +33,34 @@ type NotificacaoRow = {
   disciplina: string | null;
   criado_em: string | null;
   lida: boolean | null;
+  referencia_tipo: string | null;
+  referencia_id: number | null;
 };
+
+// Mapeia a referência salva na notificação pra rota real do front - é o que
+// permite clicar numa notificação e ser levado direto pro lugar certo.
+const getLinkDaNotificacao = (row: NotificacaoRow): string | null => {
+  if (!row.referencia_tipo) return null;
+
+  switch (row.referencia_tipo) {
+    case "atividade":
+      return row.referencia_id ? `/aluno/atividades/${row.referencia_id}` : null;
+    case "resumo":
+      return row.referencia_id ? `/aluno/resumos/${row.referencia_id}` : null;
+    case "videoaula":
+      return row.referencia_id ? `/aluno/videoaulas/${row.referencia_id}` : null;
+    case "agenda_estudo":
+      return "/aluno/calendario";
+    default:
+      return null;
+  }
+};
+
+// Com que frequência reconsulta a API enquanto o aluno está com a aba aberta.
+// Sem isso, o sino só busca notificações (e portanto só gera os lembretes de
+// prazo/revisão) uma vez por sessão, porque o layout do aluno é persistente
+// e não remonta ao trocar de página.
+const INTERVALO_POLLING_MS = 2 * 60 * 1000;
 
 const getTempoRelativo = (dataEnvio: string) => {
   const agora = new Date();
@@ -77,6 +105,7 @@ export function useAlunoNotifications() {
           discipline: row.disciplina || "Sistema",
           time: row.criado_em ? getTempoRelativo(row.criado_em) : "",
           read: !!row.lida,
+          link: getLinkDaNotificacao(row),
         };
       });
 
@@ -92,6 +121,9 @@ export function useAlunoNotifications() {
 
   useEffect(() => {
     carregar();
+
+    const intervalId = setInterval(carregar, INTERVALO_POLLING_MS);
+    return () => clearInterval(intervalId);
   }, [carregar]);
 
   const markAsRead = async (id: string) => {

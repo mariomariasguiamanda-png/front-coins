@@ -13,7 +13,8 @@ export class NotificacoesController {
   constructor(private readonly notificacoesService: NotificacoesService) {}
 
   @Get()
-  findByUsuario(@CurrentUser() user: AuthUser) {
+  async findByUsuario(@CurrentUser() user: AuthUser) {
+    await this.notificacoesService.sincronizarAlertasAluno(user);
     return this.notificacoesService.findByUsuario(user.sub);
   }
 

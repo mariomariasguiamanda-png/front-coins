@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Put, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Put, Query, UseGuards } from '@nestjs/common';
 import { NotasService } from './notas.service';
 import { JwtGuard } from '../common/guards/jwt.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
@@ -37,5 +37,15 @@ export class NotasController {
       body.nota_final,
       user,
     );
+  }
+
+  @Delete('professor/notas')
+  @Roles('professor')
+  limparNotaFinal(
+    @Query('aluno') alunoId: string,
+    @Query('disciplina') disciplinaId: string,
+    @CurrentUser() user: AuthUser,
+  ) {
+    return this.notasService.limparNotaFinal(BigInt(alunoId), BigInt(disciplinaId), user);
   }
 }

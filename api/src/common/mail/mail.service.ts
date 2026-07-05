@@ -39,6 +39,24 @@ export class MailService {
     });
   }
 
+  async sendNotificacao(destinatario: string, titulo: string, mensagem: string) {
+    const transporter = this.getTransporter();
+
+    if (!transporter) {
+      this.logger.warn(
+        `SMTP não configurado (defina SMTP_HOST no .env). E-mail de notificação para ${destinatario}: "${titulo}" - ${mensagem}`,
+      );
+      return;
+    }
+
+    await transporter.sendMail({
+      from: process.env.SMTP_FROM ?? 'coins@no-reply.local',
+      to: destinatario,
+      subject: titulo,
+      html: `<p>${mensagem}</p>`,
+    });
+  }
+
   async sendNovoChamadoSuporte(chamado: {
     id_chamado: bigint;
     assunto: string | null;

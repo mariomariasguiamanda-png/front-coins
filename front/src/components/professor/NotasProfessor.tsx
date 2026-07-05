@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { Download, Upload, Plus, Trash2 } from "lucide-react";
 
 type GradeRow = {
@@ -19,7 +20,7 @@ interface NotasProfessorProps {
   grades: GradeRow[];
   onAddGrade: () => void; // não vamos usar de verdade no modelo 2, mas mantemos a assinatura
   onEditGrade: (id: string, updated: Partial<GradeRow>) => void | Promise<void>;
-  onDeleteGrade: (id: string) => void;
+  onDeleteGrade: (id: string) => void | Promise<void>;
   onExportGrades: () => void;
   onImportGrades: () => void;
 }
@@ -89,14 +90,54 @@ export function NotasProfessor({
     setDataInput("");
   };
 
-  // Tabela – o professor ainda consegue ver/ajustar diretamente, se quiser
-  const handleInlineChange = async (
-    gradeId: string,
-    newValue: string
-  ) => {
-    const notaNumber = Number(String(newValue).replace(",", "."));
-    if (isNaN(notaNumber)) return;
-    await onEditGrade(gradeId, {
+  // Tabela – o professor ainda consegue ver/ajustar diretamente, se quiser.
+  // O valor digitado fica num rascunho local e só é enviado pra API quando o
+  // campo perde o foco ou o usuário aperta Enter - salvar a cada tecla
+  // (onChange) impedia digitar decimais ("8," disparava salvar com "8" e a
+  // vírgula sozinha virava NaN) e não deixava limpar a nota.
+  const [draftNotas, setDraftNotas] = useState<Record<string, string>>({});
+  const [gradeParaLimpar, setGradeParaLimpar] = useState<GradeRow | null>(null);
+
+  const formatarNota = (grade: GradeRow) =>
+    grade.grade !== null && grade.grade !== undefined
+      ? String(grade.grade).replace(".", ",")
+      : "";
+
+  const handleDraftChange = (gradeId: string, value: string) => {
+    setDraftNotas((prev) => ({ ...prev, [gradeId]: value }));
+  };
+
+  const limparRascunho = (gradeId: string) => {
+    setDraftNotas((prev) => {
+      const { [gradeId]: _removido, ...resto } = prev;
+      return resto;
+    });
+  };
+
+  const commitInlineChange = async (grade: GradeRow) => {
+    const draft = draftNotas[grade.id];
+    if (draft === undefined) return; // nada foi digitado, não faz nada
+
+    const valor = draft.trim();
+
+    if (valor === "") {
+      limparRascunho(grade.id);
+      if (grade.grade !== null && grade.grade !== undefined) {
+        setGradeParaLimpar(grade); // pede confirmação antes de limpar de fato
+      }
+      return;
+    }
+
+    const notaNumber = Number(valor.replace(",", "."));
+    if (isNaN(notaNumber) || notaNumber < 0 || notaNumber > grade.maxGrade) {
+      alert(`Nota inválida. Use um número entre 0 e ${grade.maxGrade}, ex: 8,5`);
+      return; // mantém o rascunho pro usuário corrigir
+    }
+
+    limparRascunho(grade.id);
+    if (notaNumber === grade.grade) return; // sem mudança, evita chamada desnecessária
+
+    await onEditGrade(grade.id, {
       grade: notaNumber,
       date: new Date().toISOString().split("T")[0],
     });
@@ -286,14 +327,19 @@ export function NotasProfessor({
                     <input
                       type="text"
                       className="border rounded-lg px-2 py-1 text-sm text-center w-20"
+                      placeholder="-"
                       value={
-                        grade.grade !== null && grade.grade !== undefined
-                          ? String(grade.grade).replace(".", ",")
-                          : ""
+                        draftNotas[grade.id] !== undefined
+                          ? draftNotas[grade.id]
+                          : formatarNota(grade)
                       }
-                      onChange={(e) =>
-                        handleInlineChange(grade.id, e.target.value)
-                      }
+                      onChange={(e) => handleDraftChange(grade.id, e.target.value)}
+                      onBlur={() => commitInlineChange(grade)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.currentTarget.blur();
+                        }
+                      }}
                     />
                   </td>
                   <td className="px-4 py-3 text-center text-gray-600">
@@ -305,7 +351,7 @@ export function NotasProfessor({
                     <button
                       type="button"
                       className="inline-flex items-center justify-center rounded-lg border border-red-100 text-red-600 px-2 py-1 text-xs hover:bg-red-50"
-                      onClick={() => onDeleteGrade(grade.id)}
+                      onClick={() => setGradeParaLimpar(grade)}
                     >
                       <Trash2 className="w-3 h-3 mr-1" />
                       Limpar
@@ -317,6 +363,25 @@ export function NotasProfessor({
           </tbody>
         </table>
       </div>
+
+      <ConfirmDialog
+        open={gradeParaLimpar !== null}
+        title="Limpar nota final"
+        description={
+          gradeParaLimpar
+            ? `Tem certeza que deseja limpar a nota final de ${gradeParaLimpar.studentName}? Essa ação não pode ser desfeita.`
+            : undefined
+        }
+        confirmLabel="Limpar nota"
+        variant="danger"
+        onCancel={() => setGradeParaLimpar(null)}
+        onConfirm={async () => {
+          if (!gradeParaLimpar) return;
+          limparRascunho(gradeParaLimpar.id);
+          await onDeleteGrade(gradeParaLimpar.id);
+          setGradeParaLimpar(null);
+        }}
+      />
     </div>
   );
 }

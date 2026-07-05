@@ -95,4 +95,15 @@ export class NotasService {
       id_disciplina: Number(registro.id_disciplina),
     };
   }
+
+  async limparNotaFinal(id_aluno: bigint, id_disciplina: bigint, professor: AuthUser) {
+    await this.professorDisciplinaService.verificar(
+      professor.id_professor as number,
+      id_disciplina,
+    );
+
+    await this.db.notas_finais.deleteMany({ where: { id_aluno, id_disciplina } });
+
+    return { sucesso: true };
+  }
 }

@@ -509,6 +509,8 @@ const AtividadesPage: NextPageWithLayout = () => {
                     disciplinaMapaNome[v.id_disciplina] ?? v.disciplinas?.nome;
                   const discCor = resolverCorByNome(discNome);
                   const DiscIcon = resolverIconByNome(discNome);
+                  const statusVideo = v.status ?? "pendente";
+                  const isAssistida = STATUS_CONCLUIDO_VID.has(statusVideo);
 
                   return (
                     <Card
@@ -522,9 +524,20 @@ const AtividadesPage: NextPageWithLayout = () => {
                           </div>
 
                           <div className="flex-1">
-                            <p className={`text-sm font-medium ${discCor.text}`}>
-                              {discNome}
-                            </p>
+                            <div className="flex items-center gap-2 mb-1">
+                              <p className={`text-sm font-medium ${discCor.text}`}>
+                                {discNome}
+                              </p>
+                              <span
+                                className={`px-2 py-0.5 text-[11px] font-medium rounded-full ${
+                                  isAssistida
+                                    ? "bg-emerald-50 text-emerald-700"
+                                    : "bg-amber-50 text-amber-700"
+                                }`}
+                              >
+                                {isAssistida ? "Assistida" : "Pendente"}
+                              </span>
+                            </div>
                             <h3 className="text-lg font-semibold">{v.titulo}</h3>
                           </div>
 
@@ -532,9 +545,14 @@ const AtividadesPage: NextPageWithLayout = () => {
                             onClick={() =>
                               router.push(`/aluno/videoaulas/${v.id_videoaula}`)
                             }
-                            className="px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg text-white"
+                            className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-white transition-colors ${
+                              isAssistida
+                                ? "bg-gray-400 hover:bg-gray-500"
+                                : "bg-red-600 hover:bg-red-700"
+                            }`}
                           >
-                            Assistir
+                            {isAssistida && <CheckCircle className="h-4 w-4" />}
+                            {isAssistida ? "Assistido" : "Assistir"}
                           </button>
                         </div>
                       </CardContent>

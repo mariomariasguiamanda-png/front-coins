@@ -2,11 +2,30 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
-import { api } from "@/lib/api";
+import { api, resolveMediaUrl } from "@/lib/api";
 import { getAlunoLayout } from "@/components/layout/AlunoLayout";
 import { Skeleton } from "@/components/ui/Skeleton";
-import { CheckCircle2, BookOpen, Loader2 } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  CheckCircle2,
+  BookOpen,
+  Loader2,
+  Paperclip,
+  ExternalLink,
+  Download,
+  Eye,
+  AlertTriangle,
+} from "lucide-react";
 import type { NextPageWithLayout } from "@/pages/_app";
+
+const EXTENSOES_IMAGEM = ["png", "jpg", "jpeg", "gif", "webp"];
+
+function extensaoDoArquivo(caminho: string) {
+  const partes = caminho.split(".");
+  return partes.length > 1 ? partes.pop()!.toLowerCase() : "";
+}
+
+type AnexoSelecionado = { url: string; nome: string; extensao: string };
 
 type Resumo = {
   id_resumo: number;
@@ -15,6 +34,8 @@ type Resumo = {
   id_disciplina: number;
   status: "pendente" | "lido";
   lido_em: string | null;
+  anexos_urls: string[];
+  links: string[];
 };
 
 const ResumoDetalhePage: NextPageWithLayout = () => {
@@ -28,6 +49,7 @@ const ResumoDetalhePage: NextPageWithLayout = () => {
     "pendente"
   );
   const [saving, setSaving] = useState(false);
+  const [anexoSelecionado, setAnexoSelecionado] = useState<AnexoSelecionado | null>(null);
 
   useEffect(() => {
     const fetchResumo = async () => {
@@ -116,6 +138,7 @@ const ResumoDetalhePage: NextPageWithLayout = () => {
   }
 
   return (
+    <>
       <div className="px-8 py-6 flex justify-center">
         <div className="w-full max-w-3xl space-y-6">
           {/* Cabeçalho */}
@@ -198,8 +221,125 @@ const ResumoDetalhePage: NextPageWithLayout = () => {
               </p>
             )}
           </div>
+
+          {/* Anexos */}
+          {resumo.anexos_urls && resumo.anexos_urls.length > 0 && (
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
+              <h2 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                <Paperclip className="h-4 w-4 text-purple-600" />
+                Arquivos anexos ({resumo.anexos_urls.length})
+              </h2>
+              <div className="space-y-2">
+                {resumo.anexos_urls.map((caminho, index) => {
+                  const nome = caminho.split("/").pop() ?? `Anexo ${index + 1}`;
+                  return (
+                    <button
+                      key={index}
+                      type="button"
+                      onClick={() =>
+                        setAnexoSelecionado({
+                          url: resolveMediaUrl(caminho) ?? caminho,
+                          nome,
+                          extensao: extensaoDoArquivo(caminho),
+                        })
+                      }
+                      className="flex w-full items-center justify-between gap-3 rounded-lg border border-gray-100 bg-gray-50 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-100 transition-colors text-left"
+                    >
+                      <span className="truncate">{nome}</span>
+                      <Eye className="h-4 w-4 text-gray-400 shrink-0" />
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Links de referência */}
+          {resumo.links && resumo.links.length > 0 && (
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
+              <h2 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                <ExternalLink className="h-4 w-4 text-purple-600" />
+                Links de referência ({resumo.links.length})
+              </h2>
+              <div className="space-y-2">
+                {resumo.links.map((link, index) => (
+                  <a
+                    key={index}
+                    href={link}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 rounded-lg border border-gray-100 bg-gray-50 px-4 py-2.5 text-sm text-purple-700 hover:bg-gray-100 transition-colors break-all"
+                  >
+                    <ExternalLink className="h-4 w-4 shrink-0" />
+                    {link}
+                  </a>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
+
+      <Dialog open={!!anexoSelecionado} onOpenChange={(v) => !v && setAnexoSelecionado(null)}>
+        <DialogContent className="w-[95vw] sm:max-w-4xl h-[85vh] bg-white text-gray-900 border-gray-200 p-0 flex flex-col gap-0">
+          <DialogHeader className="flex-row items-center justify-between gap-4 space-y-0 border-b border-gray-100 p-4 pr-10">
+            <DialogTitle className="text-gray-900 truncate text-base">
+              {anexoSelecionado?.nome}
+            </DialogTitle>
+            {anexoSelecionado && (
+              <a
+                href={anexoSelecionado.url}
+                download
+                className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50 transition-colors"
+              >
+                <Download className="h-3.5 w-3.5" />
+                Baixar
+              </a>
+            )}
+          </DialogHeader>
+
+          <div className="flex-1 min-h-0 bg-gray-50">
+            {anexoSelecionado && anexoSelecionado.extensao === "pdf" && (
+              <iframe
+                src={anexoSelecionado.url}
+                title={anexoSelecionado.nome}
+                className="w-full h-full border-0"
+              />
+            )}
+
+            {anexoSelecionado && EXTENSOES_IMAGEM.includes(anexoSelecionado.extensao) && (
+              <div className="w-full h-full flex items-center justify-center p-4 overflow-auto">
+                <img
+                  src={anexoSelecionado.url}
+                  alt={anexoSelecionado.nome}
+                  className="max-w-full max-h-full object-contain"
+                />
+              </div>
+            )}
+
+            {anexoSelecionado &&
+              anexoSelecionado.extensao !== "pdf" &&
+              !EXTENSOES_IMAGEM.includes(anexoSelecionado.extensao) && (
+                <div className="w-full h-full flex flex-col items-center justify-center gap-3 p-6 text-center text-gray-500">
+                  <AlertTriangle className="h-10 w-10 text-amber-500" />
+                  <p className="text-sm">
+                    Não é possível pré-visualizar arquivos .{anexoSelecionado.extensao} dentro da
+                    aplicação. Baixe o arquivo para abri-lo.
+                  </p>
+                  <a
+                    href={anexoSelecionado.url}
+                    download
+                    className="inline-flex items-center gap-2 rounded-lg bg-purple-600 text-white text-sm font-medium px-4 py-2 hover:bg-purple-700 transition-colors"
+                  >
+                    <Download className="h-4 w-4" />
+                    Baixar arquivo
+                  </a>
+                </div>
+              )}
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 };
 

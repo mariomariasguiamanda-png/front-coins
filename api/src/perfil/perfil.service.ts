@@ -16,6 +16,15 @@ export class PerfilService {
     });
     if (!usuario) throw new NotFoundException('Usuário não encontrado');
 
+    // Mesmo cálculo usado no ranking e em /aluno/moedas/total-ganho, para que
+    // o total exibido no perfil bata com o do ranking e o da dashboard.
+    const totalGanho = usuario.alunos
+      ? await this.db.transacoes_moedas.aggregate({
+          where: { id_aluno: usuario.alunos.id_aluno, quantidade: { gt: 0 } },
+          _sum: { quantidade: true },
+        })
+      : null;
+
     return {
       id_usuario: Number(usuario.id_usuario),
       nome: usuario.nome,
@@ -28,7 +37,52 @@ export class PerfilService {
       endereco: usuario.alunos?.endereco ?? null,
       foto_url: usuario.alunos?.foto_url ?? null,
       turma: usuario.alunos?.turmas ?? null,
+      total_moedas_historico: totalGanho?._sum.quantidade ?? 0,
     };
+  }
+
+  async getPerfilAdmin(id_usuario: number) {
+    const usuario = await this.db.usuarios.findUnique({ where: { id_usuario } });
+    if (!usuario) throw new NotFoundException('Usuário não encontrado');
+
+    const [totalAlunos, totalProfessores, totalTurmas] = await Promise.all([
+      this.db.alunos.count(),
+      this.db.professores.count(),
+      this.db.turmas.count(),
+    ]);
+
+    return {
+      id_usuario: Number(usuario.id_usuario),
+      nome: usuario.nome,
+      email: usuario.email,
+      telefone: usuario.telefone,
+      foto_url: usuario.foto_url,
+      criado_em: usuario.criado_em,
+      total_alunos: totalAlunos,
+      total_professores: totalProfessores,
+      total_turmas: totalTurmas,
+    };
+  }
+
+  async updatePerfilAdmin(id_usuario: number, dto: UpdatePerfilDto) {
+    const usuario = await this.db.usuarios.update({
+      where: { id_usuario },
+      data: { nome: dto.nome, telefone: dto.telefone },
+    });
+
+    return {
+      id_usuario: Number(usuario.id_usuario),
+      nome: usuario.nome,
+      telefone: usuario.telefone,
+    };
+  }
+
+  async updateFotoAdmin(id_usuario: number, fotoUrl: string) {
+    const usuario = await this.db.usuarios.update({
+      where: { id_usuario },
+      data: { foto_url: fotoUrl },
+    });
+    return { foto_url: usuario.foto_url };
   }
 
   async getPerfilProfessor(id_usuario: number) {

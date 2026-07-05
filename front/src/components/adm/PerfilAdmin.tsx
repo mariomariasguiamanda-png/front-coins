@@ -5,66 +5,77 @@ import {
   User,
   Mail,
   Phone,
+  Calendar,
+  Users,
+  BookOpen,
   School,
   Lock,
-  Shield,
-  Calendar,
-  BookOpen,
-  Users,
   Eye,
   EyeOff,
+  Bell,
+  Palette,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/services/auth/AuthContext";
+import { useTheme } from "next-themes";
 import { ProfileHero, type ProfileStat } from "@/components/perfil/ProfileHero";
 
-interface ProfileData {
+export interface AdminProfileData {
   readonly: {
     nomeCompleto: string;
-    disciplinas: string[];
-    turmas: string[];
     emailInstitucional: string;
-    cadastradoEm?: string | null;
+    cadastradoEm: string | null;
   };
   editable: {
     telefone: string;
-    especialidade: string;
     foto: string | null;
   };
-  stats?: {
+  stats: {
     totalAlunos: number;
+    totalProfessores: number;
+    totalTurmas: number;
   };
 }
 
-interface PerfilProfessorProps {
-  data: ProfileData;
-  onSave: (dados: { telefone: string; especialidade: string }) => Promise<void>;
+interface PerfilAdminProps {
+  data: AdminProfileData;
+  onSave: (dados: { nome: string; telefone: string }) => Promise<void>;
   onUploadFoto: (file: File) => Promise<void>;
   onChangePassword: (senhaAtual: string, senhaNova: string) => Promise<void>;
 }
 
-export function PerfilProfessor({ data, onSave, onUploadFoto, onChangePassword }: PerfilProfessorProps) {
+export function PerfilAdmin({ data, onSave, onUploadFoto, onChangePassword }: PerfilAdminProps) {
   const { signOut } = useAuth();
+  const { theme, setTheme } = useTheme();
+
   const [showPassword, setShowPassword] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [uploadingFoto, setUploadingFoto] = useState(false);
-  const [editableData, setEditableData] = useState(data.editable);
+  const [nome, setNome] = useState(data.readonly.nomeCompleto);
+  const [telefone, setTelefone] = useState(data.editable.telefone);
   const [senhaAtual, setSenhaAtual] = useState("");
   const [senhaNova, setSenhaNova] = useState("");
   const [senhaConfirmacao, setSenhaConfirmacao] = useState("");
   const [erroSenha, setErroSenha] = useState<string | null>(null);
 
-  // Ressincroniza os campos com o que vem do servidor (ex: depois de salvar
-  // ou trocar a foto, o pai recarrega `data` - sem isso os inputs ficavam
-  // presos no valor capturado só no primeiro mount). Não mexe se o professor
-  // estiver editando, pra não apagar o que ele está digitando.
+  const [notificacoesEmail, setNotificacoesEmail] = useState(true);
+  const [notificacoesPush, setNotificacoesPush] = useState(true);
+
   useEffect(() => {
     if (!isEditing) {
-      setEditableData(data.editable);
+      setNome(data.readonly.nomeCompleto);
+      setTelefone(data.editable.telefone);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [data.editable]);
+  }, [data.readonly.nomeCompleto, data.editable.telefone]);
+
+  useEffect(() => {
+    const email = localStorage.getItem("notificacoesEmail");
+    const push = localStorage.getItem("notificacoesPush");
+    if (email !== null) setNotificacoesEmail(JSON.parse(email));
+    if (push !== null) setNotificacoesPush(JSON.parse(push));
+  }, []);
 
   const limparCamposSenha = () => {
     setSenhaAtual("");
@@ -76,7 +87,7 @@ export function PerfilProfessor({ data, onSave, onUploadFoto, onChangePassword }
   const handleSave = async () => {
     setSaving(true);
     try {
-      await onSave({ telefone: editableData.telefone, especialidade: editableData.especialidade });
+      await onSave({ nome, telefone });
 
       if (senhaAtual || senhaNova || senhaConfirmacao) {
         if (senhaNova.length < 6) {
@@ -102,7 +113,8 @@ export function PerfilProfessor({ data, onSave, onUploadFoto, onChangePassword }
   };
 
   const handleCancel = () => {
-    setEditableData(data.editable);
+    setNome(data.readonly.nomeCompleto);
+    setTelefone(data.editable.telefone);
     limparCamposSenha();
     setIsEditing(false);
   };
@@ -116,18 +128,29 @@ export function PerfilProfessor({ data, onSave, onUploadFoto, onChangePassword }
     }
   };
 
+  const handleTogglePreferencia = (tipo: "email" | "push") => {
+    if (tipo === "email") {
+      const novo = !notificacoesEmail;
+      setNotificacoesEmail(novo);
+      localStorage.setItem("notificacoesEmail", JSON.stringify(novo));
+    } else {
+      const novo = !notificacoesPush;
+      setNotificacoesPush(novo);
+      localStorage.setItem("notificacoesPush", JSON.stringify(novo));
+    }
+  };
+
   const stats: ProfileStat[] = [
-    { label: "Total de Alunos", value: data.stats?.totalAlunos ?? 0, icon: Users, color: "blue" },
-    { label: "Disciplinas", value: data.readonly.disciplinas.length, icon: BookOpen, color: "violet" },
-    { label: "Turmas", value: data.readonly.turmas.length, icon: Users, color: "amber" },
+    { label: "Total de Alunos", value: data.stats.totalAlunos, icon: Users, color: "blue" },
+    { label: "Total de Professores", value: data.stats.totalProfessores, icon: BookOpen, color: "violet" },
+    { label: "Total de Turmas", value: data.stats.totalTurmas, icon: School, color: "amber" },
   ];
 
   return (
     <div className="space-y-6 pb-8">
       <ProfileHero
         nomeCompleto={data.readonly.nomeCompleto}
-        subtitulo="Professor(a)"
-        badges={data.readonly.disciplinas}
+        subtitulo="Administrador do Sistema"
         fotoUrl={data.editable.foto}
         onUploadFoto={handleUploadFoto}
         uploadingFoto={uploadingFoto}
@@ -137,7 +160,7 @@ export function PerfilProfessor({ data, onSave, onUploadFoto, onChangePassword }
         onCancel={handleCancel}
         saving={saving}
         onSignOut={signOut}
-        stats={data.stats ? stats : undefined}
+        stats={stats}
       />
 
       <div className="grid gap-6 lg:grid-cols-2">
@@ -146,7 +169,7 @@ export function PerfilProfessor({ data, onSave, onUploadFoto, onChangePassword }
           <CardContent className="p-6">
             <div className="mb-6 flex items-center gap-3">
               <div className="h-10 w-10 rounded-lg bg-blue-100 flex items-center justify-center">
-                <School className="h-5 w-5 text-blue-600" />
+                <Mail className="h-5 w-5 text-blue-600" />
               </div>
               <div>
                 <h2 className="text-lg font-semibold text-gray-900">Dados Institucionais</h2>
@@ -155,42 +178,6 @@ export function PerfilProfessor({ data, onSave, onUploadFoto, onChangePassword }
             </div>
 
             <div className="space-y-4">
-              <div>
-                <Label className="text-sm font-medium text-gray-700 flex items-center gap-2">
-                  <User className="h-4 w-4 text-gray-500" />
-                  Nome Completo
-                </Label>
-                <Input
-                  value={data.readonly.nomeCompleto}
-                  disabled
-                  className="rounded-xl mt-1 bg-gray-50"
-                />
-              </div>
-
-              <div>
-                <Label className="text-sm font-medium text-gray-700 flex items-center gap-2">
-                  <BookOpen className="h-4 w-4 text-gray-500" />
-                  Disciplinas
-                </Label>
-                <Input
-                  value={data.readonly.disciplinas.join(", ") || "Nenhuma disciplina vinculada"}
-                  disabled
-                  className="rounded-xl mt-1 bg-gray-50"
-                />
-              </div>
-
-              <div>
-                <Label className="text-sm font-medium text-gray-700 flex items-center gap-2">
-                  <Users className="h-4 w-4 text-gray-500" />
-                  Turmas
-                </Label>
-                <Input
-                  value={data.readonly.turmas.join(", ") || "Nenhuma turma"}
-                  disabled
-                  className="rounded-xl mt-1 bg-gray-50"
-                />
-              </div>
-
               <div>
                 <Label className="text-sm font-medium text-gray-700 flex items-center gap-2">
                   <Mail className="h-4 w-4 text-gray-500" />
@@ -210,7 +197,7 @@ export function PerfilProfessor({ data, onSave, onUploadFoto, onChangePassword }
                     Cadastrado em
                   </Label>
                   <Input
-                    value={new Date(data.readonly.cadastradoEm).toLocaleDateString('pt-BR')}
+                    value={new Date(data.readonly.cadastradoEm).toLocaleDateString("pt-BR")}
                     disabled
                     className="rounded-xl mt-1 bg-gray-50"
                   />
@@ -221,7 +208,7 @@ export function PerfilProfessor({ data, onSave, onUploadFoto, onChangePassword }
         </Card>
 
         {/* Dados Pessoais Editáveis */}
-        <Card className={`rounded-xl shadow-sm ${isEditing ? 'border-2 border-violet-300' : ''}`}>
+        <Card className={`rounded-xl shadow-sm ${isEditing ? "border-2 border-violet-300" : ""}`}>
           <CardContent className="p-6">
             <div className="mb-6 flex items-center gap-3">
               <div className="h-10 w-10 rounded-lg bg-violet-100 flex items-center justify-center">
@@ -236,29 +223,28 @@ export function PerfilProfessor({ data, onSave, onUploadFoto, onChangePassword }
             <div className="space-y-4">
               <div>
                 <Label className="text-sm font-medium text-gray-700 flex items-center gap-2">
-                  <Phone className="h-4 w-4 text-gray-500" />
-                  Telefone/WhatsApp
+                  <User className="h-4 w-4 text-gray-500" />
+                  Nome Completo
                 </Label>
                 <Input
-                  value={editableData.telefone}
-                  onChange={(e) => setEditableData({ ...editableData, telefone: e.target.value })}
+                  value={nome}
+                  onChange={(e) => setNome(e.target.value)}
                   disabled={!isEditing}
-                  className={`rounded-xl mt-1 ${!isEditing ? 'bg-gray-50' : ''}`}
-                  placeholder="(11) 98765-4321"
+                  className={`rounded-xl mt-1 ${!isEditing ? "bg-gray-50" : ""}`}
                 />
               </div>
 
               <div>
                 <Label className="text-sm font-medium text-gray-700 flex items-center gap-2">
-                  <Shield className="h-4 w-4 text-gray-500" />
-                  Especialidade
+                  <Phone className="h-4 w-4 text-gray-500" />
+                  Telefone
                 </Label>
                 <Input
-                  value={editableData.especialidade}
-                  onChange={(e) => setEditableData({ ...editableData, especialidade: e.target.value })}
+                  value={telefone}
+                  onChange={(e) => setTelefone(e.target.value)}
                   disabled={!isEditing}
-                  className={`rounded-xl mt-1 ${!isEditing ? 'bg-gray-50' : ''}`}
-                  placeholder="Ex: Matemática e Física"
+                  className={`rounded-xl mt-1 ${!isEditing ? "bg-gray-50" : ""}`}
+                  placeholder="(11) 98765-4321"
                 />
               </div>
 
@@ -275,7 +261,7 @@ export function PerfilProfessor({ data, onSave, onUploadFoto, onChangePassword }
                       value={senhaAtual}
                       onChange={(e) => setSenhaAtual(e.target.value)}
                       disabled={!isEditing}
-                      className={`rounded-xl ${!isEditing ? 'bg-gray-50' : ''}`}
+                      className={`rounded-xl ${!isEditing ? "bg-gray-50" : ""}`}
                     />
                     {isEditing && (
                       <button
@@ -312,6 +298,89 @@ export function PerfilProfessor({ data, onSave, onUploadFoto, onChangePassword }
           </CardContent>
         </Card>
       </div>
+
+      {/* Preferências (exclusivo do admin) */}
+      <Card className="rounded-xl shadow-sm">
+        <CardContent className="p-6 space-y-6">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-lg bg-amber-100 flex items-center justify-center">
+              <Palette className="h-5 w-5 text-amber-600" />
+            </div>
+            <div>
+              <h2 className="text-lg font-semibold text-gray-900">Preferências do Sistema</h2>
+              <p className="text-sm text-gray-500">Personalize sua experiência no sistema</p>
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Bell className="h-4 w-4 text-gray-500" />
+                <div>
+                  <p className="font-medium text-gray-900">Notificações por E-mail</p>
+                  <p className="text-sm text-gray-600">Receba atualizações importantes por e-mail</p>
+                </div>
+              </div>
+              <button
+                onClick={() => handleTogglePreferencia("email")}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition ${
+                  notificacoesEmail ? "bg-violet-600" : "bg-gray-200"
+                }`}
+              >
+                <span
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition ${
+                    notificacoesEmail ? "translate-x-6" : "translate-x-1"
+                  }`}
+                />
+              </button>
+            </div>
+
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Bell className="h-4 w-4 text-gray-500" />
+                <div>
+                  <p className="font-medium text-gray-900">Notificações Push</p>
+                  <p className="text-sm text-gray-600">Receba notificações em tempo real no navegador</p>
+                </div>
+              </div>
+              <button
+                onClick={() => handleTogglePreferencia("push")}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition ${
+                  notificacoesPush ? "bg-violet-600" : "bg-gray-200"
+                }`}
+              >
+                <span
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition ${
+                    notificacoesPush ? "translate-x-6" : "translate-x-1"
+                  }`}
+                />
+              </button>
+            </div>
+
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Palette className="h-4 w-4 text-gray-500" />
+                <div>
+                  <p className="font-medium text-gray-900">Modo Escuro</p>
+                  <p className="text-sm text-gray-600">Ative o tema escuro para reduzir o brilho da tela</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition ${
+                  theme === "dark" ? "bg-violet-600" : "bg-gray-200"
+                }`}
+              >
+                <span
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition ${
+                    theme === "dark" ? "translate-x-6" : "translate-x-1"
+                  }`}
+                />
+              </button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

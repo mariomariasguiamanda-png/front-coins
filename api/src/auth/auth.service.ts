@@ -137,7 +137,7 @@ export class AuthService {
       nome: user.nome,
       email: user.email,
       tipo_usuario: user.tipo_usuario,
-      foto_url: user.alunos?.foto_url ?? user.professores?.foto_url ?? null,
+      foto_url: user.alunos?.foto_url ?? user.professores?.foto_url ?? user.foto_url ?? null,
       id_aluno: user.alunos ? Number(user.alunos.id_aluno) : null,
       id_professor: user.professores ? Number(user.professores.id_professor) : null,
     };

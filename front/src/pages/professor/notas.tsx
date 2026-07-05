@@ -43,8 +43,10 @@ export default function NotasPage() {
       try {
         setErro(null);
 
+        // /professor/disciplinas retorna só as disciplinas vinculadas a este
+        // professor (GET /disciplinas é a lista global, de todo o sistema).
         const [discData, turmaData] = await Promise.all([
-          api.get("/disciplinas"),
+          api.get("/professor/disciplinas"),
           api.get("/turmas"),
         ]);
 
@@ -141,8 +143,25 @@ export default function NotasPage() {
   const handleAddGrade = () =>
     alert("Para adicionar aluno, use a tela de matrícula.");
 
-  const handleDeleteGrade = () =>
-    alert("Remover nota final será implementado depois.");
+  // Limpa a nota final do aluno (remove o registro em notas_finais).
+  // A confirmação é feita antes, pelo ConfirmDialog dentro de NotasProfessor.
+  const handleDeleteGrade = async (id: string) => {
+    const atual = grades.find((g) => g.id === id);
+    if (!atual) return;
+
+    try {
+      await api.delete(
+        `/professor/notas?aluno=${atual._idAluno}&disciplina=${atual._idDisciplina}`
+      );
+
+      if (disciplinaSelecionada && turmaSelecionada) {
+        await carregarNotas(disciplinaSelecionada, turmaSelecionada);
+      }
+    } catch (err: any) {
+      console.error(err);
+      alert("Erro ao limpar nota final.");
+    }
+  };
 
   const handleExportGrades = () => {
     const headers = [

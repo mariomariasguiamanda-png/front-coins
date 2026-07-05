@@ -3,8 +3,9 @@
 import Image from "next/image";
 import Link from "next/link";
 import { Menu, ChevronLeft } from "lucide-react";
-import { admin } from "@/lib/mock/admin";
 import { Notifications } from "@/components/ui/Notifications";
+import { useUsuarioLogado } from "@/hooks/useUsuarioLogado";
+import { resolveMediaUrl } from "@/lib/api";
 
 type HeaderAdmProps = {
   onToggleSidebar?: () => void;
@@ -12,6 +13,8 @@ type HeaderAdmProps = {
 };
 
 export function HeaderAdm({ onToggleSidebar, sidebarOpen }: HeaderAdmProps) {
+  const { nome, fotoUrl } = useUsuarioLogado();
+
   return (
     <header className="sticky top-0 z-30 bg-gradient-to-br from-[#7C3AED] via-[#7C3AED] to-[#7C3AED] text-white border-b border-white/20">
       <div className="w-full px-5 h-14 flex items-center justify-between">
@@ -52,14 +55,23 @@ export function HeaderAdm({ onToggleSidebar, sidebarOpen }: HeaderAdmProps) {
 
           <Link
             href="/adm/perfil"
-            className="flex items-center gap-2 rounded-lg bg-white/10 hover:bg-white/20 px-2 py-1 transition text-white"
+            title="Ver meu perfil"
+            className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition"
           >
-            <div className="h-7 w-7 rounded-full bg-gradient-to-br from-purple-400 to-purple-700 grid place-items-center text-xs font-bold text-[#fff]">
-              {admin.nome.split(" ")[0][0]}
-            </div>
-            <span className="text-sm text-white hidden sm:block max-w-[140px] truncate">
-              {admin.nome}
+            <span className="text-sm font-medium hidden sm:block max-w-[140px] truncate">
+              {nome || "Carregando..."}
             </span>
+            {fotoUrl ? (
+              <img
+                src={resolveMediaUrl(fotoUrl) ?? undefined}
+                alt="Foto do usuário"
+                className="w-10 h-10 rounded-full object-cover border border-gray-300 shadow-sm"
+              />
+            ) : (
+              <div className="w-10 h-10 rounded-full bg-purple-600 text-white flex items-center justify-center text-sm font-semibold shadow-sm">
+                {nome ? nome.charAt(0).toUpperCase() : "?"}
+              </div>
+            )}
           </Link>
         </div>
       </div>
