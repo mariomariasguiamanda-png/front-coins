@@ -65,7 +65,7 @@ const RankingPage: NextPageWithLayout = () => {
           (row: any) => ({
             id_aluno: row.id_aluno,
             nome_aluno: row.nome,
-            total_moedas_ganhas: row.saldo_total,
+            total_moedas_ganhas: row.total_moedas_historico,
             foto_url: row.foto_url,
             posicao: row.posicao,
           })
@@ -145,10 +145,16 @@ const RankingPage: NextPageWithLayout = () => {
         <Card className="rounded-2xl bg-white border border-gray-200 card-bounce card-bounce-delay-1">
           <CardContent className="p-6">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold flex items-center gap-2">
-                <Medal className="h-5 w-5 text-amber-500" />
-                Ranking Geral por Moedas
-              </h2>
+              <div>
+                <h2 className="text-lg font-semibold flex items-center gap-2">
+                  <Medal className="h-5 w-5 text-amber-500" />
+                  Ranking Geral por Moedas
+                </h2>
+                <p className="text-xs text-gray-500 mt-1">
+                  Total histórico de moedas conquistadas — comprar pontos não
+                  reduz sua posição no ranking.
+                </p>
+              </div>
 
               <Button
                 onClick={() => setShowFullRanking(!showFullRanking)}

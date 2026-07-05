@@ -26,7 +26,7 @@ interface ProfileData {
 
 export default function Perfil() {
   const router = useRouter();
-  const { signOut } = useAuth();
+  const { signOut, refresh } = useAuth();
 
   // ========= ESTADOS PRINCIPAIS =========
   const [loading, setLoading] = useState(true);
@@ -127,17 +127,27 @@ export default function Perfil() {
   }
 
   async function handleSaveProfile() {
+    const nomeAparado = profile.nome.trim();
+    if (!nomeAparado) {
+      showNotificationFn("O nome não pode ficar em branco.", "error");
+      return;
+    }
+
     try {
       setSaving(true);
 
       // Atualiza apenas campos que o aluno PODE editar: nome e telefone
       await api.patch("/aluno/perfil", {
-        nome: profile.nome,
+        nome: nomeAparado,
         telefone: profile.telefone,
       });
 
-      setOriginalProfile(profile);
+      setProfile((prev) => ({ ...prev, nome: nomeAparado }));
+      setOriginalProfile({ ...profile, nome: nomeAparado });
       setIsEditing(false);
+
+      // Atualiza nome exibido no header (AuthContext) sem precisar recarregar a página
+      refresh();
 
       showNotificationFn("Dados atualizados com sucesso!", "success");
     } catch (error: any) {
@@ -157,9 +167,23 @@ export default function Perfil() {
 
   // ========= FOTO: SELEÇÃO (preview) =========
 
+  const TAMANHO_MAX_FOTO = 5 * 1024 * 1024; // 5MB
+
   async function handleImageChange(e: ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      showNotificationFn("Selecione um arquivo de imagem válido.", "error");
+      e.target.value = "";
+      return;
+    }
+
+    if (file.size > TAMANHO_MAX_FOTO) {
+      showNotificationFn("A foto deve ter no máximo 5MB.", "error");
+      e.target.value = "";
+      return;
+    }
 
     setTempPhotoFile(file);
     const previewUrl = URL.createObjectURL(file);
@@ -189,6 +213,9 @@ export default function Perfil() {
 
       setTempPhotoFile(null);
       setTempPhotoPreview(null);
+
+      // Atualiza foto exibida no header (AuthContext) sem precisar recarregar a página
+      refresh();
 
       showNotificationFn("Foto atualizada com sucesso!", "success");
     } catch (error: any) {
@@ -262,6 +289,7 @@ export default function Perfil() {
 
                   <label
                     htmlFor="avatar-upload"
+                    aria-label="Alterar foto de perfil"
                     className="absolute bottom-0 right-0 bg-white rounded-full p-2 shadow-md cursor-pointer hover:bg-violet-50 hover:border-violet-400 border border-transparent transition"
                   >
                     <Camera className="w-4 h-4 text-violet-600" />

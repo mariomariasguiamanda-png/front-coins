@@ -43,9 +43,21 @@ type CalendarDay = {
 // ==================== DADOS INICIAIS ====================
 // Inicia sem mocks; carregará do Supabase ou localStorage (fallback)
 
+// ==================== DATAS (sempre em fuso local, nunca UTC) ====================
+// new Date().toISOString() converte para UTC antes de fatiar a data - perto da
+// meia-noite (ex: 21h-23h59 no horário de Brasília, UTC-3) isso já "vira o dia"
+// em UTC e o calendário passa a marcar amanhã como hoje. Usar os getters locais
+// (getFullYear/getMonth/getDate) evita esse deslocamento de fuso.
+function toDateKey(date: Date): string {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
 // ==================== STATUS DE EVENTOS ====================
 function getStatusColor(event: RevisionEvent) {
-  const today = new Date().toISOString().split("T")[0];
+  const today = toDateKey(new Date());
   if (event.completed) return "completed"; // verde
   if (event.date < today) return "overdue"; // vermelho
   return "pending"; // amarelo
@@ -53,7 +65,7 @@ function getStatusColor(event: RevisionEvent) {
 
 function getDayStatusClass(eventsOfDay: RevisionEvent[]) {
   if (eventsOfDay.length === 0) return "";
-  const today = new Date().toISOString().split("T")[0];
+  const today = toDateKey(new Date());
   const hasOverdue = eventsOfDay.some((e) => !e.completed && e.date < today);
   const allCompleted = eventsOfDay.every((e) => e.completed);
   if (hasOverdue) return "bg-red-100 border-red-400";
@@ -106,7 +118,7 @@ export default function Frequencia() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newEvent, setNewEvent] = useState<Partial<RevisionEvent>>({
     title: "",
-    date: new Date().toISOString().split("T")[0],
+    date: toDateKey(new Date()),
     subject: "",
     type: "revision",
     completed: false,
@@ -162,7 +174,7 @@ export default function Frequencia() {
     } catch {}
 
     // Notificação para hoje se houver eventos não concluídos
-    const today = new Date().toISOString().split("T")[0];
+    const today = toDateKey(new Date());
     const todayEvents = events.filter(
       (event) => event.date === today && !event.completed
     );
@@ -197,9 +209,9 @@ export default function Frequencia() {
     // Dias do mês atual
     for (let day = 1; day <= daysInMonth; day++) {
       const dayDate = new Date(year, month, day);
-      const dateStr = dayDate.toISOString().split("T")[0];
+      const dateStr = toDateKey(dayDate);
       const dayEvents = events.filter((event) => event.date === dateStr);
-      const isToday = dateStr === new Date().toISOString().split("T")[0];
+      const isToday = dateStr === toDateKey(new Date());
 
       days.push({
         date: dayDate,
@@ -336,13 +348,11 @@ export default function Frequencia() {
   };
 
   const handleNavigateToItem = (event: RevisionEvent) => {
-    if (event.linkType && event.disciplinaId && event.itemId) {
+    if (event.linkType && event.itemId) {
       if (event.linkType === "atividade") {
-        router.push(
-          `/aluno/disciplinas/${event.disciplinaId}/atividades/${event.itemId}`
-        );
+        router.push(`/aluno/atividades/${event.itemId}`);
       } else if (event.linkType === "resumo") {
-        router.push(`/aluno/disciplinas/${event.disciplinaId}/resumos`);
+        router.push(`/aluno/resumos/${event.itemId}`);
       }
       setShowDayModal(false);
     }
@@ -389,7 +399,7 @@ export default function Frequencia() {
     setShowCreateModal(false);
     setNewEvent({
       title: "",
-      date: new Date().toISOString().split("T")[0],
+      date: toDateKey(new Date()),
       subject: "",
       type: "revision",
       completed: false,
@@ -510,7 +520,7 @@ export default function Frequencia() {
             {/* Grid do Calendário */}
             <div className="grid grid-cols-7 gap-2">
               {days.map((day, index) => {
-                const dateStr = day.date.toISOString().split("T")[0];
+                const dateStr = toDateKey(day.date);
                 const eventsOfDay = events.filter((ev) => ev.date === dateStr);
                 const dayStatusClass = getDayStatusClass(eventsOfDay);
                 const baseMonthClass = day.isCurrentMonth
@@ -545,7 +555,7 @@ export default function Frequencia() {
       {/* ==================== MODAL DE ATIVIDADES DO DIA ==================== */}
       {showDayModal && selectedDate && (
         <div
-          className="fixed inset-0 bg-black/50 flex items-center justify-center z-90 p-4"
+          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
           onClick={handleCloseDayModal}
         >
           <div
@@ -629,7 +639,7 @@ export default function Frequencia() {
                     </div>
 
                     <div className="flex justify-between items-center gap-3">
-                      {event.linkType && event.disciplinaId && event.itemId && (
+                      {event.linkType && event.itemId && (
                         <Button
                           onClick={() => handleNavigateToItem(event)}
                           className="bg-violet-500 hover:bg-violet-600 text-white shadow-md hover:shadow-lg smooth-transition flex items-center gap-2"
@@ -669,7 +679,7 @@ export default function Frequencia() {
       {/* ==================== MODAL CRIAR EVENTO ==================== */}
       {showCreateModal && (
         <div
-          className="fixed inset-0 bg-black/50 flex items-center justify-center z-90 p-4"
+          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
           onClick={() => setShowCreateModal(false)}
         >
           <div

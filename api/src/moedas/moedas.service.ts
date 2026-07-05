@@ -112,18 +112,33 @@ export class MoedasService {
       where: { id_turma },
       include: {
         usuarios: { select: { nome: true } },
-        moedas_saldo: { select: { saldo: true } },
       },
     });
+
+    const alunoIds = alunos.map((a) => a.id_aluno);
+
+    // Ranking reflete o HISTÓRICO de moedas ganhas (soma só dos créditos),
+    // não o saldo atual - o saldo cai quando o aluno compra pontos extras, e
+    // usar saldo faria quem gasta moedas (uso pretendido do sistema) cair de
+    // posição, punindo justamente quem mais usa a recompensa que conquistou.
+    const totaisGanhos = await this.db.transacoes_moedas.groupBy({
+      by: ['id_aluno'],
+      where: { id_aluno: { in: alunoIds }, quantidade: { gt: 0 } },
+      _sum: { quantidade: true },
+    });
+
+    const mapaTotais = new Map(
+      totaisGanhos.map((t) => [Number(t.id_aluno), t._sum.quantidade ?? 0]),
+    );
 
     const ranking = alunos
       .map((a) => ({
         id_aluno: Number(a.id_aluno),
         nome: a.usuarios.nome,
         foto_url: a.foto_url,
-        saldo_total: a.moedas_saldo.reduce((sum, s) => sum + (s.saldo ?? 0), 0),
+        total_moedas_historico: mapaTotais.get(Number(a.id_aluno)) ?? 0,
       }))
-      .sort((a, b) => b.saldo_total - a.saldo_total)
+      .sort((a, b) => b.total_moedas_historico - a.total_moedas_historico)
       .map((a, index) => ({ ...a, posicao: index + 1 }));
 
     return { alunos: ranking };

@@ -6,11 +6,13 @@ import { Eye, EyeOff } from "@/components/ui/Icons";
 import { FormEvent, useState } from "react";
 import { HiOutlineMail, HiOutlineLockClosed } from "react-icons/hi";
 import { api } from "@/lib/api";
+import { useAuth } from "@/services/auth/AuthContext";
 
 const roboto = Roboto({ subsets: ["latin"], weight: ["400", "500", "700"] });
 
 export default function LoginPage() {
   const router = useRouter();
+  const { refresh } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -44,10 +46,14 @@ export default function LoginPage() {
       }
       
       localStorage.setItem("coins_token", response.token);
-      
+
+      // Popula o AuthContext (nome/foto no header) ANTES de navegar, pra não
+      // depender de uma segunda chamada a /auth/me só ao montar a página seguinte.
+      await refresh();
+
       const tipo = response.tipo_usuario ?? "aluno";
       const destino = redirectByRole(tipo);
-      
+
       router.push(destino);
     } catch (err: any) {
       console.error("Erro no login:", err);

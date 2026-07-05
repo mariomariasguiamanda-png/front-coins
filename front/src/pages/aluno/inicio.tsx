@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
+import { useRouter } from "next/router";
 import { getAlunoLayout } from "../../components/layout/AlunoLayout";
 import { Card, CardContent } from "../../components/ui/Card";
 import type { NextPageWithLayout } from "@/pages/_app";
@@ -11,8 +12,8 @@ import {
   AlertTriangle,
   Zap,
   ShieldCheck,
-  ChevronUp,
-  ChevronDown,
+  Clock,
+  ArrowRight,
 } from "lucide-react";
 import { api } from "@/lib/api";
 
@@ -59,6 +60,7 @@ type PeriodoFiltro =
 // Formato "achatado" de GET aluno/atividades (já vem com status/nota/disciplinas.nome
 // resolvidos pela própria API, sem precisar de joins manuais no client).
 type ProgressoAtividadeRow = {
+  id_atividade: number | null;
   titulo: string | null;
   recompensa_moedas: number | null;
   id_disciplina: number | null;
@@ -199,16 +201,13 @@ const obterCriadoEspecifico = (row: ProgressoAtividadeRow) => {
 };
 
 const Inicio: NextPageWithLayout = () => {
+  const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [mounted, setMounted] = useState(false);
-  const [expandirDificuldades, setExpandirDificuldades] = useState(false);
   const [periodoSelecionado, setPeriodoSelecionado] =
     useState<PeriodoFiltro>("esseMes");
   const [progressoAtividades, setProgressoAtividades] = useState<
     ProgressoAtividadeRow[]
-  >([]);
-  const [dificuldades, setDificuldades] = useState<
-    Array<{ materia: string; nota: number }>
   >([]);
   const [error, setError] = useState<string | null>(null);
   const [nomeAluno, setNomeAluno] = useState<string | null>(null);
@@ -221,12 +220,14 @@ const Inicio: NextPageWithLayout = () => {
         setLoading(true);
         setError(null);
 
-        // 1) Nome do aluno logado (o backend já resolve tudo a partir do JWT)
-        const me = await api.get("/auth/me");
+        // Nome do aluno + atividades (já achatadas com status/nota/disciplinas.nome)
+        // não dependem uma da outra - buscar em paralelo evita esperar dois
+        // round-trips em sequência logo na primeira tela após o login.
+        const [me, atividades] = await Promise.all([
+          api.get("/auth/me"),
+          api.get("/aluno/atividades"),
+        ]);
         setNomeAluno(me?.nome || null);
-
-        // 2) Atividades do aluno, já achatadas com status/nota/disciplinas.nome
-        const atividades = await api.get("/aluno/atividades");
         setProgressoAtividades((atividades as ProgressoAtividadeRow[]) ?? []);
       } catch (err: any) {
         console.error(err);
@@ -293,12 +294,16 @@ const Inicio: NextPageWithLayout = () => {
       })
       .map((row) => {
         const atividade = obterAtividade(row);
+        const prazo = obterPrazoAtividade(row);
+        const atrasada = prazo ? prazo.getTime() < agora.getTime() : false;
         return {
+          id_atividade: atividade?.id_atividade ?? null,
           titulo: atividade?.titulo ?? "Atividade",
           disciplina: obterNomeDisciplina(row),
           status: statusParaExibicao(row.status),
           criadoEm: obterCriadoEspecifico(row) ?? obterDataReferencia(row),
-          prazo: obterPrazoAtividade(row),
+          prazo,
+          atrasada,
         };
       })
       .sort((a, b) => {
@@ -367,28 +372,13 @@ const Inicio: NextPageWithLayout = () => {
       });
   }, [progressoFiltrado]);
 
-  // riscoNumero agora reflete o número de disciplinas críticas mostradas
-  // (alinha o número do cartão com as matérias renderizadas abaixo)
+  // Risco = nº de atividades atrasadas/pendentes há muito tempo (itensAtencaoCritica),
+  // não mais uma proporção de moedas por disciplina - essa métrica media "quem ganhou
+  // menos moedas no período", o que não é a mesma coisa que "está com atividade atrasada"
+  // e podia contradizer o que a tela de Minhas Notas mostra pra mesma disciplina.
+  const riscoNumero = itensAtencaoCritica.length;
 
-  const desempenhoDisciplinas = useMemo(() => {
-    const lista = dadosGrafico.slice(0, 4);
-    const max = lista.reduce((m, x) => Math.max(m, x.moedas), 0) || 1;
-    // performance: 0-10 where higher is better (based on moedas)
-    return lista.map((d) => ({
-      nome: d.label,
-      score: Math.max(0, Math.round((d.moedas / max) * 10)),
-    }));
-  }, [dadosGrafico]);
 
-  const LIMIAR_CRITICO = 7;
-  const disciplinasCriticas = useMemo(
-    () => desempenhoDisciplinas.filter((d) => d.score < LIMIAR_CRITICO),
-    [desempenhoDisciplinas]
-  );
-
-  const riscoNumero = useMemo(() => disciplinasCriticas.length, [disciplinasCriticas]);
-
-  
 
   return (
       <div className="space-y-6">
@@ -508,107 +498,6 @@ const Inicio: NextPageWithLayout = () => {
           </Card>
         </div>
 
-        {/* 2. NOVO BANNER DE DIFICULDADES (ENTRE OS CARDS E O GRÁFICO) */}
-        {mounted && dificuldades.length > 0 && (
-          <Card className="mt-8 mb-4 border-2 border-red-200 rounded-3xl bg-white shadow-2xl overflow-hidden transition-all duration-300">
-            <CardContent className="p-0">
-              <div className="flex flex-col lg:flex-row">
-                {/* Lado Esquerdo: Alerta Vermelho Profundo */}
-                <div className="bg-gradient-to-br from-red-600 via-red-700 to-red-900 p-8 flex flex-col items-center justify-center text-white lg:w-64">
-                  <div className="bg-white/10 p-4 rounded-full backdrop-blur-md mb-3 border border-white/20 animate-pulse">
-                    <AlertTriangle className="h-12 w-12 text-white" />
-                  </div>
-                  <p className="text-5xl font-black drop-shadow-lg">
-                    {dificuldades.length}
-                  </p>
-                  <p className="text-[10px] font-black uppercase tracking-[0.3em] text-red-200 mt-1">
-                    Risco Acadêmico
-                  </p>
-                </div>
-
-                {/* Lado Direito */}
-                <div className="p-8 flex-1 bg-slate-50/30">
-                  <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
-                    <div>
-                      <h3 className="text-2xl font-black text-red-950 tracking-tight flex items-center gap-2">
-                        Zona de Atenção Crítica
-                      </h3>
-                      <p className="text-sm text-slate-500 font-semibold">
-                        Resultados abaixo de 7.0 detectados no seu histórico
-                        recente.
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-full shadow-lg shadow-red-200">
-                      <span className="relative flex h-2 w-2">
-                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
-                        <span className="relative inline-flex rounded-full h-2 w-2 bg-white"></span>
-                      </span>
-                      <span className="text-[10px] font-black uppercase tracking-widest">
-                        Ação Imediata
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Listagem com Animação e Cores Novas */}
-                  <div
-                    className={`grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8 transition-all duration-700 ease-in-out overflow-hidden ${
-                      expandirDificuldades ? "max-h-[2000px]" : "max-h-[280px]"
-                    }`}
-                  >
-                    {dificuldades
-                      .slice(0, expandirDificuldades ? dificuldades.length : 4)
-                      .map((item, idx) => (
-                        <div
-                          key={idx}
-                          className="group relative animate-in fade-in slide-in-from-top-2"
-                        >
-                          <div className="flex justify-between items-end mb-2">
-                            <div className="flex flex-col">
-                              <span className="text-[10px] font-black text-red-600 uppercase tracking-widest mb-1">
-                                {item.materia}
-                              </span>
-                              <span className="text-sm font-black text-slate-800">
-                                Desempenho: {item.nota} / 10
-                              </span>
-                            </div>
-                          </div>
-                          <div className="w-full bg-slate-200 rounded-full h-3 overflow-hidden shadow-inner border border-slate-300">
-                            <div
-                              className="bg-gradient-to-r from-red-500 to-red-800 h-full rounded-full transition-all duration-1000 ease-out shadow-[0_0_10px_rgba(220,38,38,0.5)]"
-                              style={{ width: `${(item.nota / 10) * 100}%` }}
-                            />
-                          </div>
-                        </div>
-                      ))}
-                  </div>
-
-                  {dificuldades.length > 4 && (
-                    <div className="mt-10 flex justify-center border-t border-slate-200 pt-6">
-                      <button
-                        onClick={() =>
-                          setExpandirDificuldades(!expandirDificuldades)
-                        }
-                        className="group flex items-center gap-3 px-6 py-2 bg-slate-100 hover:bg-red-600 rounded-full transition-all duration-300"
-                      >
-                        <span className="text-xs font-black uppercase tracking-widest text-slate-500 group-hover:text-white">
-                          {expandirDificuldades
-                            ? "Recolher Alertas"
-                            : `Ver todos os ${dificuldades.length} alertas`}
-                        </span>
-                        {expandirDificuldades ? (
-                          <ChevronUp className="h-4 w-4 text-slate-400 group-hover:text-white transition-transform" />
-                        ) : (
-                          <ChevronDown className="h-4 w-4 text-slate-400 group-hover:text-white transition-transform" />
-                        )}
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
         {/* Gráfico de Evolução de Moedas */}
         <GraficoMoedas
           dados={dadosGrafico}
@@ -670,23 +559,48 @@ const Inicio: NextPageWithLayout = () => {
               </div>
             ) : (
               <div className="grid grid-cols-1 lg:grid-cols-[300px_1fr]">
-                {/* Lado vermelho */}
-                <div className="relative overflow-hidden bg-gradient-to-br from-red-800 via-red-600 to-red-500 p-6 text-white">
+                {/* Lado colorido: vermelho quando há risco, verde quando está tudo em dia */}
+                <div
+                  className={`relative overflow-hidden p-6 text-white ${
+                    riscoNumero > 0
+                      ? "bg-gradient-to-br from-red-800 via-red-600 to-red-500"
+                      : "bg-gradient-to-br from-emerald-700 via-emerald-600 to-emerald-500"
+                  }`}
+                >
                   <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_20%,rgba(255,255,255,0.24),transparent_34%),radial-gradient(circle_at_90%_85%,rgba(255,255,255,0.14),transparent_26%)]" />
                   <div className="absolute -right-14 -top-14 h-36 w-36 rounded-full bg-white/10 blur-2xl" />
-                  <div className="absolute -bottom-16 -left-16 h-44 w-44 rounded-full bg-red-950/30 blur-2xl" />
+                  <div
+                    className={`absolute -bottom-16 -left-16 h-44 w-44 rounded-full blur-2xl ${
+                      riscoNumero > 0 ? "bg-red-950/30" : "bg-emerald-950/20"
+                    }`}
+                  />
 
                   <div className="relative z-10 flex min-h-[300px] flex-col items-center justify-center text-center">
                     <div className="relative mb-6">
-                      <div className="critical-pulse-ring absolute inset-0 rounded-full bg-white/20" />
-                      <div className="critical-pulse-ring absolute -inset-5 rounded-full border border-white/25" />
-                      <div className="critical-pulse-ring absolute -inset-10 rounded-full border border-white/15" />
+                      {riscoNumero > 0 && (
+                        <>
+                          <div className="critical-pulse-ring absolute inset-0 rounded-full bg-white/20" />
+                          <div className="critical-pulse-ring absolute -inset-5 rounded-full border border-white/25" />
+                          <div className="critical-pulse-ring absolute -inset-10 rounded-full border border-white/15" />
+                        </>
+                      )}
 
-                      <div className="critical-glow-icon relative flex h-28 w-28 items-center justify-center rounded-full bg-white/15 ring-2 ring-white/25 backdrop-blur-sm">
-                        <AlertTriangle
-                          className="h-16 w-16 text-white"
-                          strokeWidth={2.7}
-                        />
+                      <div
+                        className={`relative flex h-28 w-28 items-center justify-center rounded-full bg-white/15 ring-2 ring-white/25 backdrop-blur-sm ${
+                          riscoNumero > 0 ? "critical-glow-icon" : ""
+                        }`}
+                      >
+                        {riscoNumero > 0 ? (
+                          <AlertTriangle
+                            className="h-16 w-16 text-white"
+                            strokeWidth={2.7}
+                          />
+                        ) : (
+                          <ShieldCheck
+                            className="h-16 w-16 text-white"
+                            strokeWidth={2.7}
+                          />
+                        )}
                       </div>
                     </div>
 
@@ -695,12 +609,25 @@ const Inicio: NextPageWithLayout = () => {
                     </p>
 
                     <p className="mt-4 text-[11px] font-black uppercase tracking-[0.35em] text-white">
-                      Risco Acadêmico
+                      {riscoNumero > 0 ? "Atividades em atenção" : "Tudo em dia"}
                     </p>
 
-                    <div className="mt-5 inline-flex items-center gap-2 rounded-full bg-red-950/30 px-4 py-2 text-xs font-black uppercase tracking-widest text-white">
-                      <Zap className="h-4 w-4" />
-                      Alerta
+                    <div
+                      className={`mt-5 inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-black uppercase tracking-widest text-white ${
+                        riscoNumero > 0 ? "bg-red-950/30" : "bg-emerald-950/20"
+                      }`}
+                    >
+                      {riscoNumero > 0 ? (
+                        <>
+                          <Zap className="h-4 w-4" />
+                          Alerta
+                        </>
+                      ) : (
+                        <>
+                          <ShieldCheck className="h-4 w-4" />
+                          Em dia
+                        </>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -711,7 +638,7 @@ const Inicio: NextPageWithLayout = () => {
                     <div>
                       <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-red-50 px-4 py-2 text-xs font-black uppercase tracking-wide text-red-700">
                         <AlertTriangle className="h-4 w-4" />
-                        Monitoramento de desempenho
+                        Monitoramento de prazos
                       </div>
 
                       <div className="flex items-center gap-3">
@@ -724,25 +651,13 @@ const Inicio: NextPageWithLayout = () => {
                       <div className="mt-4 h-1 w-24 rounded-full bg-red-600" />
 
                       <p className="mt-4 max-w-2xl text-sm font-medium leading-relaxed text-gray-500">
-                        Resultados abaixo de 7.0 detectados no seu histórico recente.
+                        Atividades atrasadas ou pendentes há mais de 7 dias, em
+                        qualquer disciplina.
                       </p>
                     </div>
-
-                    <button
-                      type="button"
-                      disabled={riscoNumero === 0}
-                      className={`inline-flex items-center justify-center gap-2 rounded-2xl px-5 py-3 text-sm font-black shadow-lg transition-all ${
-                        riscoNumero > 0
-                          ? "bg-gradient-to-r from-red-700 to-red-500 text-white shadow-red-200 hover:-translate-y-0.5 hover:shadow-xl"
-                          : "cursor-not-allowed bg-gray-100 text-gray-400 shadow-gray-100"
-                      }`}
-                    >
-                      <Zap className="h-5 w-5" />
-                      {riscoNumero > 0 ? "Ação Imediata" : "Tudo certo"}
-                    </button>
                   </div>
 
-                  {disciplinasCriticas.length === 0 ? (
+                  {itensAtencaoCritica.length === 0 ? (
                     <div className="flex items-center gap-5 rounded-3xl border border-red-100 bg-gradient-to-br from-red-50 via-white to-green-50 p-6">
                       <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-3xl bg-green-100 text-green-700">
                         <ShieldCheck className="h-9 w-9" />
@@ -750,48 +665,78 @@ const Inicio: NextPageWithLayout = () => {
 
                       <div>
                         <p className="text-lg font-black text-green-700">
-                          Nenhuma disciplina com desempenho crítico no período selecionado.
+                          Nenhuma atividade atrasada ou pendente há muito tempo.
                         </p>
                         <p className="mt-1 text-sm text-gray-500">
-                          Continue assim! Seu desempenho está dentro do esperado.
+                          Continue assim! Você está em dia com seus prazos.
                         </p>
                       </div>
                     </div>
                   ) : (
                     <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                      {disciplinasCriticas.map((d, i) => (
-                        <div
-                          key={i}
-                          className="group rounded-2xl border border-red-200 bg-white p-5 shadow-sm transition hover:-translate-y-1 hover:border-red-400 hover:shadow-lg"
-                        >
-                          <div className="flex items-start justify-between gap-3">
-                            <div>
-                              <p className="text-sm font-black text-gray-900">
-                                {d.nome}
-                              </p>
-                              <p className="mt-1 text-xs font-semibold text-red-600">
-                                Necessita revisão
-                              </p>
+                      {itensAtencaoCritica.map((item, i) => {
+                        const diasReferencia = item.atrasada
+                          ? item.prazo
+                          : item.criadoEm;
+                        const dias = diasReferencia
+                          ? Math.max(
+                              0,
+                              Math.floor(
+                                (Date.now() - diasReferencia.getTime()) /
+                                  86400000
+                              )
+                            )
+                          : null;
+
+                        return (
+                          <button
+                            key={i}
+                            type="button"
+                            onClick={() =>
+                              item.id_atividade &&
+                              router.push(`/aluno/atividades/${item.id_atividade}`)
+                            }
+                            disabled={!item.id_atividade}
+                            className="group text-left rounded-2xl border border-red-200 bg-white p-5 shadow-sm transition hover:-translate-y-1 hover:border-red-400 hover:shadow-lg disabled:cursor-default disabled:hover:translate-y-0"
+                          >
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="min-w-0">
+                                <p className="truncate text-sm font-black text-gray-900">
+                                  {item.titulo}
+                                </p>
+                                <p className="mt-0.5 text-xs font-semibold text-gray-500">
+                                  {item.disciplina}
+                                </p>
+                              </div>
+
+                              <AlertTriangle className="h-5 w-5 shrink-0 text-red-500" />
                             </div>
 
-                            <AlertTriangle className="h-5 w-5 text-red-500" />
-                          </div>
+                            <div className="mt-4 flex items-center justify-between">
+                              <span
+                                className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-bold ${
+                                  item.atrasada
+                                    ? "bg-red-100 text-red-700"
+                                    : "bg-amber-100 text-amber-700"
+                                }`}
+                              >
+                                <Clock className="h-3 w-3" />
+                                {item.atrasada
+                                  ? dias && dias > 0
+                                    ? `Atrasada há ${dias} dia${dias > 1 ? "s" : ""}`
+                                    : "Atrasada"
+                                  : dias && dias > 0
+                                    ? `Pendente há ${dias} dias`
+                                    : "Pendente"}
+                              </span>
 
-                          <div className="mt-4">
-                            <div className="mb-2 flex justify-between text-xs font-bold text-gray-500">
-                              <span>Desempenho</span>
-                              <span>{d.score}/10</span>
+                              {item.id_atividade && (
+                                <ArrowRight className="h-4 w-4 text-gray-300 transition group-hover:translate-x-0.5 group-hover:text-red-500" />
+                              )}
                             </div>
-
-                            <div className="h-2 overflow-hidden rounded-full bg-red-100">
-                              <div
-                                className="h-full rounded-full bg-gradient-to-r from-red-500 to-red-800 shadow-[0_0_12px_rgba(220,38,38,0.55)]"
-                                style={{ width: `${Math.max(10, d.score * 10)}%` }}
-                              />
-                            </div>
-                          </div>
-                        </div>
-                      ))}
+                          </button>
+                        );
+                      })}
                     </div>
                   )}
                 </div>

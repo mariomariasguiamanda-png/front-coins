@@ -3,8 +3,9 @@
 /node_modules
 /build
 
-# Logs
-logs
+# Logs (raiz do projeto apenas - sem a barra, isso também casava com
+# src/logs/, um módulo de código-fonte real que nunca era versionado)
+/logs
 *.log
 npm-debug.log*
 pnpm-debug.log*

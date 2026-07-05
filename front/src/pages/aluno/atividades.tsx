@@ -422,7 +422,7 @@ const AtividadesPage: NextPageWithLayout = () => {
                           </div>
 
                           <button
-                            onClick={() => router.push(`/aluno/disciplinas/${a.id_disciplina}`)}
+                            onClick={() => router.push(`/aluno/atividades/${a.id_atividade}`)}
                             className="px-4 py-2 rounded-lg bg-purple-600 text-white hover:bg-purple-700 transition-all"
                           >
                             Abrir
@@ -482,7 +482,7 @@ const AtividadesPage: NextPageWithLayout = () => {
                           </div>
 
                           <button
-                            onClick={() => router.push(`/aluno/disciplinas/${r.id_disciplina}/resumos`)}
+                            onClick={() => router.push(`/aluno/resumos/${r.id_resumo}`)}
                             className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg"
                           >
                             Ver
@@ -530,7 +530,7 @@ const AtividadesPage: NextPageWithLayout = () => {
 
                           <button
                             onClick={() =>
-                              router.push(`/aluno/disciplinas/${v.id_disciplina}/videoaulas`)
+                              router.push(`/aluno/videoaulas/${v.id_videoaula}`)
                             }
                             className="px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg text-white"
                           >

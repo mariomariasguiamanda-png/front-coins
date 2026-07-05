@@ -61,7 +61,7 @@ export default function AlunoHeader({
             title="Ver meu perfil"
             className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition"
           >
-            <span className="text-sm font-medium">
+            <span className="text-sm font-medium hidden sm:block max-w-[140px] truncate">
               {nome || "Carregando..."}
             </span>
             {fotoUrl ? (
