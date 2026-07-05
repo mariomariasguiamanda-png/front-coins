@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { DashboardProfessor } from "@/components/professor/DashboardProfessor";
-import { ProfessorLayout } from "@/components/professor/ProfessorLayout";
+import { getProfessorLayout } from "@/components/professor/ProfessorLayout";
+import type { NextPageWithLayout } from "@/pages/_app";
 import { api } from "@/lib/api";
 
 type ActivityCard = {
@@ -15,7 +16,7 @@ type TurmaResumo = { turma: string; media: number | null; participacao: number }
 type RankingAluno = { nome: string; saldo: number };
 type AtividadeRecente = { tipo: "entrega" | "correcao"; mensagem: string; data: string };
 
-export default function TeacherDashboardPage() {
+function TeacherDashboardPage() {
   const [nome, setNome] = useState("");
   const [activities, setActivities] = useState<ActivityCard[]>([]);
   const [turmas, setTurmas] = useState<TurmaResumo[]>([]);
@@ -44,7 +45,7 @@ export default function TeacherDashboardPage() {
   }, []);
 
   return (
-    <ProfessorLayout>
+    <>
       <DashboardProfessor
         teacherName={nome}
         activities={activities}
@@ -52,6 +53,10 @@ export default function TeacherDashboardPage() {
         ranking={ranking}
         atividadesRecentes={atividadesRecentes}
       />
-    </ProfessorLayout>
+    </>
   );
 }
+
+(TeacherDashboardPage as NextPageWithLayout).getLayout = getProfessorLayout;
+
+export default TeacherDashboardPage;

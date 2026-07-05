@@ -177,53 +177,91 @@ export class DisciplinasService {
       where: { id_professor: professor.id_professor as number },
       include: { disciplinas: true },
     });
+    const ids = vinculos.map((v) => v.disciplinas.id_disciplina);
 
-    return Promise.all(
-      vinculos.map(async (v) => {
-        const disciplina = v.disciplinas;
-        const id_disciplina = disciplina.id_disciplina;
-
-        const matriculas = await this.db.matriculas_aluno_disciplina.findMany({
-          where: { id_disciplina },
+    // Queries fixas para o conjunto todo de disciplinas em vez de 4 POR
+    // disciplina - com o banco remoto cada round-trip custa caro.
+    const [matriculas, atividadesAtivas, todasAtividades, corrigidasPorAtividade, mediasNotas] =
+      await Promise.all([
+        this.db.matriculas_aluno_disciplina.findMany({
+          where: { id_disciplina: { in: ids } },
           include: { alunos: { include: { turmas: { select: { nome: true } } } } },
-        });
-        const totalAlunos = matriculas.length;
-        const turmas = Array.from(
-          new Set(
-            matriculas
-              .map((m) => m.alunos.turmas?.nome)
-              .filter((nome): nome is string => !!nome),
-          ),
-        );
+        }),
+        this.db.atividades.groupBy({
+          by: ['id_disciplina'],
+          where: { id_disciplina: { in: ids }, ativo: true },
+          _count: { _all: true },
+        }),
+        this.db.atividades.findMany({
+          where: { id_disciplina: { in: ids } },
+          select: { id_atividade: true, id_disciplina: true },
+        }),
+        this.db.aluno_atividade.groupBy({
+          by: ['id_atividade'],
+          where: { status: 'corrigida', atividades: { id_disciplina: { in: ids } } },
+          _count: { _all: true },
+        }),
+        this.db.notas_finais.groupBy({
+          by: ['id_disciplina'],
+          where: { id_disciplina: { in: ids } },
+          _avg: { nota_final: true },
+        }),
+      ]);
 
-        const [totalAtividades, totalCorrigidas, mediaNotas] = await Promise.all([
-          this.db.atividades.count({ where: { id_disciplina, ativo: true } }),
-          this.db.aluno_atividade.count({
-            where: { status: 'corrigida', atividades: { id_disciplina } },
-          }),
-          this.db.notas_finais.aggregate({
-            where: { id_disciplina },
-            _avg: { nota_final: true },
-          }),
-        ]);
-
-        const totalPossivel = totalAtividades * totalAlunos;
-
-        return {
-          id_disciplina: Number(id_disciplina),
-          nome: disciplina.nome,
-          codigo: disciplina.codigo,
-          descricao: disciplina.descricao,
-          carga_horaria: disciplina.carga_horaria,
-          ativo: disciplina.ativo,
-          turmas,
-          total_alunos: totalAlunos,
-          media_nota: mediaNotas._avg.nota_final,
-          taxa_conclusao:
-            totalPossivel > 0 ? Math.round((totalCorrigidas / totalPossivel) * 100) : 0,
-        };
-      }),
+    const mapaAtividadesAtivas = new Map(
+      atividadesAtivas.map((a) => [String(a.id_disciplina), a._count._all]),
     );
+    const mapaAtividadeDisciplina = new Map(
+      todasAtividades.map((a) => [String(a.id_atividade), String(a.id_disciplina)]),
+    );
+    const mapaCorrigidas = new Map<string, number>();
+    for (const c of corrigidasPorAtividade) {
+      const idDisc = mapaAtividadeDisciplina.get(String(c.id_atividade));
+      if (!idDisc) continue;
+      mapaCorrigidas.set(idDisc, (mapaCorrigidas.get(idDisc) ?? 0) + c._count._all);
+    }
+    const mapaMediaNotas = new Map(
+      mediasNotas.map((n) => [String(n.id_disciplina), n._avg.nota_final]),
+    );
+    const matriculasPorDisciplina = new Map<string, typeof matriculas>();
+    for (const m of matriculas) {
+      const idDisc = String(m.id_disciplina);
+      if (!matriculasPorDisciplina.has(idDisc)) matriculasPorDisciplina.set(idDisc, []);
+      matriculasPorDisciplina.get(idDisc)!.push(m);
+    }
+
+    return vinculos.map((v) => {
+      const disciplina = v.disciplinas;
+      const idDisc = String(disciplina.id_disciplina);
+
+      const matriculasDisc = matriculasPorDisciplina.get(idDisc) ?? [];
+      const totalAlunos = matriculasDisc.length;
+      const turmas = Array.from(
+        new Set(
+          matriculasDisc
+            .map((m) => m.alunos.turmas?.nome)
+            .filter((nome): nome is string => !!nome),
+        ),
+      );
+
+      const totalAtividades = mapaAtividadesAtivas.get(idDisc) ?? 0;
+      const totalCorrigidas = mapaCorrigidas.get(idDisc) ?? 0;
+      const totalPossivel = totalAtividades * totalAlunos;
+
+      return {
+        id_disciplina: Number(disciplina.id_disciplina),
+        nome: disciplina.nome,
+        codigo: disciplina.codigo,
+        descricao: disciplina.descricao,
+        carga_horaria: disciplina.carga_horaria,
+        ativo: disciplina.ativo,
+        turmas,
+        total_alunos: totalAlunos,
+        media_nota: mapaMediaNotas.get(idDisc) ?? null,
+        taxa_conclusao:
+          totalPossivel > 0 ? Math.round((totalCorrigidas / totalPossivel) * 100) : 0,
+      };
+    });
   }
 
   async findOne(id: bigint) {

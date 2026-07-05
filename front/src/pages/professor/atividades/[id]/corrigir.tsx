@@ -1,4 +1,5 @@
-import { ProfessorLayout } from "@/components/professor/ProfessorLayout";
+import { getProfessorLayout } from "@/components/professor/ProfessorLayout";
+import type { NextPageWithLayout } from "@/pages/_app";
 import { Button } from "@/components/ui/Button";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
@@ -51,7 +52,7 @@ type Atividade = {
   discipline: string;
 };
 
-export default function CorrigirAtividadePage() {
+function CorrigirAtividadePage() {
   const router = useRouter();
   const { id } = router.query;
 
@@ -199,14 +200,14 @@ export default function CorrigirAtividadePage() {
 
   if (!activity) {
     return (
-      <ProfessorLayout>
+      <>
         <div className="p-6 text-gray-500">Carregando atividade...</div>
-      </ProfessorLayout>
+      </>
     );
   }
 
   return (
-    <ProfessorLayout>
+    <>
       <div className="space-y-6 pb-8">
         {/* Header */}
         <div>
@@ -508,6 +509,10 @@ export default function CorrigirAtividadePage() {
           )}
         </div>
       </div>
-    </ProfessorLayout>
+    </>
   );
 }
+
+(CorrigirAtividadePage as NextPageWithLayout).getLayout = getProfessorLayout;
+
+export default CorrigirAtividadePage;

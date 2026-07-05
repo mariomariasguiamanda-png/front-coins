@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { ProfessorLayout } from "@/components/professor/ProfessorLayout";
+import { getProfessorLayout } from "@/components/professor/ProfessorLayout";
+import type { NextPageWithLayout } from "@/pages/_app";
 import { NotasProfessor } from "@/components/professor/NotasProfessor";
 import { api } from "@/lib/api";
 
@@ -27,7 +28,7 @@ type NotaProfessorRow = {
   atualizado_em: string | null;
 };
 
-export default function NotasPage() {
+function NotasPage() {
   const [disciplinas, setDisciplinas] = useState<DisciplinaOption[]>([]);
   const [turmas, setTurmas] = useState<TurmaOption[]>([]);
   const [disciplinaSelecionada, setDisciplinaSelecionada] = useState<number | null>(null);
@@ -198,7 +199,7 @@ export default function NotasPage() {
     alert("Importação de CSV será implementada futuramente.");
 
   return (
-    <ProfessorLayout>
+    <>
       {/* Filtros */}
       <div className="px-6 pt-6 pb-4 flex flex-wrap gap-6">
         <div>
@@ -250,6 +251,10 @@ export default function NotasPage() {
         onExportGrades={handleExportGrades}
         onImportGrades={handleImportGrades}
       />
-    </ProfessorLayout>
+    </>
   );
 }
+
+(NotasPage as NextPageWithLayout).getLayout = getProfessorLayout;
+
+export default NotasPage;

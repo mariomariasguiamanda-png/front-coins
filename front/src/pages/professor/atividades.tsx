@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { AtividadesProfessor } from "@/components/professor/AtividadesProfessor";
-import { ProfessorLayout } from "@/components/professor/ProfessorLayout";
+import { getProfessorLayout } from "@/components/professor/ProfessorLayout";
+import type { NextPageWithLayout } from "@/pages/_app";
 import { api } from "@/lib/api";
 
 type Activity = {
@@ -18,7 +19,7 @@ type Activity = {
 
 type DisciplinaOption = { id: string; nome: string };
 
-export default function AtividadesPage() {
+function AtividadesPage() {
   const [activities, setActivities] = useState<Activity[]>([]);
   const [disciplinas, setDisciplinas] = useState<DisciplinaOption[]>([]);
 
@@ -100,7 +101,7 @@ export default function AtividadesPage() {
   };
 
   return (
-    <ProfessorLayout>
+    <>
       <AtividadesProfessor
         activities={activities}
         disciplinas={disciplinas}
@@ -109,6 +110,10 @@ export default function AtividadesPage() {
         onEditActivity={handleEditActivity}
         onDeleteActivity={handleDeleteActivity}
       />
-    </ProfessorLayout>
+    </>
   );
 }
+
+(AtividadesPage as NextPageWithLayout).getLayout = getProfessorLayout;
+
+export default AtividadesPage;

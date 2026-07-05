@@ -117,46 +117,60 @@ export class DesempenhoService {
       },
     });
 
-    const totalAtividades = await this.db.atividades.count({
-      where: { id_disciplina, ativo: true },
-    });
+    const idsAlunos = matriculas.map((m) => m.alunos.id_aluno);
 
-    const alunosDesempenho = await Promise.all(
-      matriculas.map(async (m) => {
-        const id_aluno = m.alunos.id_aluno;
-
-        const [entregues, corrigidas, mediaNota, saldo] = await Promise.all([
-          this.db.aluno_atividade.count({
-            where: {
-              id_aluno,
-              status: { in: ['entregue', 'corrigida'] },
-              atividades: { id_disciplina },
-            },
-          }),
-          this.db.aluno_atividade.count({
-            where: { id_aluno, status: 'corrigida', atividades: { id_disciplina } },
-          }),
-          this.db.aluno_atividade.aggregate({
-            where: { id_aluno, status: 'corrigida', atividades: { id_disciplina } },
-            _avg: { nota: true },
-          }),
-          this.db.moedas_saldo.findUnique({
-            where: { id_aluno_id_disciplina: { id_aluno, id_disciplina } },
-          }),
-        ]);
-
-        return {
-          id_aluno: Number(id_aluno),
-          nome: m.alunos.usuarios.nome,
-          matricula: m.alunos.matricula,
-          total_atividades: totalAtividades,
-          atividades_entregues: entregues,
-          atividades_corrigidas: corrigidas,
-          media_nota: mediaNota._avg.nota,
-          saldo_moedas: saldo?.saldo ?? 0,
-        };
+    // Agregados calculados em queries fixas (groupBy por aluno) em vez de
+    // 4 queries POR aluno - com o banco remoto, o N+1 antigo transformava
+    // uma turma de 30 alunos em ~120 round-trips e segundos de espera.
+    const [totalAtividades, statusPorAluno, mediasPorAluno, saldos] = await Promise.all([
+      this.db.atividades.count({
+        where: { id_disciplina, ativo: true },
       }),
-    );
+      this.db.aluno_atividade.groupBy({
+        by: ['id_aluno', 'status'],
+        where: {
+          id_aluno: { in: idsAlunos },
+          status: { in: ['entregue', 'corrigida'] },
+          atividades: { id_disciplina },
+        },
+        _count: { _all: true },
+      }),
+      this.db.aluno_atividade.groupBy({
+        by: ['id_aluno'],
+        where: { id_aluno: { in: idsAlunos }, status: 'corrigida', atividades: { id_disciplina } },
+        _avg: { nota: true },
+      }),
+      this.db.moedas_saldo.findMany({
+        where: { id_disciplina, id_aluno: { in: idsAlunos } },
+      }),
+    ]);
+
+    const mapaStatus = new Map<number, { entregues: number; corrigidas: number }>();
+    for (const s of statusPorAluno) {
+      const id = Number(s.id_aluno);
+      const atual = mapaStatus.get(id) ?? { entregues: 0, corrigidas: 0 };
+      atual.entregues += s._count._all;
+      if (s.status === 'corrigida') atual.corrigidas += s._count._all;
+      mapaStatus.set(id, atual);
+    }
+    const mapaMedia = new Map(mediasPorAluno.map((m) => [Number(m.id_aluno), m._avg.nota]));
+    const mapaSaldo = new Map(saldos.map((s) => [Number(s.id_aluno), s.saldo ?? 0]));
+
+    const alunosDesempenho = matriculas.map((m) => {
+      const id_aluno = Number(m.alunos.id_aluno);
+      const status = mapaStatus.get(id_aluno);
+
+      return {
+        id_aluno,
+        nome: m.alunos.usuarios.nome,
+        matricula: m.alunos.matricula,
+        total_atividades: totalAtividades,
+        atividades_entregues: status?.entregues ?? 0,
+        atividades_corrigidas: status?.corrigidas ?? 0,
+        media_nota: mapaMedia.get(id_aluno) ?? null,
+        saldo_moedas: mapaSaldo.get(id_aluno) ?? 0,
+      };
+    });
 
     const notasValidas = alunosDesempenho
       .map((a) => (a.media_nota !== null ? Number(a.media_nota) : null))

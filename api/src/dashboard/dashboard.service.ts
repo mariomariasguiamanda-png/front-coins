@@ -15,34 +15,81 @@ export class DashboardService {
     });
     const idsDisciplinas = vinculos.map((v) => v.disciplinas.id_disciplina);
 
-    const disciplinas = await Promise.all(
-      vinculos.map(async (v) => {
-        const id_disciplina = v.disciplinas.id_disciplina;
-        const [pending, corrected] = await Promise.all([
-          this.db.aluno_atividade.count({
-            where: { status: 'entregue', atividades: { id_disciplina } },
-          }),
-          this.db.aluno_atividade.count({
-            where: { status: 'corrigida', atividades: { id_disciplina } },
-          }),
-        ]);
-
-        return {
-          discipline: v.disciplinas.nome,
-          codigo: v.disciplinas.codigo,
-          total: pending + corrected,
-          pending,
-          corrected,
-        };
+    // Tudo em uma leva de queries fixas (agregadas em memória por disciplina/
+    // turma) em vez de 2 counts POR disciplina + 2 POR turma - com o banco
+    // remoto cada round-trip custa caro.
+    const [
+      statusPorAtividade,
+      todasAtividades,
+      matriculas,
+      totalAtividades,
+      corrigidasPorAluno,
+      notasFinais,
+      saldos,
+    ] = await Promise.all([
+      this.db.aluno_atividade.groupBy({
+        by: ['id_atividade', 'status'],
+        where: {
+          status: { in: ['entregue', 'corrigida'] },
+          atividades: { id_disciplina: { in: idsDisciplinas } },
+        },
+        _count: { _all: true },
       }),
-    );
+      this.db.atividades.findMany({
+        where: { id_disciplina: { in: idsDisciplinas } },
+        select: { id_atividade: true, id_disciplina: true },
+      }),
+      this.db.matriculas_aluno_disciplina.findMany({
+        where: { id_disciplina: { in: idsDisciplinas } },
+        include: { alunos: { include: { turmas: { select: { nome: true } } } } },
+      }),
+      this.db.atividades.count({
+        where: { id_disciplina: { in: idsDisciplinas }, ativo: true },
+      }),
+      this.db.aluno_atividade.groupBy({
+        by: ['id_aluno'],
+        where: { status: 'corrigida', atividades: { id_disciplina: { in: idsDisciplinas } } },
+        _count: { _all: true },
+      }),
+      this.db.notas_finais.findMany({
+        where: { id_disciplina: { in: idsDisciplinas } },
+        select: { id_aluno: true, nota_final: true },
+      }),
+      this.db.moedas_saldo.findMany({
+        where: { id_disciplina: { in: idsDisciplinas } },
+        include: { alunos: { include: { usuarios: { select: { nome: true } } } } },
+      }),
+    ]);
 
-    // Agrupa alunos matriculados (em qualquer disciplina do professor) por turma
-    const matriculas = await this.db.matriculas_aluno_disciplina.findMany({
-      where: { id_disciplina: { in: idsDisciplinas } },
-      include: { alunos: { include: { turmas: { select: { nome: true } } } } },
+    // Entregas pendentes/corrigidas por disciplina
+    const mapaAtividadeDisciplina = new Map(
+      todasAtividades.map((a) => [String(a.id_atividade), String(a.id_disciplina)]),
+    );
+    const contagemPorDisciplina = new Map<string, { pending: number; corrected: number }>();
+    for (const s of statusPorAtividade) {
+      const idDisc = mapaAtividadeDisciplina.get(String(s.id_atividade));
+      if (!idDisc) continue;
+      const atual = contagemPorDisciplina.get(idDisc) ?? { pending: 0, corrected: 0 };
+      if (s.status === 'entregue') atual.pending += s._count._all;
+      else atual.corrected += s._count._all;
+      contagemPorDisciplina.set(idDisc, atual);
+    }
+
+    const disciplinas = vinculos.map((v) => {
+      const contagem = contagemPorDisciplina.get(String(v.disciplinas.id_disciplina)) ?? {
+        pending: 0,
+        corrected: 0,
+      };
+      return {
+        discipline: v.disciplinas.nome,
+        codigo: v.disciplinas.codigo,
+        total: contagem.pending + contagem.corrected,
+        pending: contagem.pending,
+        corrected: contagem.corrected,
+      };
     });
 
+    // Agrupa alunos matriculados (em qualquer disciplina do professor) por turma
     const alunosPorTurma = new Map<string, Set<number>>();
     for (const m of matriculas) {
       const nomeTurma = m.alunos.turmas?.nome;
@@ -51,44 +98,40 @@ export class DashboardService {
       alunosPorTurma.get(nomeTurma)!.add(Number(m.alunos.id_aluno));
     }
 
-    const totalAtividades = await this.db.atividades.count({
-      where: { id_disciplina: { in: idsDisciplinas }, ativo: true },
-    });
-
-    const turmas = await Promise.all(
-      Array.from(alunosPorTurma.entries()).map(async ([nomeTurma, idsAlunosSet]) => {
-        const idsAlunos = Array.from(idsAlunosSet);
-
-        const [mediaAgg, totalCorrigidas] = await Promise.all([
-          this.db.notas_finais.aggregate({
-            where: { id_aluno: { in: idsAlunos }, id_disciplina: { in: idsDisciplinas } },
-            _avg: { nota_final: true },
-          }),
-          this.db.aluno_atividade.count({
-            where: {
-              id_aluno: { in: idsAlunos },
-              status: 'corrigida',
-              atividades: { id_disciplina: { in: idsDisciplinas } },
-            },
-          }),
-        ]);
-
-        const totalPossivel = totalAtividades * idsAlunos.length;
-
-        return {
-          turma: nomeTurma,
-          media: mediaAgg._avg.nota_final !== null ? Number(mediaAgg._avg.nota_final) : null,
-          participacao:
-            totalPossivel > 0 ? Math.round((totalCorrigidas / totalPossivel) * 100) : 0,
-        };
-      }),
+    const mapaCorrigidasAluno = new Map(
+      corrigidasPorAluno.map((c) => [Number(c.id_aluno), c._count._all]),
     );
+    const notasPorAluno = new Map<number, number[]>();
+    for (const n of notasFinais) {
+      if (n.nota_final === null) continue;
+      const id = Number(n.id_aluno);
+      if (!notasPorAluno.has(id)) notasPorAluno.set(id, []);
+      notasPorAluno.get(id)!.push(Number(n.nota_final));
+    }
+
+    const turmas = Array.from(alunosPorTurma.entries()).map(([nomeTurma, idsAlunosSet]) => {
+      const idsAlunos = Array.from(idsAlunosSet);
+
+      const notasTurma = idsAlunos.flatMap((id) => notasPorAluno.get(id) ?? []);
+      const media =
+        notasTurma.length > 0
+          ? notasTurma.reduce((s, n) => s + n, 0) / notasTurma.length
+          : null;
+
+      const totalCorrigidas = idsAlunos.reduce(
+        (s, id) => s + (mapaCorrigidasAluno.get(id) ?? 0),
+        0,
+      );
+      const totalPossivel = totalAtividades * idsAlunos.length;
+
+      return {
+        turma: nomeTurma,
+        media,
+        participacao: totalPossivel > 0 ? Math.round((totalCorrigidas / totalPossivel) * 100) : 0,
+      };
+    });
 
     // Ranking: top 3 alunos por saldo de moedas nas disciplinas do professor
-    const saldos = await this.db.moedas_saldo.findMany({
-      where: { id_disciplina: { in: idsDisciplinas } },
-      include: { alunos: { include: { usuarios: { select: { nome: true } } } } },
-    });
     const saldoPorAluno = new Map<number, { nome: string; saldo: number }>();
     for (const s of saldos) {
       const id = Number(s.id_aluno);

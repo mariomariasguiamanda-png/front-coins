@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { ProfessorLayout } from "@/components/professor/ProfessorLayout";
+import { getProfessorLayout } from "@/components/professor/ProfessorLayout";
+import type { NextPageWithLayout } from "@/pages/_app";
 import { VideoaulasProfessor } from "@/components/professor/VideoaulasProfessor";
 import { api } from "@/lib/api";
 
@@ -28,7 +29,7 @@ type VideoLesson = {
 
 type DisciplinaOption = { id: string; nome: string };
 
-export default function VideoaulasPage() {
+function VideoaulasPage() {
   const [lessons, setLessons] = useState<VideoLesson[]>([]);
   const [disciplinas, setDisciplinas] = useState<DisciplinaOption[]>([]);
 
@@ -100,7 +101,7 @@ export default function VideoaulasPage() {
   };
 
   return (
-    <ProfessorLayout>
+    <>
       <VideoaulasProfessor
         lessons={lessons}
         disciplinas={disciplinas}
@@ -108,6 +109,10 @@ export default function VideoaulasPage() {
         onEditLesson={handleEditLesson}
         onDeleteLesson={handleDeleteLesson}
       />
-    </ProfessorLayout>
+    </>
   );
 }
+
+(VideoaulasPage as NextPageWithLayout).getLayout = getProfessorLayout;
+
+export default VideoaulasPage;

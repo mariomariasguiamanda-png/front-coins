@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { PerfilProfessor } from "@/components/professor/PerfilProfessor";
-import { ProfessorLayout } from "@/components/professor/ProfessorLayout";
+import { getProfessorLayout } from "@/components/professor/ProfessorLayout";
+import type { NextPageWithLayout } from "@/pages/_app";
 import { api, resolveMediaUrl } from "@/lib/api";
 
 type ProfileData = {
@@ -21,7 +22,7 @@ type ProfileData = {
   };
 };
 
-export default function PerfilPage() {
+function PerfilPage() {
   const [profileData, setProfileData] = useState<ProfileData | null>(null);
 
   const carregar = async () => {
@@ -73,17 +74,21 @@ export default function PerfilPage() {
   };
 
   if (!profileData) {
-    return <ProfessorLayout><div className="p-6 text-gray-500">Carregando perfil...</div></ProfessorLayout>;
+    return <><div className="p-6 text-gray-500">Carregando perfil...</div></>;
   }
 
   return (
-    <ProfessorLayout>
+    <>
       <PerfilProfessor
         data={profileData}
         onSave={handleSave}
         onUploadFoto={handleUploadFoto}
         onChangePassword={handleChangePassword}
       />
-    </ProfessorLayout>
+    </>
   );
 }
+
+(PerfilPage as NextPageWithLayout).getLayout = getProfessorLayout;
+
+export default PerfilPage;

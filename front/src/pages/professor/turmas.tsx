@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { ProfessorLayout } from "@/components/professor/ProfessorLayout";
+import { getProfessorLayout } from "@/components/professor/ProfessorLayout";
+import type { NextPageWithLayout } from "@/pages/_app";
 import { TurmasProfessor, Class } from "@/components/professor/TurmasProfessor";
 import { api } from "@/lib/api";
 
@@ -32,7 +33,7 @@ function convertTurmaToClass(t: TurmaUI): Class {
   };
 }
 
-export default function TurmasPage() {
+function TurmasPage() {
   const [turmas, setTurmas] = useState<TurmaUI[]>([]);
   const classes: Class[] = turmas.map(convertTurmaToClass);
   const [loading, setLoading] = useState(true);
@@ -105,7 +106,7 @@ export default function TurmasPage() {
   };
 
   return (
-    <ProfessorLayout>
+    <>
       {/* Se quiser, dá pra mostrar um loading aqui */}
       {/* {loading ? <div>Carregando turmas...</div> : ( */}
       <TurmasProfessor
@@ -115,6 +116,10 @@ export default function TurmasPage() {
         onDeleteClass={handleDeleteClass}
       />
       {/* )} */}
-    </ProfessorLayout>
+    </>
   );
 }
+
+(TurmasPage as NextPageWithLayout).getLayout = getProfessorLayout;
+
+export default TurmasPage;

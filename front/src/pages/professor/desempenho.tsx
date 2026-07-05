@@ -1,4 +1,5 @@
-﻿import { ProfessorLayout } from "@/components/professor/ProfessorLayout";
+﻿import { getProfessorLayout } from "@/components/professor/ProfessorLayout";
+import type { NextPageWithLayout } from "@/pages/_app";
 import { DesempenhoProfessor } from "@/components/professor/DesempenhoProfessor";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
@@ -15,7 +16,7 @@ type PerformanceRow = {
   class: string;
 };
 
-export default function DesempenhoPage() {
+function DesempenhoPage() {
   const router = useRouter();
   const [performanceData, setPerformanceData] = useState<PerformanceRow[]>([]);
 
@@ -115,12 +116,16 @@ export default function DesempenhoPage() {
   };
 
   return (
-    <ProfessorLayout>
+    <>
       <DesempenhoProfessor
         performanceData={performanceData}
         onExportReport={handleExportReport}
         onFilterChange={handleFilterChange}
       />
-    </ProfessorLayout>
+    </>
   );
 }
+
+(DesempenhoPage as NextPageWithLayout).getLayout = getProfessorLayout;
+
+export default DesempenhoPage;

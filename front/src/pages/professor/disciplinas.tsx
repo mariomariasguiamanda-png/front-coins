@@ -1,4 +1,5 @@
-import { ProfessorLayout } from "@/components/professor/ProfessorLayout";
+import { getProfessorLayout } from "@/components/professor/ProfessorLayout";
+import type { NextPageWithLayout } from "@/pages/_app";
 import { DisciplinasProfessor } from "@/components/professor/DisciplinasProfessor";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
@@ -17,7 +18,7 @@ type Discipline = {
   status: "active" | "inactive";
 };
 
-export default function DisciplinasPage() {
+function DisciplinasPage() {
   const router = useRouter();
   const [disciplines, setDisciplines] = useState<Discipline[]>([]);
   const [initialViewCode, setInitialViewCode] = useState<string | null>(null);
@@ -55,8 +56,12 @@ export default function DisciplinasPage() {
   }, []);
 
   return (
-    <ProfessorLayout>
+    <>
       <DisciplinasProfessor disciplines={disciplines} initialViewCode={initialViewCode} />
-    </ProfessorLayout>
+    </>
   );
 }
+
+(DisciplinasPage as NextPageWithLayout).getLayout = getProfessorLayout;
+
+export default DisciplinasPage;

@@ -1,6 +1,6 @@
 "use client";
 
-import { ReactNode, useState } from "react";
+import { ReactElement, ReactNode, useState } from "react";
 import { useRouter } from "next/router";
 import { Roboto } from "next/font/google";
 import {
@@ -141,4 +141,12 @@ export function ProfessorLayout({ children }: ProfessorLayoutProps) {
       </div>
     </div>
   );
+}
+
+// Layout persistente: usado via `Page.getLayout = getProfessorLayout` nas
+// páginas de /professor/*, pra manter o mesmo layout (header/sidebar) montado
+// entre navegações em vez de remontar tudo a cada troca de aba - mesmo padrão
+// já usado no AlunoLayout.
+export function getProfessorLayout(page: ReactElement) {
+  return <ProfessorLayout>{page}</ProfessorLayout>;
 }

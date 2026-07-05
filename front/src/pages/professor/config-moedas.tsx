@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { ConfigMoedasProfessor } from "@/components/professor/ConfigMoedasProfessor";
-import { ProfessorLayout } from "@/components/professor/ProfessorLayout";
+import { getProfessorLayout } from "@/components/professor/ProfessorLayout";
+import type { NextPageWithLayout } from "@/pages/_app";
 import { api } from "@/lib/api";
 
 const PALETA_CORES = ["azul", "verde", "roxo", "laranja", "amarelo", "rosa"];
@@ -23,7 +24,7 @@ type HistoricoItem = {
   data: string;
 };
 
-export default function ConfigMoedasPage() {
+function ConfigMoedasPage() {
   const [disciplinas, setDisciplinas] = useState<DisciplinaConfig[]>([]);
   const [historico, setHistorico] = useState<HistoricoItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -87,12 +88,16 @@ export default function ConfigMoedasPage() {
   };
 
   return (
-    <ProfessorLayout>
+    <>
       <ConfigMoedasProfessor
         disciplinas={loading ? [] : disciplinas}
         onUpdateConfig={handleUpdateConfig}
         historico={historico}
       />
-    </ProfessorLayout>
+    </>
   );
 }
+
+(ConfigMoedasPage as NextPageWithLayout).getLayout = getProfessorLayout;
+
+export default ConfigMoedasPage;

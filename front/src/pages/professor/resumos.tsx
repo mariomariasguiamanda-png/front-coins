@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { ProfessorLayout } from "@/components/professor/ProfessorLayout";
+import { getProfessorLayout } from "@/components/professor/ProfessorLayout";
+import type { NextPageWithLayout } from "@/pages/_app";
 import { ResumosProfessor } from "@/components/professor/ResumosProfessor";
 import { api, resolveMediaUrl } from "@/lib/api";
 
@@ -17,7 +18,7 @@ type Summary = {
 
 type DisciplinaOption = { id: string; nome: string };
 
-export default function ResumosPage() {
+function ResumosPage() {
   const [summaries, setSummaries] = useState<Summary[]>([]);
   const [disciplinas, setDisciplinas] = useState<DisciplinaOption[]>([]);
 
@@ -93,7 +94,7 @@ export default function ResumosPage() {
   };
 
   return (
-    <ProfessorLayout>
+    <>
       <ResumosProfessor
         summaries={summaries}
         disciplinas={disciplinas}
@@ -104,6 +105,10 @@ export default function ResumosPage() {
         onRemoveAnexo={handleRemoveAnexo}
         resolveUrl={(path) => resolveMediaUrl(path) ?? path}
       />
-    </ProfessorLayout>
+    </>
   );
 }
+
+(ResumosPage as NextPageWithLayout).getLayout = getProfessorLayout;
+
+export default ResumosPage;
