@@ -5,12 +5,13 @@ import {
   IsNotEmpty,
   IsOptional,
   IsString,
+  Min,
   ValidateIf,
 } from 'class-validator';
 
 export class CreateQuestaoDto {
-  @IsIn(['vf', 'multipla'])
-  tipo: 'vf' | 'multipla';
+  @IsIn(['vf', 'multipla', 'descritiva'])
+  tipo: 'vf' | 'multipla' | 'descritiva';
 
   @IsString()
   @IsNotEmpty()
@@ -45,4 +46,9 @@ export class CreateQuestaoDto {
   @IsOptional()
   @IsInt()
   ordem?: number;
+
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  peso?: number;
 }

@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { ProfessorLayout } from "@/components/professor/ProfessorLayout";
 import { TurmasProfessor, Class } from "@/components/professor/TurmasProfessor";
-import { supabase } from "@/lib/supabaseClient";
+import { api } from "@/lib/api";
 
 // Nova interface simplificada para refletir tabela turmas atual
 interface TurmaUI {
@@ -38,20 +38,17 @@ export default function TurmasPage() {
   const [loading, setLoading] = useState(true);
 
   // ==========================
-  // CARREGAR TURMAS DO SUPABASE
+  // CARREGAR TURMAS DA API
   // ==========================
   useEffect(() => {
     async function carregarTurmas() {
       setLoading(true);
 
-      const { data, error } = await supabase
-        .from("turmas") // nome da tabela no Supabase
-        .select("*");
-
-      if (error) {
-        console.error("Erro ao buscar turmas:", error);
-      } else if (data) {
-        setTurmas(data.map(mapTurmaRowToUI));
+      try {
+        const data = await api.get("/turmas");
+        setTurmas((data ?? []).map(mapTurmaRowToUI));
+      } catch (err) {
+        console.error("Erro ao buscar turmas:", err);
       }
 
       setLoading(false);
@@ -64,23 +61,15 @@ export default function TurmasPage() {
   // CRIAR TURMA
   // ==========================
   const handleCreateClass = async (classData: any) => {
-    const { data, error } = await supabase
-      .from("turmas")
-      .insert({
+    try {
+      const data = await api.post("/turmas", {
         nome: classData.name,
         turno: classData.shift,
-      })
-      .select("*")
-      .single();
+      });
 
-    if (error) {
-      console.error("Erro ao criar turma:", error);
-      return;
-    }
-
-    if (data) {
       setTurmas((prev) => [...prev, mapTurmaRowToUI(data)]);
-      console.log("Turma criada:", data);
+    } catch (err) {
+      console.error("Erro ao criar turma:", err);
     }
   };
 
@@ -88,42 +77,31 @@ export default function TurmasPage() {
   // EDITAR TURMA
   // ==========================
   const handleEditClass = async (id: string, classData: any) => {
-    const { data, error } = await supabase
-      .from("turmas")
-      .update({
+    try {
+      const data = await api.patch(`/turmas/${id}`, {
         ...(classData.name && { nome: classData.name }),
         ...(classData.shift && { turno: classData.shift }),
-      })
-      .eq("id_turma", id)
-      .select("*")
-      .single();
+      });
 
-    if (error) {
-      console.error("Erro ao editar turma:", error);
-      return;
-    }
-
-    if (data) {
       setTurmas((prev) =>
         prev.map((t) => (t.id === id ? mapTurmaRowToUI(data) : t))
       );
-      console.log("Turma editada:", id, data);
+    } catch (err) {
+      console.error("Erro ao editar turma:", err);
     }
   };
 
   // ==========================
-  // DELETAR TURMA
+  // DELETAR TURMA (soft delete - a turma sai da lista, mas os dados ficam
+  // preservados na API, evitando quebrar matrículas de alunos já vinculados)
   // ==========================
   const handleDeleteClass = async (id: string) => {
-    const { error } = await supabase.from("turmas").delete().eq("id_turma", id);
-
-    if (error) {
-      console.error("Erro ao deletar turma:", error);
-      return;
+    try {
+      await api.delete(`/turmas/${id}`);
+      setTurmas((prev) => prev.filter((t) => t.id !== id));
+    } catch (err) {
+      console.error("Erro ao deletar turma:", err);
     }
-
-    setTurmas((prev) => prev.filter((t) => t.id !== id));
-    console.log("Turma deletada:", id);
   };
 
   return (

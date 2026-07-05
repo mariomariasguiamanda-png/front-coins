@@ -80,10 +80,38 @@ export class VideoaulasService {
   }
 
   async findByProfessor(id_professor: number) {
-    return this.db.videoaulas.findMany({
-      where: { id_professor },
-      include: { disciplinas: { select: { nome: true } } },
+    const videoaulas = await this.db.videoaulas.findMany({
+      where: { id_professor, ativo: true },
+      include: {
+        disciplinas: { select: { nome: true } },
+        aluno_videoaula: {
+          include: { alunos: { include: { usuarios: { select: { nome: true } } } } },
+        },
+      },
       orderBy: { data_criacao: 'desc' },
+    });
+
+    return videoaulas.map((v) => {
+      const duracao = v.duracao_segundos ?? 0;
+      const studentsWatched = v.aluno_videoaula.map((av) => {
+        const progress = av.percentual_assistido ?? 0;
+        const segundosAssistidos = Math.round((duracao * progress) / 100);
+        return {
+          id: Number(av.id_aluno),
+          name: av.alunos.usuarios.nome,
+          watchedAt: av.assistido_em,
+          completed: av.status === 'assistida',
+          progress,
+          timeWatchedSegundos: segundosAssistidos,
+        };
+      });
+
+      return {
+        ...v,
+        views: v.aluno_videoaula.length,
+        studentsWatched,
+        aluno_videoaula: undefined,
+      };
     });
   }
 
@@ -108,6 +136,7 @@ export class VideoaulasService {
         id_disciplina,
         id_professor: professor.id_professor as number,
         titulo: dto.titulo,
+        descricao: dto.descricao,
         url_video: dto.url_video,
         duracao_segundos: dto.duracao_segundos,
       },

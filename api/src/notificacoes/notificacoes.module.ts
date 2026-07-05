@@ -7,5 +7,6 @@ import { DatabaseModule } from '../database/database.module';
   imports: [DatabaseModule],
   providers: [NotificacoesService],
   controllers: [NotificacoesController],
+  exports: [NotificacoesService],
 })
 export class NotificacoesModule {}

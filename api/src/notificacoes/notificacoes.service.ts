@@ -5,6 +5,17 @@ import { DatabaseService } from '../database/database.service';
 export class NotificacoesService {
   constructor(private db: DatabaseService) {}
 
+  async criar(dados: {
+    id_usuario: number;
+    titulo: string;
+    mensagem: string;
+    tipo?: string;
+    categoria?: string;
+    disciplina?: string;
+  }) {
+    return this.db.notificacoes.create({ data: dados });
+  }
+
   async findByUsuario(id_usuario: number) {
     return this.db.notificacoes.findMany({
       where: { id_usuario },

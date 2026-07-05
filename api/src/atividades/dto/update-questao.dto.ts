@@ -1,4 +1,4 @@
-import { IsBoolean, IsIn, IsInt, IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import { IsBoolean, IsIn, IsInt, IsNotEmpty, IsOptional, IsString, Min } from 'class-validator';
 
 export class UpdateQuestaoDto {
   @IsOptional()
@@ -33,4 +33,9 @@ export class UpdateQuestaoDto {
   @IsOptional()
   @IsInt()
   ordem?: number;
+
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  peso?: number;
 }

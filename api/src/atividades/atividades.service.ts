@@ -2,8 +2,10 @@ import {
   ForbiddenException,
   Injectable,
   NotFoundException,
+  UnprocessableEntityException,
 } from '@nestjs/common';
 import { DatabaseService } from '../database/database.service';
+import { NotificacoesService } from '../notificacoes/notificacoes.service';
 import { EntregarAtividadeDto } from './dto/entregar-atividade.dto';
 import { CreateAtividadeDto } from './dto/create-atividade.dto';
 import { UpdateAtividadeDto } from './dto/update-atividade.dto';
@@ -14,7 +16,10 @@ import type { questoes_atividade } from '@prisma/client';
 
 @Injectable()
 export class AtividadesService {
-  constructor(private db: DatabaseService) {}
+  constructor(
+    private db: DatabaseService,
+    private notificacoesService: NotificacoesService,
+  ) {}
 
   private async verificarProfessorLecionaDisciplina(
     id_professor: number,
@@ -49,19 +54,73 @@ export class AtividadesService {
       },
       orderBy: { data_criacao: 'desc' },
     });
-    return atividades;
+
+    return Promise.all(
+      atividades.map(async (a) => {
+        const [totalAlunos, entregues, corrigidas] = await Promise.all([
+          this.db.matriculas_aluno_disciplina.count({ where: { id_disciplina: a.id_disciplina } }),
+          this.db.aluno_atividade.count({
+            where: { id_atividade: a.id_atividade, status: 'entregue' },
+          }),
+          this.db.aluno_atividade.count({
+            where: { id_atividade: a.id_atividade, status: 'corrigida' },
+          }),
+        ]);
+
+        const status = entregues + corrigidas === 0 ? 'pendente' : entregues === 0 ? 'corrigida' : 'entregue';
+
+        return {
+          ...a,
+          total_alunos: totalAlunos,
+          entregues,
+          corrigidas,
+          status,
+        };
+      }),
+    );
   }
 
   async findEntregas(id_atividade: bigint, id_professor: number) {
     await this.buscarAtividadeDoProfessor(id_atividade, id_professor);
 
-    return this.db.aluno_atividade.findMany({
-      where: { id_atividade },
-      include: {
-        alunos: { select: { matricula: true, usuarios: { select: { nome: true } } } },
-      },
-      orderBy: { data_entrega: 'desc' },
-    });
+    const [entregas, respostas] = await Promise.all([
+      this.db.aluno_atividade.findMany({
+        where: { id_atividade },
+        include: {
+          alunos: { select: { matricula: true, usuarios: { select: { nome: true } } } },
+        },
+        orderBy: { data_entrega: 'desc' },
+      }),
+      this.db.respostas_atividade_aluno.findMany({
+        where: { id_atividade },
+        include: {
+          questoes_atividade: {
+            select: { enunciado: true, tipo: true, ordem: true, peso: true },
+          },
+        },
+        orderBy: { questoes_atividade: { ordem: 'asc' } },
+      }),
+    ]);
+
+    const respostasPorAluno = new Map<number, typeof respostas>();
+    for (const r of respostas) {
+      const id = Number(r.id_aluno);
+      if (!respostasPorAluno.has(id)) respostasPorAluno.set(id, []);
+      respostasPorAluno.get(id)!.push(r);
+    }
+
+    return entregas.map((e) => ({
+      ...e,
+      respostas_questoes: (respostasPorAluno.get(Number(e.id_aluno)) ?? []).map((r) => ({
+        id_questao: Number(r.id_questao),
+        enunciado: r.questoes_atividade.enunciado,
+        tipo: r.questoes_atividade.tipo,
+        peso: r.questoes_atividade.peso ?? 1,
+        resposta: r.resposta,
+        correta: r.correta,
+        pontuacao: r.pontuacao !== null ? Number(r.pontuacao) : null,
+      })),
+    }));
   }
 
   async createAtividade(dto: CreateAtividadeDto, professor: AuthUser) {
@@ -129,6 +188,7 @@ export class AtividadesService {
         alternativa_d: dto.alternativa_d,
         letra_correta: dto.letra_correta,
         ordem,
+        peso: dto.peso ?? 1,
       },
     });
   }
@@ -195,6 +255,7 @@ export class AtividadesService {
     const atividade = await this.db.atividades.findUnique({
       where: { id_atividade: id },
       include: {
+        disciplinas: { select: { nome: true } },
         questoes_atividade: {
           orderBy: { ordem: 'asc' },
           select: {
@@ -267,6 +328,8 @@ export class AtividadesService {
       return resposta.toUpperCase() === questao.letra_correta.toUpperCase();
     }
 
+    // 'descritiva' (resposta em texto livre) não tem gabarito automático -
+    // fica sem nota sugerida até o professor corrigir manualmente.
     return null;
   }
 
@@ -277,22 +340,19 @@ export class AtividadesService {
     });
     if (!atividade) throw new NotFoundException('Atividade não encontrada');
 
-    let notaSugerida: number | null = null;
-
     if (dto.respostas && dto.respostas.length > 0) {
       const questoesPorId = new Map(
         atividade.questoes_atividade.map((q) => [q.id_questao.toString(), q]),
       );
-      let acertos = 0;
-      let avaliadas = 0;
 
       const operacoes = dto.respostas.map((r) => {
         const questao = questoesPorId.get(r.id_questao);
         const correta = questao ? this.avaliarResposta(questao, r.resposta) : null;
-        if (correta !== null) {
-          avaliadas += 1;
-          if (correta) acertos += 1;
-        }
+        const peso = questao?.peso ?? 1;
+        // vf/multipla já têm gabarito, então já saem com pontuação (peso se
+        // acertou, 0 se errou); descritiva fica sem pontuação até o professor
+        // corrigir manualmente.
+        const pontuacao = correta === null ? null : correta ? peso : 0;
 
         return this.db.respostas_atividade_aluno.upsert({
           where: {
@@ -308,35 +368,92 @@ export class AtividadesService {
             id_aluno,
             resposta: r.resposta,
             correta,
+            pontuacao,
           },
-          update: { resposta: r.resposta, correta },
+          update: { resposta: r.resposta, correta, pontuacao },
         });
       });
 
       await this.db.$transaction(operacoes);
-
-      if (avaliadas > 0) {
-        notaSugerida = Math.round((acertos / avaliadas) * 1000) / 100;
-      }
     }
 
-    return this.db.aluno_atividade.upsert({
+    await this.db.aluno_atividade.upsert({
       where: { id_aluno_id_atividade: { id_aluno, id_atividade } },
       create: {
         id_atividade,
         id_aluno,
         status: 'entregue',
         data_entrega: new Date(),
-        nota: notaSugerida,
         resposta_texto: dto.resposta_texto,
       },
       update: {
         status: 'entregue',
         data_entrega: new Date(),
-        nota: notaSugerida,
         resposta_texto: dto.resposta_texto,
       },
     });
+
+    return this.recalcularNotaESalvar(id_atividade, id_aluno);
+  }
+
+  // Nota sugerida = soma dos pontos já avaliados (objetivas na hora da entrega,
+  // descritivas quando o professor corrige) dividida pela soma dos pesos
+  // dessas mesmas questões, escalada pra 0-10. Questões descritivas ainda sem
+  // correção não entram na conta - por isso a nota sobe conforme o professor
+  // vai avaliando as dissertativas.
+  private async recalcularNotaESalvar(id_atividade: bigint, id_aluno: number) {
+    const respostas = await this.db.respostas_atividade_aluno.findMany({
+      where: { id_atividade, id_aluno },
+      include: { questoes_atividade: { select: { peso: true } } },
+    });
+
+    let pontosObtidos = 0;
+    let pesoAvaliado = 0;
+    for (const r of respostas) {
+      if (r.pontuacao === null) continue;
+      pontosObtidos += Number(r.pontuacao);
+      pesoAvaliado += r.questoes_atividade.peso ?? 1;
+    }
+
+    const notaSugerida =
+      pesoAvaliado > 0 ? Math.round((pontosObtidos / pesoAvaliado) * 1000) / 100 : null;
+
+    return this.db.aluno_atividade.update({
+      where: { id_aluno_id_atividade: { id_aluno, id_atividade } },
+      data: { nota: notaSugerida },
+    });
+  }
+
+  async avaliarQuestaoDescritiva(
+    id_atividade: bigint,
+    id_questao: bigint,
+    id_aluno: number,
+    pontuacao: number,
+    professor: AuthUser,
+  ) {
+    await this.buscarAtividadeDoProfessor(id_atividade, professor.id_professor as number);
+
+    const questao = await this.db.questoes_atividade.findUnique({ where: { id_questao } });
+    if (!questao || Number(questao.id_atividade) !== Number(id_atividade)) {
+      throw new NotFoundException('Pergunta não encontrada nesta atividade');
+    }
+
+    const peso = questao.peso ?? 1;
+    if (pontuacao > peso) {
+      throw new UnprocessableEntityException(`A pontuação máxima desta pergunta é ${peso}`);
+    }
+
+    const resposta = await this.db.respostas_atividade_aluno.findUnique({
+      where: { id_atividade_id_questao_id_aluno: { id_atividade, id_questao, id_aluno } },
+    });
+    if (!resposta) throw new NotFoundException('O aluno ainda não respondeu esta pergunta');
+
+    await this.db.respostas_atividade_aluno.update({
+      where: { id_atividade_id_questao_id_aluno: { id_atividade, id_questao, id_aluno } },
+      data: { pontuacao },
+    });
+
+    return this.recalcularNotaESalvar(id_atividade, id_aluno);
   }
 
   async corrigir(
@@ -348,6 +465,7 @@ export class AtividadesService {
   ) {
     const atividade = await this.db.atividades.findUnique({
       where: { id_atividade },
+      include: { disciplinas: { select: { nome: true } } },
     });
     if (!atividade) throw new NotFoundException('Atividade não encontrada');
 
@@ -360,7 +478,7 @@ export class AtividadesService {
       );
     }
 
-    return this.db.$transaction(async (tx) => {
+    const entrega = await this.db.$transaction(async (tx) => {
       const entrega = await tx.aluno_atividade.update({
         where: { id_aluno_id_atividade: { id_aluno, id_atividade } },
         data: { status: 'corrigida', nota, feedback },
@@ -398,5 +516,25 @@ export class AtividadesService {
 
       return entrega;
     });
+
+    const aluno = await this.db.alunos.findUnique({
+      where: { id_aluno },
+      select: { id_usuario: true },
+    });
+
+    if (aluno) {
+      await this.notificacoesService.criar({
+        id_usuario: Number(aluno.id_usuario),
+        titulo: 'Atividade corrigida',
+        mensagem: feedback
+          ? `Sua atividade "${atividade.titulo}" foi corrigida. Nota: ${nota}. Feedback do professor: "${feedback}"`
+          : `Sua atividade "${atividade.titulo}" foi corrigida. Nota: ${nota}.`,
+        tipo: 'success',
+        categoria: 'nota',
+        disciplina: atividade.disciplinas.nome,
+      });
+    }
+
+    return entrega;
   }
 }

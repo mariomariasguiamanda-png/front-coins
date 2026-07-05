@@ -1,6 +1,9 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import * as bcrypt from 'bcryptjs';
 import { DatabaseService } from '../database/database.service';
 import { UpdatePerfilDto } from './dto/update-perfil.dto';
+import { UpdatePerfilProfessorDto } from './dto/update-perfil-professor.dto';
+import { AlterarSenhaDto } from './dto/alterar-senha.dto';
 
 @Injectable()
 export class PerfilService {
@@ -34,14 +37,40 @@ export class PerfilService {
       include: { professores: true },
     });
     if (!usuario) throw new NotFoundException('Usuário não encontrado');
+    if (!usuario.professores) throw new NotFoundException('Professor não encontrado');
+
+    const id_professor = usuario.professores.id_professor;
+
+    const vinculos = await this.db.professor_disciplina.findMany({
+      where: { id_professor },
+      include: { disciplinas: { select: { id_disciplina: true, nome: true } } },
+    });
+    const idsDisciplinas = vinculos.map((v) => v.disciplinas.id_disciplina);
+
+    const matriculas = await this.db.matriculas_aluno_disciplina.findMany({
+      where: { id_disciplina: { in: idsDisciplinas } },
+      include: { alunos: { include: { turmas: { select: { nome: true } } } } },
+    });
+
+    const disciplinas = Array.from(new Set(vinculos.map((v) => v.disciplinas.nome)));
+    const turmas = Array.from(
+      new Set(
+        matriculas.map((m) => m.alunos.turmas?.nome).filter((nome): nome is string => !!nome),
+      ),
+    );
+    const totalAlunos = new Set(matriculas.map((m) => Number(m.alunos.id_aluno))).size;
 
     return {
       id_usuario: Number(usuario.id_usuario),
       nome: usuario.nome,
       email: usuario.email,
       telefone: usuario.telefone,
-      especialidade: usuario.professores?.especialidade ?? null,
-      foto_url: usuario.professores?.foto_url ?? null,
+      especialidade: usuario.professores.especialidade,
+      foto_url: usuario.professores.foto_url,
+      criado_em: usuario.professores.criado_em,
+      disciplinas,
+      turmas,
+      total_alunos: totalAlunos,
     };
   }
 
@@ -56,6 +85,41 @@ export class PerfilService {
       nome: usuario.nome,
       telefone: usuario.telefone,
     };
+  }
+
+  async updatePerfilProfessor(id_usuario: number, dto: UpdatePerfilProfessorDto) {
+    return this.db.$transaction(async (tx) => {
+      const usuario = await tx.usuarios.update({
+        where: { id_usuario },
+        data: { nome: dto.nome, telefone: dto.telefone },
+      });
+
+      if (dto.especialidade !== undefined) {
+        await tx.professores.update({
+          where: { id_usuario },
+          data: { especialidade: dto.especialidade },
+        });
+      }
+
+      return {
+        id_usuario: Number(usuario.id_usuario),
+        nome: usuario.nome,
+        telefone: usuario.telefone,
+      };
+    });
+  }
+
+  async alterarSenha(id_usuario: number, dto: AlterarSenhaDto) {
+    const usuario = await this.db.usuarios.findUnique({ where: { id_usuario } });
+    if (!usuario) throw new NotFoundException('Usuário não encontrado');
+
+    const senhaConfere = await bcrypt.compare(dto.senha_atual, usuario.senha_hash);
+    if (!senhaConfere) throw new UnauthorizedException('Senha atual incorreta');
+
+    const senha_hash = await bcrypt.hash(dto.senha_nova, 10);
+    await this.db.usuarios.update({ where: { id_usuario }, data: { senha_hash } });
+
+    return { sucesso: true };
   }
 
   async updateFoto(id_aluno: number, fotoUrl: string) {

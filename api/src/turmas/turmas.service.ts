@@ -9,6 +9,7 @@ export class TurmasService {
 
   async findAll() {
     return this.db.turmas.findMany({
+      where: { ativo: true },
       include: { _count: { select: { alunos: true } } },
     });
   }

@@ -1,44 +1,78 @@
 import { Card, CardContent } from "@/components/ui/Card";
-import { 
-  Award, 
-  BarChart2, 
-  BookOpen, 
-  Clock, 
+import {
+  Award,
+  BarChart2,
+  BookOpen,
+  Clock,
   TrendingUp,
   CheckCircle2,
   ArrowRight,
-  Activity
+  Activity,
+  Send,
 } from "lucide-react";
 import Link from "next/link";
 
 interface ActivityCard {
   discipline: string;
+  codigo: string;
   total: number;
   pending: number;
   corrected: number;
-  color: string;
+}
+
+interface TurmaResumo {
+  turma: string;
+  media: number | null;
+  participacao: number;
+}
+
+interface RankingAluno {
+  nome: string;
+  saldo: number;
+}
+
+interface AtividadeRecente {
+  tipo: "entrega" | "correcao";
+  mensagem: string;
+  data: string;
 }
 
 interface DashboardProps {
   teacherName: string;
   activities: ActivityCard[];
+  turmas: TurmaResumo[];
+  ranking: RankingAluno[];
+  atividadesRecentes: AtividadeRecente[];
 }
 
-// Mock data para visualizações
-const performanceData = [
-  { turma: "9A", media: 8.5, participacao: 92 },
-  { turma: "9B", media: 7.8, participacao: 85 },
-  { turma: "9C", media: 8.2, participacao: 88 },
+const CORES_DISCIPLINA = [
+  "border-blue-500",
+  "border-green-500",
+  "border-purple-500",
+  "border-amber-500",
+  "border-pink-500",
+  "border-cyan-500",
 ];
 
-const recentActivity = [
-  { id: 1, type: "correction", message: "5 atividades de Matemática corrigidas", time: "10 min atrás" },
-  { id: 2, type: "submission", message: "João Silva entregou Exercício 12", time: "25 min atrás" },
-  { id: 3, type: "alert", message: "3 atividades próximas do prazo", time: "1 hora atrás" },
-];
+const MEDALHAS = ["🥇", "🥈", "🥉"];
 
-export function DashboardProfessor({ teacherName, activities = [] }: DashboardProps) {
-  // Calcular estatísticas gerais
+const formatarTempoRelativo = (dataIso: string): string => {
+  const diffMs = Date.now() - new Date(dataIso).getTime();
+  const diffMin = Math.round(diffMs / 60000);
+  if (diffMin < 1) return "agora mesmo";
+  if (diffMin < 60) return `${diffMin} min atrás`;
+  const diffHoras = Math.round(diffMin / 60);
+  if (diffHoras < 24) return `${diffHoras}h atrás`;
+  return `${Math.round(diffHoras / 24)}d atrás`;
+};
+
+export function DashboardProfessor({
+  teacherName,
+  activities = [],
+  turmas = [],
+  ranking = [],
+  atividadesRecentes = [],
+}: DashboardProps) {
   const totalActivities = activities.reduce((acc, act) => acc + act.total, 0);
   const totalPending = activities.reduce((acc, act) => acc + act.pending, 0);
   const totalCorrected = activities.reduce((acc, act) => acc + act.corrected, 0);
@@ -123,7 +157,7 @@ export function DashboardProfessor({ teacherName, activities = [] }: DashboardPr
       <div>
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-semibold text-gray-900">Suas Disciplinas</h2>
-          <Link 
+          <Link
             href="/professor/disciplinas"
             className="text-sm text-violet-600 hover:text-violet-700 font-medium flex items-center gap-1"
           >
@@ -131,77 +165,77 @@ export function DashboardProfessor({ teacherName, activities = [] }: DashboardPr
             <ArrowRight className="h-4 w-4" />
           </Link>
         </div>
-        
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {activities.map((activity, index) => {
-            // Mapeamento de disciplinas para códigos
-            const disciplineCodes: Record<string, string> = {
-              "Matemática": "MAT301",
-              "Física": "FIS201",
-              "Química": "QUI101",
-              "História": "HIS102",
-              "Biologia": "BIO201",
-              "Português": "POR101",
-            };
-            const disciplineCode = disciplineCodes[activity.discipline] || "";
-            
-            return (
-              <Link key={index} href={`/professor/disciplinas?view=${disciplineCode}`}>
-                <Card className={`rounded-xl border-l-4 ${activity.color} hover:shadow-md transition-shadow cursor-pointer group`}>
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg font-semibold text-gray-900 group-hover:text-violet-600 transition-colors">
-                      {activity.discipline}
-                    </h3>
-                    <BookOpen className="h-5 w-5 text-gray-400 group-hover:text-violet-600 transition-colors" />
-                  </div>
-                  
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-600">Total de atividades:</span>
-                      <span className="text-sm font-semibold text-gray-900">{activity.total}</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-600">Pendentes:</span>
-                      <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 text-sm font-semibold">
-                        <Clock className="h-3 w-3" />
-                        {activity.pending}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-600">Corrigidas:</span>
-                      <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-green-100 text-green-700 text-sm font-semibold">
-                        <CheckCircle2 className="h-3 w-3" />
-                        {activity.corrected}
-                      </span>
-                    </div>
-                  </div>
 
-                  {/* Progress Bar */}
-                  <div className="mt-4 pt-4 border-t border-gray-100">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-xs text-gray-600">Progresso</span>
-                      <span className="text-xs font-semibold text-gray-900">
-                        {((activity.corrected / activity.total) * 100).toFixed(0)}%
-                      </span>
-                    </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div 
-                        className="bg-violet-600 h-2 rounded-full transition-all duration-300"
-                        style={{ width: `${(activity.corrected / activity.total) * 100}%` }}
-                      />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </Link>
-          )})}
-        </div>
+        {activities.length === 0 ? (
+          <Card className="rounded-xl shadow-sm">
+            <CardContent className="p-8 text-center text-gray-500">
+              Você ainda não leciona nenhuma disciplina.
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {activities.map((activity, index) => {
+              const cor = CORES_DISCIPLINA[index % CORES_DISCIPLINA.length];
+              const progresso = activity.total > 0 ? (activity.corrected / activity.total) * 100 : 0;
+
+              return (
+                <Link key={activity.codigo} href={`/professor/disciplinas?view=${activity.codigo}`}>
+                  <Card className={`rounded-xl border-l-4 ${cor} hover:shadow-md transition-shadow cursor-pointer group`}>
+                    <CardContent className="p-6">
+                      <div className="flex items-center justify-between mb-4">
+                        <h3 className="text-lg font-semibold text-gray-900 group-hover:text-violet-600 transition-colors">
+                          {activity.discipline}
+                        </h3>
+                        <BookOpen className="h-5 w-5 text-gray-400 group-hover:text-violet-600 transition-colors" />
+                      </div>
+
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-gray-600">Total de atividades:</span>
+                          <span className="text-sm font-semibold text-gray-900">{activity.total}</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-gray-600">Pendentes:</span>
+                          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 text-sm font-semibold">
+                            <Clock className="h-3 w-3" />
+                            {activity.pending}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-gray-600">Corrigidas:</span>
+                          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-green-100 text-green-700 text-sm font-semibold">
+                            <CheckCircle2 className="h-3 w-3" />
+                            {activity.corrected}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="mt-4 pt-4 border-t border-gray-100">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-xs text-gray-600">Progresso</span>
+                          <span className="text-xs font-semibold text-gray-900">
+                            {progresso.toFixed(0)}%
+                          </span>
+                        </div>
+                        <div className="w-full bg-gray-200 rounded-full h-2">
+                          <div
+                            className="bg-violet-600 h-2 rounded-full transition-all duration-300"
+                            style={{ width: `${progresso}%` }}
+                          />
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </Link>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* Gráficos e Informações */}
       <div className="grid gap-6 lg:grid-cols-5">
-        {/* Desempenho por Turma com barras CSS */}
+        {/* Desempenho por Turma */}
         <Card className="rounded-xl shadow-sm lg:col-span-3">
           <CardContent className="p-6">
             <div className="flex items-center justify-between mb-6">
@@ -214,7 +248,7 @@ export function DashboardProfessor({ teacherName, activities = [] }: DashboardPr
                   <p className="text-sm text-gray-500">Média e participação</p>
                 </div>
               </div>
-              <Link 
+              <Link
                 href="/professor/desempenho"
                 className="text-sm text-violet-600 hover:text-violet-700 font-medium flex items-center gap-1"
               >
@@ -222,46 +256,56 @@ export function DashboardProfessor({ teacherName, activities = [] }: DashboardPr
                 <ArrowRight className="h-4 w-4" />
               </Link>
             </div>
-            
-            <div className="space-y-6">
-              {performanceData.map((turma) => (
-                <div key={turma.turma} className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-semibold text-gray-900">{turma.turma}</span>
-                    <div className="flex items-center gap-4">
-                      <span className="text-xs text-gray-600">Média: <span className="font-semibold text-violet-600">{turma.media}</span></span>
-                      <span className="text-xs text-gray-600">Participação: <span className="font-semibold text-green-600">{turma.participacao}%</span></span>
+
+            {turmas.length === 0 ? (
+              <p className="text-sm text-gray-500 text-center py-8">Nenhuma turma com dados ainda.</p>
+            ) : (
+              <div className="space-y-6">
+                {turmas.map((turma) => (
+                  <div key={turma.turma} className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-semibold text-gray-900">{turma.turma}</span>
+                      <div className="flex items-center gap-4">
+                        <span className="text-xs text-gray-600">
+                          Média: <span className="font-semibold text-violet-600">{turma.media !== null ? turma.media.toFixed(1) : "-"}</span>
+                        </span>
+                        <span className="text-xs text-gray-600">
+                          Participação: <span className="font-semibold text-green-600">{turma.participacao}%</span>
+                        </span>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-xs text-gray-500">Média</span>
+                          <span className="text-xs font-medium text-violet-600">
+                            {turma.media !== null ? `${turma.media.toFixed(1)}/10` : "-"}
+                          </span>
+                        </div>
+                        <div className="h-3 bg-gray-200 rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-gradient-to-r from-violet-500 to-violet-600 rounded-full transition-all duration-500"
+                            style={{ width: `${((turma.media ?? 0) / 10) * 100}%` }}
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-xs text-gray-500">Participação</span>
+                          <span className="text-xs font-medium text-green-600">{turma.participacao}%</span>
+                        </div>
+                        <div className="h-3 bg-gray-200 rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-gradient-to-r from-green-500 to-green-600 rounded-full transition-all duration-500"
+                            style={{ width: `${turma.participacao}%` }}
+                          />
+                        </div>
+                      </div>
                     </div>
                   </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="text-xs text-gray-500">Média</span>
-                        <span className="text-xs font-medium text-violet-600">{turma.media}/10</span>
-                      </div>
-                      <div className="h-3 bg-gray-200 rounded-full overflow-hidden">
-                        <div 
-                          className="h-full bg-gradient-to-r from-violet-500 to-violet-600 rounded-full transition-all duration-500"
-                          style={{ width: `${(turma.media / 10) * 100}%` }}
-                        />
-                      </div>
-                    </div>
-                    <div>
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="text-xs text-gray-500">Participação</span>
-                        <span className="text-xs font-medium text-green-600">{turma.participacao}%</span>
-                      </div>
-                      <div className="h-3 bg-gray-200 rounded-full overflow-hidden">
-                        <div 
-                          className="h-full bg-gradient-to-r from-green-500 to-green-600 rounded-full transition-all duration-500"
-                          style={{ width: `${turma.participacao}%` }}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -272,36 +316,28 @@ export function DashboardProfessor({ teacherName, activities = [] }: DashboardPr
               <div className="h-10 w-10 rounded-lg bg-amber-100 flex items-center justify-center">
                 <Award className="h-5 w-5 text-amber-600" />
               </div>
-              <h3 className="text-lg font-semibold text-gray-900">Ranking da Turma</h3>
+              <h3 className="text-lg font-semibold text-gray-900">Ranking de Moedas</h3>
             </div>
-            
+
             <div className="space-y-3 mb-6">
-              <Link href="/professor/desempenho#ranking-individual" className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors group">
-                <span className="text-2xl">🥇</span>
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium text-gray-900 group-hover:text-violet-600 transition-colors">João Silva</p>
-                  <p className="text-sm text-gray-600">950 moedas</p>
-                </div>
-                <ArrowRight className="h-4 w-4 text-gray-400 group-hover:text-violet-600 transition-colors" />
-              </Link>
-              
-              <Link href="/professor/desempenho#ranking-individual" className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors group">
-                <span className="text-2xl">🥈</span>
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium text-gray-900 group-hover:text-violet-600 transition-colors">Maria Santos</p>
-                  <p className="text-sm text-gray-600">820 moedas</p>
-                </div>
-                <ArrowRight className="h-4 w-4 text-gray-400 group-hover:text-violet-600 transition-colors" />
-              </Link>
-              
-              <Link href="/professor/desempenho#ranking-individual" className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors group">
-                <span className="text-2xl">🥉</span>
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium text-gray-900 group-hover:text-violet-600 transition-colors">Pedro Oliveira</p>
-                  <p className="text-sm text-gray-600">780 moedas</p>
-                </div>
-                <ArrowRight className="h-4 w-4 text-gray-400 group-hover:text-violet-600 transition-colors" />
-              </Link>
+              {ranking.length === 0 ? (
+                <p className="text-sm text-gray-500">Nenhum aluno com moedas ainda.</p>
+              ) : (
+                ranking.map((aluno, index) => (
+                  <Link
+                    key={aluno.nome}
+                    href="/professor/desempenho#ranking-individual"
+                    className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors group"
+                  >
+                    <span className="text-2xl">{MEDALHAS[index] ?? "🎖️"}</span>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-gray-900 group-hover:text-violet-600 transition-colors">{aluno.nome}</p>
+                      <p className="text-sm text-gray-600">{aluno.saldo} moedas</p>
+                    </div>
+                    <ArrowRight className="h-4 w-4 text-gray-400 group-hover:text-violet-600 transition-colors" />
+                  </Link>
+                ))
+              )}
             </div>
 
             {/* Atividades Recentes */}
@@ -310,20 +346,25 @@ export function DashboardProfessor({ teacherName, activities = [] }: DashboardPr
                 <Activity className="h-4 w-4 text-violet-600" />
                 <h4 className="text-sm font-semibold text-gray-900">Atividades Recentes</h4>
               </div>
-              <div className="space-y-3">
-                {recentActivity.map((item) => (
-                  <div key={item.id} className="flex items-start gap-3">
-                    <div className={`h-2 w-2 rounded-full mt-2 flex-shrink-0 ${
-                      item.type === 'correction' ? 'bg-green-500' : 
-                      item.type === 'alert' ? 'bg-amber-500' : 'bg-blue-500'
-                    }`} />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm text-gray-900">{item.message}</p>
-                      <p className="text-xs text-gray-500 mt-0.5">{item.time}</p>
+              {atividadesRecentes.length === 0 ? (
+                <p className="text-sm text-gray-500">Nenhuma atividade recente.</p>
+              ) : (
+                <div className="space-y-3">
+                  {atividadesRecentes.map((item, index) => (
+                    <div key={index} className="flex items-start gap-3">
+                      {item.tipo === "correcao" ? (
+                        <CheckCircle2 className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
+                      ) : (
+                        <Send className="h-4 w-4 text-blue-500 mt-0.5 flex-shrink-0" />
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm text-gray-900">{item.mensagem}</p>
+                        <p className="text-xs text-gray-500 mt-0.5">{formatarTempoRelativo(item.data)}</p>
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>

@@ -5,220 +5,205 @@ import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { 
-  ArrowLeft, 
-  Download, 
-  Eye, 
-  CheckCircle2, 
-  XCircle,
+import {
+  ArrowLeft,
+  Eye,
+  CheckCircle2,
   Clock,
   FileText,
-  User,
   Calendar,
   Coins,
-  Save
+  Save,
+  Award,
 } from "lucide-react";
 import { useRouter } from "next/router";
 import { useState, useEffect } from "react";
+import { api } from "@/lib/api";
 
-interface Submission {
+type RespostaQuestao = {
+  id_questao: number;
+  enunciado: string;
+  tipo: "vf" | "multipla" | "descritiva";
+  peso: number;
+  resposta: string;
+  correta: boolean | null;
+  pontuacao: number | null;
+};
+
+type Entrega = {
   id: string;
+  id_aluno: number;
   studentName: string;
-  studentEmail: string;
-  submittedAt: string;
-  status: "pendente" | "aprovado" | "reprovado";
-  grade?: number;
-  file?: string;
-}
+  matricula: string;
+  submittedAt: string | null;
+  status: "entregue" | "corrigida";
+  grade: number | null;
+  feedback: string | null;
+  respostaTexto: string | null;
+  respostasQuestoes: RespostaQuestao[];
+};
+
+type Atividade = {
+  title: string;
+  description: string;
+  dueDate: string;
+  coins: number;
+  discipline: string;
+};
 
 export default function CorrigirAtividadePage() {
   const router = useRouter();
-  const { id, studentId } = router.query;
+  const { id } = router.query;
 
-  // Mock data
-  const [activity] = useState({
-    id: "1",
-    title: "Lista de Exercícios - Funções Quadráticas",
-    description: "Resolver os exercícios 1 a 15 sobre funções quadráticas. Inclui análise de gráficos e aplicações práticas.",
-    dueDate: "2024-11-15",
-    coins: 15,
-    discipline: "Matemática",
-    submissions: 15
-  });
-
-  // Mesma lista de nomes usada em AtividadesProfessor
-  const studentNames = [
-    { name: "João Silva", email: "joao@email.com" },
-    { name: "Maria Santos", email: "maria@email.com" },
-    { name: "Pedro Costa", email: "pedro@email.com" },
-    { name: "Ana Oliveira", email: "ana@email.com" },
-    { name: "Carlos Mendes", email: "carlos@email.com" },
-    { name: "Beatriz Lima", email: "beatriz@email.com" },
-    { name: "Rafael Souza", email: "rafael@email.com" },
-    { name: "Juliana Rocha", email: "juliana@email.com" },
-    { name: "Lucas Ferreira", email: "lucas@email.com" },
-    { name: "Camila Alves", email: "camila@email.com" },
-    { name: "Felipe Barbosa", email: "felipe@email.com" },
-    { name: "Larissa Martins", email: "larissa@email.com" },
-    { name: "Bruno Silva", email: "bruno@email.com" },
-    { name: "Patricia Souza", email: "patricia@email.com" },
-    { name: "Ricardo Lima", email: "ricardo@email.com" },
-    { name: "Fernanda Costa", email: "fernanda@email.com" },
-    { name: "Thiago Santos", email: "thiago@email.com" },
-    { name: "Amanda Rocha", email: "amanda@email.com" },
-    { name: "Gabriel Alves", email: "gabriel@email.com" },
-    { name: "Mariana Dias", email: "mariana@email.com" },
-    { name: "Rodrigo Carvalho", email: "rodrigo@email.com" },
-    { name: "Isabela Teixeira", email: "isabela@email.com" },
-    { name: "Diego Monteiro", email: "diego@email.com" },
-    { name: "Carolina Nunes", email: "carolina@email.com" },
-    { name: "Vinícius Castro", email: "vinicius@email.com" },
-    { name: "Aline Cardoso", email: "aline@email.com" },
-    { name: "Mateus Ribeiro", email: "mateus@email.com" },
-    { name: "Sabrina Moreira", email: "sabrina@email.com" },
-    { name: "Eduardo Araújo", email: "eduardo@email.com" },
-    { name: "Letícia Freitas", email: "leticia@email.com" }
-  ];
-
-  // Função para gerar número pseudoaleatório baseado em seed
-  const seededRandom = (seed: number) => {
-    const x = Math.sin(seed) * 10000;
-    return x - Math.floor(x);
-  };
-
-  // Gerar submissões usando a mesma lógica
-  const generateSubmissions = (): Submission[] => {
-    const count = activity.submissions || 0;
-    const submissions: Submission[] = [];
-    const activitySeed = parseInt(activity.id) || 1;
-    
-    for (let i = 0; i < count; i++) {
-      const student = studentNames[i % studentNames.length];
-      const randomStatus = seededRandom(activitySeed * 1000 + i);
-      const status: "pendente" | "aprovado" | "reprovado" = 
-        randomStatus > 0.7 ? "pendente" : randomStatus > 0.1 ? "aprovado" : "reprovado";
-      const gradeRandom = seededRandom(activitySeed * 1000 + i + 500);
-      const grade = status === "aprovado" ? (7 + gradeRandom * 3) : status === "reprovado" ? (gradeRandom * 6) : undefined;
-      
-      const dayRandom = seededRandom(activitySeed * 100 + i);
-      const hourRandom = seededRandom(activitySeed * 200 + i);
-      const minuteRandom = seededRandom(activitySeed * 300 + i);
-      
-      submissions.push({
-        id: `${i + 1}`,
-        studentName: `${student.name}${i >= studentNames.length ? ` ${Math.floor(i / studentNames.length) + 1}` : ''}`,
-        studentEmail: student.email,
-        submittedAt: `2024-11-${String(Math.floor(dayRandom * 7) + 1).padStart(2, '0')} ${String(Math.floor(hourRandom * 12) + 8).padStart(2, '0')}:${String(Math.floor(minuteRandom * 60)).padStart(2, '0')}`,
-        status,
-        grade: grade ? parseFloat(grade.toFixed(1)) : undefined,
-        file: `trabalho_${student.name.split(' ')[0].toLowerCase()}_${i + 1}.pdf`
-      });
-    }
-    
-    return submissions;
-  };
-
-  const [submissions, setSubmissions] = useState<Submission[]>(generateSubmissions());
-  const [editingGrades, setEditingGrades] = useState<{[key: string]: {grade: string, feedback: string}}>({});
+  const [activity, setActivity] = useState<Atividade | null>(null);
+  const [entregas, setEntregas] = useState<Entrega[]>([]);
+  const [editingGrades, setEditingGrades] = useState<{ [key: string]: { grade: string; feedback: string } }>({});
   const [expandedSubmission, setExpandedSubmission] = useState<string | null>(null);
+  const [saving, setSaving] = useState<string | null>(null);
+  const [pontuacoesDraft, setPontuacoesDraft] = useState<{ [key: string]: string }>({});
+  const [savingPontuacao, setSavingPontuacao] = useState<string | null>(null);
+
+  const carregarEntregas = async (atividadeId: string) => {
+    const data = await api.get(`/professor/atividades/${atividadeId}/entregas`);
+    setEntregas(
+      (data ?? []).map((e: any) => ({
+        id: String(e.id),
+        id_aluno: Number(e.id_aluno),
+        studentName: e.alunos.usuarios.nome,
+        matricula: e.alunos.matricula,
+        submittedAt: e.data_entrega,
+        status: e.status,
+        grade: e.nota !== null && e.nota !== undefined ? Number(e.nota) : null,
+        feedback: e.feedback,
+        respostaTexto: e.resposta_texto,
+        respostasQuestoes: (e.respostas_questoes ?? []).map((r: any) => ({
+          id_questao: Number(r.id_questao),
+          enunciado: r.enunciado,
+          tipo: r.tipo,
+          peso: r.peso,
+          resposta: r.resposta,
+          correta: r.correta,
+          pontuacao: r.pontuacao,
+        })),
+      }))
+    );
+  };
 
   useEffect(() => {
-    if (router.isReady && studentId && typeof studentId === 'string') {
-      setExpandedSubmission(studentId);
-      setTimeout(() => {
-        const element = document.getElementById(`submission-${studentId}`);
-        if (element) {
-          element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }
-      }, 300);
+    if (!router.isReady || typeof id !== "string") return;
+
+    async function carregar() {
+      try {
+        const [atividade] = await Promise.all([
+          api.get(`/aluno/atividades/${id}`),
+          carregarEntregas(id as string),
+        ]);
+        setActivity({
+          title: atividade.titulo,
+          description: atividade.descricao ?? "",
+          dueDate: atividade.data_vencimento ? atividade.data_vencimento.split("T")[0] : "",
+          coins: atividade.recompensa_moedas ?? 0,
+          discipline: atividade.disciplinas?.nome ?? "",
+        });
+      } catch (err) {
+        console.error("Erro ao carregar atividade:", err);
+      }
     }
-  }, [router.isReady, studentId]);
+
+    carregar();
+  }, [router.isReady, id]);
 
   const stats = {
-    total: submissions.length,
-    pendente: submissions.filter(s => s.status === "pendente").length,
-    aprovada: submissions.filter(s => s.status === "aprovado").length,
-    reprovada: submissions.filter(s => s.status === "reprovado").length,
+    total: entregas.length,
+    aguardando: entregas.filter(e => e.status === "entregue").length,
+    corrigidas: entregas.filter(e => e.status === "corrigida").length,
+    media: (() => {
+      const notas = entregas.filter(e => e.grade !== null).map(e => e.grade as number);
+      return notas.length > 0 ? notas.reduce((s, n) => s + n, 0) / notas.length : null;
+    })(),
   };
 
   const getStatusConfig = (status: string) => {
-    switch(status) {
-      case "pendente":
-        return { 
-          color: "text-amber-700 bg-amber-100 border-amber-200", 
-          icon: Clock,
-          label: "Pendente"
-        };
-      case "aprovado":
-        return { 
-          color: "text-green-700 bg-green-100 border-green-200", 
-          icon: CheckCircle2,
-          label: "Aprovada"
-        };
-      case "reprovado":
-        return { 
-          color: "text-red-700 bg-red-100 border-red-200", 
-          icon: XCircle,
-          label: "Reprovada"
-        };
-      default:
-        return { 
-          color: "text-gray-700 bg-gray-100 border-gray-200", 
-          icon: FileText,
-          label: status
-        };
+    if (status === "corrigida") {
+      return { color: "text-green-700 bg-green-100 border-green-200", icon: CheckCircle2, label: "Corrigida" };
+    }
+    return { color: "text-amber-700 bg-amber-100 border-amber-200", icon: Clock, label: "Aguardando correção" };
+  };
+
+  const handleSaveGrade = async (entrega: Entrega) => {
+    const editData = editingGrades[entrega.id];
+    if (!editData || typeof id !== "string") return;
+
+    const nota = parseFloat(editData.grade);
+    if (Number.isNaN(nota) || nota < 0 || nota > 10) {
+      alert("Informe uma nota entre 0 e 10.");
+      return;
+    }
+
+    setSaving(entrega.id);
+    try {
+      await api.post(`/professor/atividades/${id}/corrigir`, {
+        id_aluno: String(entrega.id_aluno),
+        nota,
+        feedback: editData.feedback || undefined,
+      });
+
+      await carregarEntregas(id);
+      const newEditingGrades = { ...editingGrades };
+      delete newEditingGrades[entrega.id];
+      setEditingGrades(newEditingGrades);
+      setExpandedSubmission(null);
+    } catch (err) {
+      console.error("Erro ao salvar avaliação:", err);
+      alert("Erro ao salvar avaliação.");
+    } finally {
+      setSaving(null);
     }
   };
 
-  const handleStartEdit = (submissionId: string, currentGrade?: number, currentFeedback?: string) => {
-    setEditingGrades({
-      ...editingGrades,
-      [submissionId]: {
-        grade: currentGrade?.toString() || '',
-        feedback: currentFeedback || ''
-      }
-    });
+  const handleSalvarPontuacao = async (entrega: Entrega, resposta: RespostaQuestao) => {
+    const chave = `${entrega.id_aluno}-${resposta.id_questao}`;
+    const valorDigitado = pontuacoesDraft[chave];
+    if (valorDigitado === undefined || typeof id !== "string") return;
+
+    const pontuacao = parseFloat(valorDigitado);
+    if (Number.isNaN(pontuacao) || pontuacao < 0 || pontuacao > resposta.peso) {
+      alert(`Informe uma pontuação entre 0 e ${resposta.peso}.`);
+      return;
+    }
+
+    setSavingPontuacao(chave);
+    try {
+      await api.patch(
+        `/professor/atividades/${id}/entregas/${entrega.id_aluno}/questoes/${resposta.id_questao}`,
+        { pontuacao }
+      );
+      await carregarEntregas(id);
+
+      // a nota sugerida mudou - descarta o rascunho de nota final (se houver)
+      // pra não salvar um valor que não bate mais com o que aparece na tela
+      const novosEditingGrades = { ...editingGrades };
+      delete novosEditingGrades[entrega.id];
+      setEditingGrades(novosEditingGrades);
+
+      const novoDraft = { ...pontuacoesDraft };
+      delete novoDraft[chave];
+      setPontuacoesDraft(novoDraft);
+    } catch (err) {
+      console.error("Erro ao salvar pontuação:", err);
+      alert("Erro ao salvar pontuação.");
+    } finally {
+      setSavingPontuacao(null);
+    }
   };
 
-  const handleSaveGrade = (submissionId: string) => {
-    const editData = editingGrades[submissionId];
-    if (!editData) return;
-
-    setSubmissions(submissions.map(sub => {
-      if (sub.id === submissionId) {
-        const grade = parseFloat(editData.grade);
-        return {
-          ...sub,
-          grade: isNaN(grade) ? undefined : grade,
-          status: isNaN(grade) ? "pendente" : grade >= 7 ? "aprovado" : "reprovado"
-        };
-      }
-      return sub;
-    }));
-
-    const newEditingGrades = {...editingGrades};
-    delete newEditingGrades[submissionId];
-    setEditingGrades(newEditingGrades);
-  };
-
-  const handleCancelEdit = (submissionId: string) => {
-    const newEditingGrades = {...editingGrades};
-    delete newEditingGrades[submissionId];
-    setEditingGrades(newEditingGrades);
-  };
-
-  const handleDownloadFile = (fileName: string) => {
-    const content = `Conteúdo simulado do arquivo: ${fileName}`;
-    const blob = new Blob([content], { type: 'application/pdf' });
-    const url = window.URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = fileName;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    window.URL.revokeObjectURL(url);
-  };
+  if (!activity) {
+    return (
+      <ProfessorLayout>
+        <div className="p-6 text-gray-500">Carregando atividade...</div>
+      </ProfessorLayout>
+    );
+  }
 
   return (
     <ProfessorLayout>
@@ -272,8 +257,8 @@ export default function CorrigirAtividadePage() {
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">Pendentes</p>
-                  <p className="text-2xl font-bold text-gray-900 mt-1">{stats.pendente}</p>
+                  <p className="text-sm font-medium text-gray-600">Aguardando</p>
+                  <p className="text-2xl font-bold text-gray-900 mt-1">{stats.aguardando}</p>
                 </div>
                 <div className="h-10 w-10 rounded-lg bg-amber-100 flex items-center justify-center">
                   <Clock className="h-5 w-5 text-amber-600" />
@@ -286,8 +271,8 @@ export default function CorrigirAtividadePage() {
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">Aprovadas</p>
-                  <p className="text-2xl font-bold text-gray-900 mt-1">{stats.aprovada}</p>
+                  <p className="text-sm font-medium text-gray-600">Corrigidas</p>
+                  <p className="text-2xl font-bold text-gray-900 mt-1">{stats.corrigidas}</p>
                 </div>
                 <div className="h-10 w-10 rounded-lg bg-green-100 flex items-center justify-center">
                   <CheckCircle2 className="h-5 w-5 text-green-600" />
@@ -296,15 +281,17 @@ export default function CorrigirAtividadePage() {
             </CardContent>
           </Card>
 
-          <Card className="rounded-xl shadow-sm border-l-4 border-l-red-500">
+          <Card className="rounded-xl shadow-sm border-l-4 border-l-blue-500">
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">Reprovadas</p>
-                  <p className="text-2xl font-bold text-gray-900 mt-1">{stats.reprovada}</p>
+                  <p className="text-sm font-medium text-gray-600">Média</p>
+                  <p className="text-2xl font-bold text-gray-900 mt-1">
+                    {stats.media !== null ? stats.media.toFixed(1) : "-"}
+                  </p>
                 </div>
-                <div className="h-10 w-10 rounded-lg bg-red-100 flex items-center justify-center">
-                  <XCircle className="h-5 w-5 text-red-600" />
+                <div className="h-10 w-10 rounded-lg bg-blue-100 flex items-center justify-center">
+                  <Award className="h-5 w-5 text-blue-600" />
                 </div>
               </div>
             </CardContent>
@@ -313,153 +300,212 @@ export default function CorrigirAtividadePage() {
 
         {/* Lista de Entregas */}
         <div className="space-y-4">
-          {submissions.map((submission) => {
-            const statusConfig = getStatusConfig(submission.status);
-            const StatusIcon = statusConfig.icon;
-            const isExpanded = expandedSubmission === submission.id;
-            const isEditing = !!editingGrades[submission.id];
+          {entregas.length === 0 ? (
+            <Card className="rounded-xl shadow-sm">
+              <CardContent className="p-12 text-center text-gray-500">
+                Nenhuma entrega recebida ainda para esta atividade.
+              </CardContent>
+            </Card>
+          ) : (
+            entregas.map((entrega) => {
+              const statusConfig = getStatusConfig(entrega.status);
+              const StatusIcon = statusConfig.icon;
+              const isExpanded = expandedSubmission === entrega.id;
+              const isEditing = !!editingGrades[entrega.id];
 
-            return (
-              <div 
-                key={submission.id} 
-                id={`submission-${submission.id}`}
-                className="scroll-mt-20"
-              >
-                <Card className="rounded-xl shadow-sm hover:shadow-md transition-shadow">
-                <CardContent className="p-6">
-                  {/* Header da Entrega */}
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex items-center gap-3">
-                      <div className="h-12 w-12 rounded-full bg-violet-100 flex items-center justify-center">
-                        <span className="text-lg font-bold text-violet-700">
-                          {submission.studentName.split(' ').map(n => n[0]).join('')}
-                        </span>
-                      </div>
-                      <div>
-                        <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                          {submission.studentName}
-                          <Badge className={`${statusConfig.color} border font-semibold`}>
-                            <StatusIcon className="h-3 w-3 mr-1" />
-                            {statusConfig.label}
-                          </Badge>
-                        </h3>
-                        <p className="text-sm text-gray-600 flex items-center gap-1.5 mt-1">
-                          <Clock className="h-3.5 w-3.5" />
-                          Entregue em: {submission.submittedAt}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setExpandedSubmission(isExpanded ? null : submission.id)}
-                        className="rounded-xl"
-                      >
-                        <Eye className="h-4 w-4 mr-2" />
-                        {isExpanded ? "Recolher" : "Detalhes"}
-                      </Button>
-                    </div>
-                  </div>
-
-                  {/* Arquivo */}
-                  {submission.file && (
-                    <div className="flex flex-wrap gap-2 mb-4">
-                      <div className="flex items-center gap-2 px-3 py-2 bg-gray-50 rounded-lg border hover:bg-gray-100 transition-colors">
-                        <FileText className="h-4 w-4 text-gray-400" />
-                        <span className="text-sm text-gray-700">{submission.file}</span>
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          className="h-6 w-6 p-0 ml-1 hover:bg-violet-100 hover:border-violet-300"
-                          onClick={() => handleDownloadFile(submission.file!)}
-                          title={`Baixar ${submission.file}`}
+              return (
+                <div key={entrega.id} id={`submission-${entrega.id}`} className="scroll-mt-20">
+                  <Card className="rounded-xl shadow-sm hover:shadow-md transition-shadow">
+                    <CardContent className="p-6">
+                      <div className="flex items-start justify-between mb-4">
+                        <div className="flex items-center gap-3">
+                          <div className="h-12 w-12 rounded-full bg-violet-100 flex items-center justify-center">
+                            <span className="text-lg font-bold text-violet-700">
+                              {entrega.studentName.split(' ').map(n => n[0]).join('').slice(0, 2)}
+                            </span>
+                          </div>
+                          <div>
+                            <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                              {entrega.studentName}
+                              <Badge className={`${statusConfig.color} border font-semibold`}>
+                                <StatusIcon className="h-3 w-3 mr-1" />
+                                {statusConfig.label}
+                              </Badge>
+                            </h3>
+                            <p className="text-sm text-gray-600 flex items-center gap-1.5 mt-1">
+                              <Clock className="h-3.5 w-3.5" />
+                              {entrega.submittedAt
+                                ? `Entregue em: ${new Date(entrega.submittedAt).toLocaleString('pt-BR')}`
+                                : "Data de entrega não registrada"}
+                            </p>
+                          </div>
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setExpandedSubmission(isExpanded ? null : entrega.id)}
+                          className="rounded-xl"
                         >
-                          <Download className="h-3.5 w-3.5" />
+                          <Eye className="h-4 w-4 mr-2" />
+                          {isExpanded ? "Recolher" : "Detalhes"}
                         </Button>
                       </div>
-                    </div>
-                  )}
 
-                  {/* Nota Existente */}
-                  {submission.grade !== undefined && !isEditing && (
-                    <div className="bg-gray-50 rounded-lg p-4 mb-4">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm font-medium text-gray-700">Nota:</span>
-                        <span className={`text-2xl font-bold ${
-                          submission.grade >= 7 ? "text-green-600" : "text-red-600"
-                        }`}>
-                          {submission.grade.toFixed(1)}
-                        </span>
-                      </div>
-                    </div>
-                  )}
+                      {entrega.respostaTexto && (
+                        <div className="mb-4 p-3 bg-gray-50 rounded-lg border text-sm text-gray-700 whitespace-pre-wrap">
+                          {entrega.respostaTexto}
+                        </div>
+                      )}
 
-                  {/* Formulário de Correção (Expandido) */}
-                  {isExpanded && (
-                    <div className="border-t pt-4 mt-4">
-                      <h4 className="text-sm font-semibold text-gray-900 mb-4">Avaliar Entrega</h4>
-                      <div className="space-y-4">
-                        <div>
-                          <Label className="text-sm font-medium text-gray-700">Nota (0 a 10)</Label>
-                          <Input
-                            type="number"
-                            min="0"
-                            max="10"
-                            step="0.5"
-                            defaultValue={submission.grade || 0}
-                            onChange={(e) => setEditingGrades({
-                              ...editingGrades,
-                              [submission.id]: {
-                                grade: e.target.value,
-                                feedback: editingGrades[submission.id]?.feedback || ""
-                              }
-                            })}
-                            className="rounded-xl mt-1"
-                            placeholder="Ex: 8.5"
-                          />
+                      {entrega.respostasQuestoes.length > 0 && (
+                        <div className="mb-4 space-y-3">
+                          {entrega.respostasQuestoes.map((r) => {
+                            const chave = `${entrega.id_aluno}-${r.id_questao}`;
+                            return (
+                              <div key={r.id_questao} className="p-3 bg-gray-50 rounded-lg border">
+                                <div className="flex items-start justify-between gap-2 mb-1.5">
+                                  <p className="text-sm font-medium text-gray-900">{r.enunciado}</p>
+                                  <div className="flex items-center gap-2 shrink-0">
+                                    <span className="text-xs text-gray-500">Peso: {r.peso}</span>
+                                    {r.correta !== null && (
+                                      <Badge
+                                        className={`${
+                                          r.correta
+                                            ? "bg-green-100 text-green-700 border-green-200"
+                                            : "bg-red-100 text-red-700 border-red-200"
+                                        } border`}
+                                      >
+                                        {r.correta ? "Correta" : "Incorreta"}
+                                      </Badge>
+                                    )}
+                                  </div>
+                                </div>
+                                <p className="text-sm text-gray-700 whitespace-pre-wrap">
+                                  {r.tipo === "vf"
+                                    ? (r.resposta === "true" ? "Verdadeiro" : "Falso")
+                                    : r.resposta}
+                                </p>
+
+                                {r.tipo === "descritiva" && (
+                                  <div className="flex items-center gap-2 mt-3 pt-3 border-t border-gray-200">
+                                    <Label className="text-xs font-medium text-gray-700 shrink-0">
+                                      Pontuação (0 a {r.peso}):
+                                    </Label>
+                                    <Input
+                                      type="number"
+                                      min={0}
+                                      max={r.peso}
+                                      step="0.5"
+                                      defaultValue={r.pontuacao ?? undefined}
+                                      onChange={(e) =>
+                                        setPontuacoesDraft({ ...pontuacoesDraft, [chave]: e.target.value })
+                                      }
+                                      className="rounded-lg w-24 h-8"
+                                    />
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      disabled={pontuacoesDraft[chave] === undefined || savingPontuacao === chave}
+                                      onClick={() => handleSalvarPontuacao(entrega, r)}
+                                      className="rounded-lg"
+                                    >
+                                      {savingPontuacao === chave ? "Salvando..." : "Salvar"}
+                                    </Button>
+                                    {r.pontuacao !== null && (
+                                      <span className="text-xs text-gray-500">
+                                        Avaliada: {r.pontuacao}/{r.peso}
+                                      </span>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
                         </div>
-                        <div>
-                          <Label className="text-sm font-medium text-gray-700">Feedback</Label>
-                          <Textarea
-                            defaultValue=""
-                            onChange={(e) => setEditingGrades({
-                              ...editingGrades,
-                              [submission.id]: {
-                                grade: editingGrades[submission.id]?.grade || submission.grade?.toString() || "0",
-                                feedback: e.target.value
-                              }
-                            })}
-                            className="rounded-xl mt-1"
-                            rows={3}
-                            placeholder="Comentários sobre o desempenho do aluno..."
-                          />
+                      )}
+
+                      {entrega.grade !== null && !isEditing && (
+                        <div className="bg-gray-50 rounded-lg p-4 mb-4">
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-sm font-medium text-gray-700">Nota:</span>
+                            <span className={`text-2xl font-bold ${entrega.grade >= 6 ? "text-green-600" : "text-red-600"}`}>
+                              {entrega.grade.toFixed(1)}
+                            </span>
+                          </div>
+                          {entrega.feedback && (
+                            <p className="text-sm text-gray-600 mt-2">{entrega.feedback}</p>
+                          )}
                         </div>
-                        <div className="flex gap-2">
-                          <Button
-                            onClick={() => handleSaveGrade(submission.id)}
-                            disabled={!editingGrades[submission.id]}
-                            className="rounded-xl bg-green-600 hover:bg-green-700"
-                          >
-                            <Save className="h-4 w-4 mr-2" />
-                            Salvar Avaliação
-                          </Button>
-                          <Button
-                            variant="outline"
-                            onClick={() => setExpandedSubmission(null)}
-                            className="rounded-xl"
-                          >
-                            Cancelar
-                          </Button>
+                      )}
+
+                      {isExpanded && (
+                        <div className="border-t pt-4 mt-4">
+                          <h4 className="text-sm font-semibold text-gray-900 mb-4">Avaliar Entrega</h4>
+                          <div className="space-y-4">
+                            <div>
+                              <Label className="text-sm font-medium text-gray-700">
+                                Nota (0 a 10) {entrega.respostasQuestoes.length > 0 && "— sugerida com base no peso das questões já avaliadas"}
+                              </Label>
+                              <Input
+                                key={`nota-${entrega.id}-${entrega.grade ?? "vazia"}`}
+                                type="number"
+                                min="0"
+                                max="10"
+                                step="0.5"
+                                defaultValue={entrega.grade ?? undefined}
+                                onChange={(e) => setEditingGrades({
+                                  ...editingGrades,
+                                  [entrega.id]: {
+                                    grade: e.target.value,
+                                    feedback: editingGrades[entrega.id]?.feedback ?? entrega.feedback ?? "",
+                                  },
+                                })}
+                                className="rounded-xl mt-1"
+                                placeholder="Ex: 8.5"
+                              />
+                            </div>
+                            <div>
+                              <Label className="text-sm font-medium text-gray-700">Feedback</Label>
+                              <Textarea
+                                defaultValue={entrega.feedback ?? ""}
+                                onChange={(e) => setEditingGrades({
+                                  ...editingGrades,
+                                  [entrega.id]: {
+                                    grade: editingGrades[entrega.id]?.grade ?? entrega.grade?.toString() ?? "",
+                                    feedback: e.target.value,
+                                  },
+                                })}
+                                className="rounded-xl mt-1"
+                                rows={3}
+                                placeholder="Comentários sobre o desempenho do aluno..."
+                              />
+                            </div>
+                            <div className="flex gap-2">
+                              <Button
+                                onClick={() => handleSaveGrade(entrega)}
+                                disabled={!editingGrades[entrega.id] || saving === entrega.id}
+                                className="rounded-xl bg-green-600 hover:bg-green-700"
+                              >
+                                <Save className="h-4 w-4 mr-2" />
+                                {saving === entrega.id ? "Salvando..." : "Salvar Avaliação"}
+                              </Button>
+                              <Button
+                                variant="outline"
+                                onClick={() => setExpandedSubmission(null)}
+                                className="rounded-xl"
+                              >
+                                Cancelar
+                              </Button>
+                            </div>
+                          </div>
                         </div>
-                      </div>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-              </div>
-            );
-          })}
+                      )}
+                    </CardContent>
+                  </Card>
+                </div>
+              );
+            })
+          )}
         </div>
       </div>
     </ProfessorLayout>

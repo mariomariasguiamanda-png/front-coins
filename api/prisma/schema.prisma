@@ -121,6 +121,7 @@ model disciplinas {
   videoaulas                  videoaulas[]
   config_compra_pontos        config_compra_pontos?
   agenda_estudos              agenda_estudos[]
+  config_compra_pontos_historico config_compra_pontos_historico[]
 
   @@index([codigo], map: "idx_disciplinas_codigo")
 }
@@ -191,16 +192,17 @@ model professor_disciplina {
 }
 
 model professores {
-  id_professor         BigInt                 @id @default(autoincrement())
-  id_usuario           BigInt                 @unique
-  especialidade        String?                @db.VarChar(255)
-  foto_url             String?                @db.VarChar(500)
-  criado_em            DateTime?              @default(now()) @db.Timestamptz(6)
-  atividades           atividades[]
-  professor_disciplina professor_disciplina[]
-  usuarios             usuarios               @relation(fields: [id_usuario], references: [id_usuario], onDelete: Cascade, onUpdate: NoAction)
-  resumos              resumos[]
-  videoaulas           videoaulas[]
+  id_professor                   BigInt                           @id @default(autoincrement())
+  id_usuario                     BigInt                           @unique
+  especialidade                  String?                          @db.VarChar(255)
+  foto_url                       String?                          @db.VarChar(500)
+  criado_em                      DateTime?                        @default(now()) @db.Timestamptz(6)
+  atividades                     atividades[]
+  professor_disciplina           professor_disciplina[]
+  usuarios                       usuarios                         @relation(fields: [id_usuario], references: [id_usuario], onDelete: Cascade, onUpdate: NoAction)
+  resumos                        resumos[]
+  videoaulas                     videoaulas[]
+  config_compra_pontos_historico config_compra_pontos_historico[]
 }
 
 model resumos {
@@ -209,6 +211,8 @@ model resumos {
   id_professor  BigInt
   titulo        String         @db.VarChar(255)
   conteudo      String?
+  links         String[]       @default([])
+  anexos_urls   String[]       @default([])
   data_criacao  DateTime?      @default(now()) @db.Timestamptz(6)
   ativo         Boolean?       @default(true)
   disciplinas   disciplinas    @relation(fields: [id_disciplina], references: [id_disciplina], onDelete: Cascade, onUpdate: NoAction)
@@ -268,6 +272,7 @@ model turmas {
   id_turma   BigInt    @id @default(autoincrement())
   nome       String    @db.VarChar(255)
   descricao  String?
+  turno      String?   @db.VarChar(20)
   ano_letivo Int?
   semestre   Int?
   ativo      Boolean?  @default(true)
@@ -305,6 +310,7 @@ model videoaulas {
   id_disciplina    BigInt
   id_professor     BigInt
   titulo           String            @db.VarChar(255)
+  descricao        String?
   url_video        String?           @db.VarChar(500)
   duracao_segundos Int?
   data_criacao     DateTime?         @default(now()) @db.Timestamptz(6)
@@ -325,6 +331,7 @@ model questoes_atividade {
   alternativa_d             String?                     @db.VarChar(500)
   letra_correta             String?                     @db.VarChar(1) // 'A' | 'B' | 'C' | 'D', usada quando tipo = 'multipla'
   correta                   Boolean? // usada quando tipo = 'vf'
+  peso                      Int?                        @default(1)
   ordem                     Int?                        @default(0)
   criado_em                 DateTime?                   @default(now()) @db.Timestamptz(6)
   atividades                atividades                  @relation(fields: [id_atividade], references: [id_atividade], onDelete: Cascade, onUpdate: NoAction)
@@ -340,6 +347,7 @@ model respostas_atividade_aluno {
   id_aluno           BigInt
   resposta           String
   correta            Boolean?
+  pontuacao          Decimal?           @db.Decimal(5, 2) // pontos obtidos nessa questão (0 até o peso dela)
   criado_em          DateTime?          @default(now()) @db.Timestamptz(6)
   atividades         atividades         @relation(fields: [id_atividade], references: [id_atividade], onDelete: Cascade, onUpdate: NoAction)
   questoes_atividade questoes_atividade @relation(fields: [id_questao], references: [id_questao], onDelete: Cascade, onUpdate: NoAction)
@@ -400,4 +408,19 @@ model config_compra_pontos {
   preco_moedas_por_ponto Int?        @default(10)
   atualizado_em          DateTime?   @default(now()) @db.Timestamptz(6)
   disciplinas            disciplinas @relation(fields: [id_disciplina], references: [id_disciplina], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model config_compra_pontos_historico {
+  id              BigInt      @id @default(autoincrement())
+  id_disciplina   BigInt
+  id_professor    BigInt
+  preco_anterior  Int?
+  preco_novo      Int?
+  pontos_anterior Int?
+  pontos_novo     Int?
+  criado_em       DateTime?   @default(now()) @db.Timestamptz(6)
+  disciplinas     disciplinas @relation(fields: [id_disciplina], references: [id_disciplina], onDelete: Cascade, onUpdate: NoAction)
+  professores     professores @relation(fields: [id_professor], references: [id_professor], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([id_disciplina], map: "idx_config_historico_disciplina")
 }

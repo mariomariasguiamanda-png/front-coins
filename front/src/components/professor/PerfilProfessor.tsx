@@ -2,21 +2,18 @@ import { Button } from "@/components/ui/Button";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
-import { 
-  User, 
-  Mail, 
-  Phone, 
-  Building, 
+import {
+  User,
+  Mail,
+  Phone,
   School,
   Camera,
   Save,
   Lock,
   Shield,
-  MapPin,
   Calendar,
   BookOpen,
   Users,
-  Award,
   Eye,
   EyeOff,
   Upload
@@ -26,55 +23,85 @@ import { useState, useRef } from "react";
 interface ProfileData {
   readonly: {
     nomeCompleto: string;
-    matricula: string;
-    cpf: string;
     disciplinas: string[];
     turmas: string[];
     emailInstitucional: string;
-    dataAdmissao?: string;
-    departamento?: string;
+    cadastradoEm?: string | null;
   };
   editable: {
-    emailAlternativo: string;
     telefone: string;
-    senha: string;
-    foto: string;
-    endereco?: string;
-    biografia?: string;
+    especialidade: string;
+    foto: string | null;
   };
   stats?: {
-    totalAulas: number;
     totalAlunos: number;
-    mediaAvaliacoes: number;
   };
 }
 
-export function PerfilProfessor({ data }: { data: ProfileData }) {
+interface PerfilProfessorProps {
+  data: ProfileData;
+  onSave: (dados: { telefone: string; especialidade: string }) => Promise<void>;
+  onUploadFoto: (file: File) => Promise<void>;
+  onChangePassword: (senhaAtual: string, senhaNova: string) => Promise<void>;
+}
+
+export function PerfilProfessor({ data, onSave, onUploadFoto, onChangePassword }: PerfilProfessorProps) {
   const [showPassword, setShowPassword] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [editableData, setEditableData] = useState(data.editable);
+  const [senhaAtual, setSenhaAtual] = useState("");
+  const [senhaNova, setSenhaNova] = useState("");
+  const [senhaConfirmacao, setSenhaConfirmacao] = useState("");
+  const [erroSenha, setErroSenha] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleSave = () => {
-    // Implementar salvamento
-    setIsEditing(false);
+  const limparCamposSenha = () => {
+    setSenhaAtual("");
+    setSenhaNova("");
+    setSenhaConfirmacao("");
+    setErroSenha(null);
+  };
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      await onSave({ telefone: editableData.telefone, especialidade: editableData.especialidade });
+
+      if (senhaAtual || senhaNova || senhaConfirmacao) {
+        if (senhaNova.length < 6) {
+          setErroSenha("A nova senha precisa de pelo menos 6 caracteres");
+          setSaving(false);
+          return;
+        }
+        if (senhaNova !== senhaConfirmacao) {
+          setErroSenha("As senhas não coincidem");
+          setSaving(false);
+          return;
+        }
+        await onChangePassword(senhaAtual, senhaNova);
+        limparCamposSenha();
+      }
+
+      setIsEditing(false);
+    } catch (err: any) {
+      setErroSenha(err?.message ?? "Erro ao salvar perfil");
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleCancel = () => {
     setEditableData(data.editable);
+    limparCamposSenha();
     setIsEditing(false);
   };
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        const base64String = event.target?.result as string;
-        setEditableData({ ...editableData, foto: base64String });
-      };
-      reader.readAsDataURL(file);
-    }
+    if (!file) return;
+
+    await onUploadFoto(file);
   };
 
   const triggerFileInput = () => {
@@ -84,10 +111,10 @@ export function PerfilProfessor({ data }: { data: ProfileData }) {
   return (
     <div className="space-y-6 pb-8">
       {/* Hidden file input */}
-      <input 
+      <input
         ref={fileInputRef}
-        type="file" 
-        accept="image/*" 
+        type="file"
+        accept="image/*"
         onChange={handleFileSelect}
         className="hidden"
       />
@@ -99,17 +126,15 @@ export function PerfilProfessor({ data }: { data: ProfileData }) {
             <div className="relative">
               <div className="h-32 w-32 rounded-2xl border-4 border-white bg-white shadow-xl overflow-hidden">
                 <img
-                  src={editableData.foto || "/placeholder-avatar.png"}
+                  src={data.editable.foto || "/placeholder-avatar.png"}
                   alt="Foto de perfil"
                   className="h-full w-full object-cover"
                 />
               </div>
-              <button 
+              <button
                 type="button"
                 onClick={triggerFileInput}
-                className={`absolute bottom-0 right-0 h-10 w-10 rounded-full bg-violet-600 hover:bg-violet-700 text-white flex items-center justify-center shadow-lg transition-all ${
-                  isEditing ? "opacity-100" : "opacity-0 pointer-events-none"
-                }`}
+                className="absolute bottom-0 right-0 h-10 w-10 rounded-full bg-violet-600 hover:bg-violet-700 text-white flex items-center justify-center shadow-lg transition-all"
               >
                 <Camera className="h-5 w-5" />
               </button>
@@ -117,7 +142,7 @@ export function PerfilProfessor({ data }: { data: ProfileData }) {
 
             <div className="flex-1 md:mb-2">
               <h1 className="text-2xl md:text-3xl font-bold text-white">{data.readonly.nomeCompleto}</h1>
-              <p className="text-gray-900 mt-1">Professor(a) • Matrícula {data.readonly.matricula}</p>
+              <p className="text-gray-900 mt-1">Professor(a)</p>
               <div className="flex flex-wrap gap-2 mt-3">
                 {data.readonly.disciplinas.slice(0, 3).map((disciplina, idx) => (
                   <span
@@ -148,14 +173,16 @@ export function PerfilProfessor({ data }: { data: ProfileData }) {
                 <>
                   <Button
                     onClick={handleSave}
+                    disabled={saving}
                     className="rounded-xl bg-green-600 hover:bg-green-700"
                   >
                     <Save className="h-4 w-4 mr-2" />
-                    Salvar
+                    {saving ? "Salvando..." : "Salvar"}
                   </Button>
                   <Button
                     onClick={handleCancel}
                     variant="outline"
+                    disabled={saving}
                     className="rounded-xl"
                   >
                     Cancelar
@@ -170,20 +197,6 @@ export function PerfilProfessor({ data }: { data: ProfileData }) {
       {/* Cards de Estatísticas */}
       {data.stats && (
         <div className="grid gap-4 md:grid-cols-3">
-          <Card className="rounded-xl shadow-sm border-l-4 border-l-violet-500">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Total de Aulas</p>
-                  <p className="text-2xl font-bold text-gray-900 mt-1">{data.stats.totalAulas}</p>
-                </div>
-                <div className="h-10 w-10 rounded-lg bg-violet-100 flex items-center justify-center">
-                  <BookOpen className="h-5 w-5 text-violet-600" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
           <Card className="rounded-xl shadow-sm border-l-4 border-l-blue-500">
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
@@ -198,15 +211,29 @@ export function PerfilProfessor({ data }: { data: ProfileData }) {
             </CardContent>
           </Card>
 
+          <Card className="rounded-xl shadow-sm border-l-4 border-l-violet-500">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-600">Disciplinas</p>
+                  <p className="text-2xl font-bold text-gray-900 mt-1">{data.readonly.disciplinas.length}</p>
+                </div>
+                <div className="h-10 w-10 rounded-lg bg-violet-100 flex items-center justify-center">
+                  <BookOpen className="h-5 w-5 text-violet-600" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
           <Card className="rounded-xl shadow-sm border-l-4 border-l-amber-500">
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">Avaliação Média</p>
-                  <p className="text-2xl font-bold text-gray-900 mt-1">{data.stats.mediaAvaliacoes.toFixed(1)}</p>
+                  <p className="text-sm font-medium text-gray-600">Turmas</p>
+                  <p className="text-2xl font-bold text-gray-900 mt-1">{data.readonly.turmas.length}</p>
                 </div>
                 <div className="h-10 w-10 rounded-lg bg-amber-100 flex items-center justify-center">
-                  <Award className="h-5 w-5 text-amber-600" />
+                  <Users className="h-5 w-5 text-amber-600" />
                 </div>
               </div>
             </CardContent>
@@ -234,61 +261,22 @@ export function PerfilProfessor({ data }: { data: ProfileData }) {
                   <User className="h-4 w-4 text-gray-500" />
                   Nome Completo
                 </Label>
-                <Input 
-                  value={data.readonly.nomeCompleto} 
-                  disabled 
-                  className="rounded-xl mt-1 bg-gray-50" 
+                <Input
+                  value={data.readonly.nomeCompleto}
+                  disabled
+                  className="rounded-xl mt-1 bg-gray-50"
                 />
               </div>
-
-              <div className="grid gap-4 md:grid-cols-2">
-                <div>
-                  <Label className="text-sm font-medium text-gray-700 flex items-center gap-2">
-                    <Shield className="h-4 w-4 text-gray-500" />
-                    Matrícula
-                  </Label>
-                  <Input 
-                    value={data.readonly.matricula} 
-                    disabled 
-                    className="rounded-xl mt-1 bg-gray-50" 
-                  />
-                </div>
-                <div>
-                  <Label className="text-sm font-medium text-gray-700 flex items-center gap-2">
-                    <Shield className="h-4 w-4 text-gray-500" />
-                    CPF
-                  </Label>
-                  <Input 
-                    value={data.readonly.cpf} 
-                    disabled 
-                    className="rounded-xl mt-1 bg-gray-50" 
-                  />
-                </div>
-              </div>
-
-              {data.readonly.departamento && (
-                <div>
-                  <Label className="text-sm font-medium text-gray-700 flex items-center gap-2">
-                    <Building className="h-4 w-4 text-gray-500" />
-                    Departamento
-                  </Label>
-                  <Input 
-                    value={data.readonly.departamento} 
-                    disabled 
-                    className="rounded-xl mt-1 bg-gray-50" 
-                  />
-                </div>
-              )}
 
               <div>
                 <Label className="text-sm font-medium text-gray-700 flex items-center gap-2">
                   <BookOpen className="h-4 w-4 text-gray-500" />
                   Disciplinas
                 </Label>
-                <Input 
-                  value={data.readonly.disciplinas.join(", ")} 
-                  disabled 
-                  className="rounded-xl mt-1 bg-gray-50" 
+                <Input
+                  value={data.readonly.disciplinas.join(", ") || "Nenhuma disciplina vinculada"}
+                  disabled
+                  className="rounded-xl mt-1 bg-gray-50"
                 />
               </div>
 
@@ -297,10 +285,10 @@ export function PerfilProfessor({ data }: { data: ProfileData }) {
                   <Users className="h-4 w-4 text-gray-500" />
                   Turmas
                 </Label>
-                <Input 
-                  value={data.readonly.turmas.join(", ")} 
-                  disabled 
-                  className="rounded-xl mt-1 bg-gray-50" 
+                <Input
+                  value={data.readonly.turmas.join(", ") || "Nenhuma turma"}
+                  disabled
+                  className="rounded-xl mt-1 bg-gray-50"
                 />
               </div>
 
@@ -309,23 +297,23 @@ export function PerfilProfessor({ data }: { data: ProfileData }) {
                   <Mail className="h-4 w-4 text-gray-500" />
                   E-mail Institucional
                 </Label>
-                <Input 
-                  value={data.readonly.emailInstitucional} 
-                  disabled 
-                  className="rounded-xl mt-1 bg-gray-50" 
+                <Input
+                  value={data.readonly.emailInstitucional}
+                  disabled
+                  className="rounded-xl mt-1 bg-gray-50"
                 />
               </div>
 
-              {data.readonly.dataAdmissao && (
+              {data.readonly.cadastradoEm && (
                 <div>
                   <Label className="text-sm font-medium text-gray-700 flex items-center gap-2">
                     <Calendar className="h-4 w-4 text-gray-500" />
-                    Data de Admissão
+                    Cadastrado em
                   </Label>
-                  <Input 
-                    value={new Date(data.readonly.dataAdmissao).toLocaleDateString('pt-BR')} 
-                    disabled 
-                    className="rounded-xl mt-1 bg-gray-50" 
+                  <Input
+                    value={new Date(data.readonly.cadastradoEm).toLocaleDateString('pt-BR')}
+                    disabled
+                    className="rounded-xl mt-1 bg-gray-50"
                   />
                 </div>
               )}
@@ -349,24 +337,10 @@ export function PerfilProfessor({ data }: { data: ProfileData }) {
             <div className="space-y-4">
               <div>
                 <Label className="text-sm font-medium text-gray-700 flex items-center gap-2">
-                  <Mail className="h-4 w-4 text-gray-500" />
-                  E-mail Alternativo
-                </Label>
-                <Input 
-                  value={editableData.emailAlternativo}
-                  onChange={(e) => setEditableData({ ...editableData, emailAlternativo: e.target.value })}
-                  disabled={!isEditing}
-                  className={`rounded-xl mt-1 ${!isEditing ? 'bg-gray-50' : ''}`}
-                  placeholder="seu.email@gmail.com"
-                />
-              </div>
-
-              <div>
-                <Label className="text-sm font-medium text-gray-700 flex items-center gap-2">
                   <Phone className="h-4 w-4 text-gray-500" />
                   Telefone/WhatsApp
                 </Label>
-                <Input 
+                <Input
                   value={editableData.telefone}
                   onChange={(e) => setEditableData({ ...editableData, telefone: e.target.value })}
                   disabled={!isEditing}
@@ -375,37 +349,19 @@ export function PerfilProfessor({ data }: { data: ProfileData }) {
                 />
               </div>
 
-              {editableData.endereco !== undefined && (
-                <div>
-                  <Label className="text-sm font-medium text-gray-700 flex items-center gap-2">
-                    <MapPin className="h-4 w-4 text-gray-500" />
-                    Endereço
-                  </Label>
-                  <Input 
-                    value={editableData.endereco}
-                    onChange={(e) => setEditableData({ ...editableData, endereco: e.target.value })}
-                    disabled={!isEditing}
-                    className={`rounded-xl mt-1 ${!isEditing ? 'bg-gray-50' : ''}`}
-                    placeholder="Rua, número, bairro"
-                  />
-                </div>
-              )}
-
-              {editableData.biografia !== undefined && (
-                <div>
-                  <Label className="text-sm font-medium text-gray-700 flex items-center gap-2">
-                    <BookOpen className="h-4 w-4 text-gray-500" />
-                    Biografia
-                  </Label>
-                  <textarea
-                    value={editableData.biografia}
-                    onChange={(e) => setEditableData({ ...editableData, biografia: e.target.value })}
-                    disabled={!isEditing}
-                    className={`w-full px-3 py-2 rounded-xl border mt-1 min-h-[100px] ${!isEditing ? 'bg-gray-50' : 'bg-white'}`}
-                    placeholder="Conte um pouco sobre você..."
-                  />
-                </div>
-              )}
+              <div>
+                <Label className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                  <Shield className="h-4 w-4 text-gray-500" />
+                  Especialidade
+                </Label>
+                <Input
+                  value={editableData.especialidade}
+                  onChange={(e) => setEditableData({ ...editableData, especialidade: e.target.value })}
+                  disabled={!isEditing}
+                  className={`rounded-xl mt-1 ${!isEditing ? 'bg-gray-50' : ''}`}
+                  placeholder="Ex: Matemática e Física"
+                />
+              </div>
 
               <div>
                 <Label className="text-sm font-medium text-gray-700 flex items-center gap-2 mb-2">
@@ -414,9 +370,11 @@ export function PerfilProfessor({ data }: { data: ProfileData }) {
                 </Label>
                 <div className="space-y-3">
                   <div className="relative">
-                    <Input 
+                    <Input
                       type={showPassword ? "text" : "password"}
                       placeholder="Senha atual"
+                      value={senhaAtual}
+                      onChange={(e) => setSenhaAtual(e.target.value)}
                       disabled={!isEditing}
                       className={`rounded-xl ${!isEditing ? 'bg-gray-50' : ''}`}
                     />
@@ -432,18 +390,23 @@ export function PerfilProfessor({ data }: { data: ProfileData }) {
                   </div>
                   {isEditing && (
                     <>
-                      <Input 
+                      <Input
                         type={showPassword ? "text" : "password"}
                         placeholder="Nova senha"
+                        value={senhaNova}
+                        onChange={(e) => setSenhaNova(e.target.value)}
                         className="rounded-xl"
                       />
-                      <Input 
+                      <Input
                         type={showPassword ? "text" : "password"}
                         placeholder="Confirmar nova senha"
+                        value={senhaConfirmacao}
+                        onChange={(e) => setSenhaConfirmacao(e.target.value)}
                         className="rounded-xl"
                       />
                     </>
                   )}
+                  {erroSenha && <p className="text-sm text-red-600">{erroSenha}</p>}
                 </div>
               </div>
 
@@ -455,21 +418,19 @@ export function PerfilProfessor({ data }: { data: ProfileData }) {
                 <div className="mt-2 flex items-center gap-4">
                   <div className="h-16 w-16 rounded-xl bg-violet-100 overflow-hidden">
                     <img
-                      src={editableData.foto || "/placeholder-avatar.png"}
+                      src={data.editable.foto || "/placeholder-avatar.png"}
                       alt="Foto de perfil"
                       className="h-full w-full object-cover"
                     />
                   </div>
-                  {isEditing && (
-                    <Button 
-                      variant="outline" 
-                      className="rounded-xl"
-                      onClick={triggerFileInput}
-                    >
-                      <Upload className="h-4 w-4 mr-2" />
-                      Alterar foto
-                    </Button>
-                  )}
+                  <Button
+                    variant="outline"
+                    className="rounded-xl"
+                    onClick={triggerFileInput}
+                  >
+                    <Upload className="h-4 w-4 mr-2" />
+                    Alterar foto
+                  </Button>
                 </div>
               </div>
             </div>

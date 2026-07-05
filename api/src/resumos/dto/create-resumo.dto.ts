@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsNumberString, IsOptional, IsString } from 'class-validator';
+import { IsArray, IsNotEmpty, IsNumberString, IsOptional, IsString } from 'class-validator';
 
 export class CreateResumoDto {
   @IsNumberString()
@@ -11,4 +11,9 @@ export class CreateResumoDto {
   @IsOptional()
   @IsString()
   conteudo?: string;
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  links?: string[];
 }

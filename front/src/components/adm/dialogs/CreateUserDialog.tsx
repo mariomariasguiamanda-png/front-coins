@@ -28,6 +28,7 @@ interface CreateUserDialogProps {
     type: "student" | "teacher" | "admin";
     status: "active" | "inactive";
     password: string;
+    matricula?: string;
   }) => Promise<void>;
 }
 
@@ -42,6 +43,7 @@ export function CreateUserDialog({
     email: "",
     phone: "",
     type: "student" as "student" | "teacher" | "admin",
+    matricula: "",
     password: "",
     confirmPassword: "",
   });
@@ -78,6 +80,10 @@ export function CreateUserDialog({
       newErrors.confirmPassword = "Senhas não coincidem";
     }
 
+    if (formData.type === "student" && !formData.matricula.trim()) {
+      newErrors.matricula = "Matrícula é obrigatória para aluno";
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -98,6 +104,7 @@ export function CreateUserDialog({
         type: formData.type,
         status: "active", // 👈 sempre cria como ativo
         password: formData.password,
+        matricula: formData.type === "student" ? formData.matricula : undefined,
       });
       handleClose();
     } catch (error) {
@@ -119,6 +126,7 @@ export function CreateUserDialog({
       email: "",
       phone: "",
       type: "student",
+      matricula: "",
       password: "",
       confirmPassword: "",
     });
@@ -261,6 +269,32 @@ export function CreateUserDialog({
               </SelectContent>
             </Select>
           </div>
+
+          {/* Matrícula (só para aluno) */}
+          {formData.type === "student" && (
+            <div className="space-y-2">
+              <Label
+                htmlFor="matricula"
+                className="text-sm font-medium text-gray-700"
+              >
+                Matrícula *
+              </Label>
+              <Input
+                id="matricula"
+                placeholder="Ex: 2026001"
+                className={`bg-white ${
+                  errors.matricula ? "border-red-500" : ""
+                }`}
+                value={formData.matricula}
+                onChange={(e) =>
+                  setFormData({ ...formData, matricula: e.target.value })
+                }
+              />
+              {errors.matricula && (
+                <p className="text-sm text-red-600">{errors.matricula}</p>
+              )}
+            </div>
+          )}
 
           {/* Senha */}
           <div className="space-y-2">

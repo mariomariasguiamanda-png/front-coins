@@ -14,10 +14,14 @@ export class DesempenhoController {
   @Get('professor/desempenho')
   @Roles('professor')
   getDesempenho(
-    @Query('disciplina') disciplinaId: string,
+    @Query('disciplina') disciplinaId: string | undefined,
     @Query('turma') turmaId: string | undefined,
     @CurrentUser() user: AuthUser,
   ) {
+    if (!disciplinaId) {
+      return this.desempenhoService.getVisaoGeral(user);
+    }
+
     return this.desempenhoService.getDesempenho(
       BigInt(disciplinaId),
       turmaId ? BigInt(turmaId) : undefined,

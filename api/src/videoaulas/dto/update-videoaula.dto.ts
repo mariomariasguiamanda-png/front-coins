@@ -8,6 +8,10 @@ export class UpdateVideoaulaDto {
 
   @IsOptional()
   @IsString()
+  descricao?: string;
+
+  @IsOptional()
+  @IsString()
   url_video?: string;
 
   @IsOptional()

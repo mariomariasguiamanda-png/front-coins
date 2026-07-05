@@ -21,6 +21,10 @@ export class MoedasService {
       id_disciplina,
     );
 
+    const anterior = await this.db.config_compra_pontos.findUnique({ where: { id_disciplina } });
+    const preco_anterior = anterior?.preco_moedas_por_ponto ?? DEFAULT_PRECO_MOEDAS_POR_PONTO;
+    const pontos_anterior = anterior?.pontos_por_compra_max ?? DEFAULT_PONTOS_POR_COMPRA_MAX;
+
     const config = await this.db.config_compra_pontos.upsert({
       where: { id_disciplina },
       create: {
@@ -35,11 +39,89 @@ export class MoedasService {
       },
     });
 
+    await this.db.config_compra_pontos_historico.create({
+      data: {
+        id_disciplina,
+        id_professor: professor.id_professor as number,
+        preco_anterior,
+        preco_novo: config.preco_moedas_por_ponto,
+        pontos_anterior,
+        pontos_novo: config.pontos_por_compra_max,
+      },
+    });
+
     return {
       id_disciplina: Number(config.id_disciplina),
       pontos_por_compra_max: config.pontos_por_compra_max,
       preco_moedas_por_ponto: config.preco_moedas_por_ponto,
     };
+  }
+
+  async getConfigPrecosProfessor(professor: AuthUser) {
+    const vinculos = await this.db.professor_disciplina.findMany({
+      where: { id_professor: professor.id_professor as number },
+      include: { disciplinas: { select: { id_disciplina: true, nome: true } } },
+    });
+
+    return Promise.all(
+      vinculos.map(async (v) => {
+        const id_disciplina = v.disciplinas.id_disciplina;
+
+        const [config, totalAlunos, moedasCirculacao] = await Promise.all([
+          this.db.config_compra_pontos.findUnique({ where: { id_disciplina } }),
+          this.db.matriculas_aluno_disciplina.count({ where: { id_disciplina } }),
+          this.db.moedas_saldo.aggregate({
+            where: { id_disciplina },
+            _sum: { saldo: true },
+          }),
+        ]);
+
+        return {
+          id_disciplina: Number(id_disciplina),
+          nome: v.disciplinas.nome,
+          pontos_por_compra_max: config?.pontos_por_compra_max ?? DEFAULT_PONTOS_POR_COMPRA_MAX,
+          preco_moedas_por_ponto: config?.preco_moedas_por_ponto ?? DEFAULT_PRECO_MOEDAS_POR_PONTO,
+          total_alunos: totalAlunos,
+          moedas_circulacao: moedasCirculacao._sum.saldo ?? 0,
+        };
+      }),
+    );
+  }
+
+  async getHistoricoConfigPrecos(professor: AuthUser) {
+    const vinculos = await this.db.professor_disciplina.findMany({
+      where: { id_professor: professor.id_professor as number },
+      select: { id_disciplina: true },
+    });
+    const idsDisciplinas = vinculos.map((v) => v.id_disciplina);
+
+    const historico = await this.db.config_compra_pontos_historico.findMany({
+      where: { id_disciplina: { in: idsDisciplinas } },
+      include: {
+        disciplinas: { select: { nome: true } },
+        professores: { include: { usuarios: { select: { nome: true } } } },
+      },
+      orderBy: { criado_em: 'desc' },
+      take: 50,
+    });
+
+    return historico.map((h) => {
+      const partes: string[] = [];
+      if (h.preco_anterior !== h.preco_novo) {
+        partes.push(`Preço alterado de ${h.preco_anterior} para ${h.preco_novo} moedas`);
+      }
+      if (h.pontos_anterior !== h.pontos_novo) {
+        partes.push(`Pontos alterados de ${h.pontos_anterior} para ${h.pontos_novo}`);
+      }
+
+      return {
+        id: Number(h.id),
+        disciplina: h.disciplinas.nome,
+        alteracao: partes.length ? partes.join(' | ') : 'Configuração salva sem alteração de valores',
+        usuario: h.professores.usuarios.nome,
+        data: h.criado_em,
+      };
+    });
   }
 
   async getPrecoPontos(id_disciplina: bigint) {
@@ -105,6 +187,17 @@ export class MoedasService {
         id_disciplina: Number(t.id_disciplina),
       })),
     };
+  }
+
+  // Mesmo cálculo usado no ranking (soma só dos créditos em transacoes_moedas),
+  // para que o total exibido na dashboard do aluno bata com o total exibido no ranking.
+  async getTotalGanho(id_aluno: number) {
+    const totalGanho = await this.db.transacoes_moedas.aggregate({
+      where: { id_aluno, quantidade: { gt: 0 } },
+      _sum: { quantidade: true },
+    });
+
+    return { total_moedas_historico: totalGanho._sum.quantidade ?? 0 };
   }
 
   async getRanking(id_turma: bigint) {

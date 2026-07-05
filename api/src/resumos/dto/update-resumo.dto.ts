@@ -1,4 +1,4 @@
-import { IsBoolean, IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import { IsArray, IsBoolean, IsNotEmpty, IsOptional, IsString } from 'class-validator';
 
 export class UpdateResumoDto {
   @IsOptional()
@@ -9,6 +9,11 @@ export class UpdateResumoDto {
   @IsOptional()
   @IsString()
   conteudo?: string;
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  links?: string[];
 
   @IsOptional()
   @IsBoolean()

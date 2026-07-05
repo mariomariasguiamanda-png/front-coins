@@ -63,3 +63,5 @@ report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 !/uploads/avatars/.gitkeep
 /uploads/suporte-anexos/*
 !/uploads/suporte-anexos/.gitkeep
+/uploads/resumos/*
+!/uploads/resumos/.gitkeep

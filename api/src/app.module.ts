@@ -22,6 +22,7 @@ import { MatriculasModule } from './matriculas/matriculas.module';
 import { SuporteModule } from './suporte/suporte.module';
 import { LogsModule } from './logs/logs.module';
 import { AgendaEstudosModule } from './agenda-estudos/agenda-estudos.module';
+import { DashboardModule } from './dashboard/dashboard.module';
 
 @Module({
   imports: [
@@ -51,6 +52,7 @@ import { AgendaEstudosModule } from './agenda-estudos/agenda-estudos.module';
     SuporteModule,
     LogsModule,
     AgendaEstudosModule,
+    DashboardModule,
   ],
   controllers: [AppController],
   providers: [AppService],

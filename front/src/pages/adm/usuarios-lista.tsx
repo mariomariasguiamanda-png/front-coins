@@ -47,6 +47,7 @@ import {
   Calendar,
 } from "lucide-react";
 import { toast } from "sonner";
+import { api } from "@/lib/api";
 
 type UserType = "student" | "teacher" | "admin";
 
@@ -471,6 +472,12 @@ export default function UsuariosListaPage() {
     toast.success(`${filtered.length} usuários exportados com sucesso!`);
   };
 
+  const tipoUsuarioParaApi = (type: UserType) => {
+    if (type === "student") return "aluno";
+    if (type === "teacher") return "professor";
+    return "admin";
+  };
+
   const handleCreateUser = async (data: {
     name: string;
     email: string;
@@ -478,33 +485,23 @@ export default function UsuariosListaPage() {
     type: UserType;
     status: "active" | "inactive";
     password: string;
+    matricula?: string;
   }) => {
     try {
-      const resp = await fetch("/api/admin/users", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
+      const created = await api.post("/admin/usuarios", {
+        nome: data.name,
+        email: data.email,
+        telefone: data.phone,
+        senha: data.password,
+        tipo_usuario: tipoUsuarioParaApi(data.type),
+        matricula: data.matricula,
       });
-
-      const body = await resp.json().catch(() => ({} as any));
-
-      if (!resp.ok) {
-        if (
-          body?.error ===
-          "A user with this email address has already been registered"
-        ) {
-          throw new Error("Já existe um usuário cadastrado com este e-mail.");
-        }
-
-        throw new Error(body?.error || "Erro ao criar usuário");
-      }
-      const createdId = body?.user?.id || body?.id || crypto.randomUUID();
 
       // Atualiza a lista local para refletir imediatamente na UI
       setUsers((prev) => [
         ...prev,
         {
-          id: createdId,
+          id: String(created.id_usuario),
           name: data.name,
           email: data.email,
           phone: data.phone,

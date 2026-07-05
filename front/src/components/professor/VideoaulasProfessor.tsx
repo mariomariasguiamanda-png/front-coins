@@ -4,6 +4,13 @@ import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
 import { Textarea } from "@/components/ui/textarea";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -11,9 +18,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { 
-  PlayCircle, 
-  Upload, 
+import {
+  PlayCircle,
   Youtube,
   Plus,
   Edit2,
@@ -22,55 +28,89 @@ import {
   Eye,
   Clock,
   Search,
-  Filter,
   TrendingUp,
   Users,
-  ThumbsUp,
-  ExternalLink,
   AlertTriangle,
   Save,
   Play,
   BarChart3,
   CheckCircle2,
-  X
+  BookOpen,
 } from "lucide-react";
-import { useState, useRef } from "react";
+import { useState } from "react";
+
+interface StudentView {
+  id: number;
+  name: string;
+  watchedAt: string | null;
+  completed: boolean;
+  progress: number;
+  timeWatchedSegundos: number;
+}
 
 interface VideoLesson {
   id: string;
   title: string;
   description: string;
   youtubeUrl?: string;
-  videoFile?: string;
-  thumbnail?: string;
   discipline: string;
+  id_disciplina: string;
   createdAt: string;
   views: number;
-  duration?: string;
-  likes?: number;
-  status?: "published" | "draft" | "scheduled";
-  studentsWatched?: StudentView[];
+  durationSegundos: number;
+  studentsWatched: StudentView[];
 }
 
-interface StudentView {
+interface DisciplinaOption {
   id: string;
-  name: string;
-  avatar?: string;
-  watchedAt: string;
-  completed: boolean;
-  progress: number;
-  timeWatched: string;
+  nome: string;
 }
 
 interface VideoaulasProfessorProps {
   lessons: VideoLesson[];
-  onCreateLesson: (lesson: Omit<VideoLesson, "id" | "createdAt" | "views">) => void;
-  onEditLesson: (id: string, lesson: Partial<VideoLesson>) => void;
-  onDeleteLesson: (id: string) => void;
+  disciplinas: DisciplinaOption[];
+  onCreateLesson: (dados: {
+    titulo: string;
+    descricao: string;
+    id_disciplina: string;
+    url_video?: string;
+    duracao_segundos?: number;
+  }) => Promise<void>;
+  onEditLesson: (
+    id: string,
+    dados: { titulo: string; descricao: string; url_video?: string; duracao_segundos?: number }
+  ) => Promise<void>;
+  onDeleteLesson: (id: string) => Promise<void>;
 }
+
+const extractYouTubeVideoId = (url?: string): string | null => {
+  if (!url) return null;
+  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+  const match = url.match(regExp);
+  return match && match[2].length === 11 ? match[2] : null;
+};
+
+const getThumbnailUrl = (url?: string): string | null => {
+  const id = extractYouTubeVideoId(url);
+  return id ? `https://img.youtube.com/vi/${id}/hqdefault.jpg` : null;
+};
+
+const formatDuration = (segundos: number): string => {
+  const m = Math.floor(segundos / 60);
+  const s = segundos % 60;
+  return `${m}:${s.toString().padStart(2, "0")}`;
+};
+
+const parseDuration = (texto: string): number | undefined => {
+  if (!texto.trim()) return undefined;
+  const [m, s] = texto.split(":").map((n) => Number(n));
+  if (Number.isNaN(m)) return undefined;
+  return m * 60 + (Number.isNaN(s) ? 0 : s);
+};
 
 export function VideoaulasProfessor({
   lessons = [],
+  disciplinas = [],
   onCreateLesson,
   onEditLesson,
   onDeleteLesson,
@@ -82,11 +122,7 @@ export function VideoaulasProfessor({
   const [previewingLesson, setPreviewingLesson] = useState<VideoLesson | null>(null);
   const [filterDiscipline, setFilterDiscipline] = useState<string>("todas");
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedVideo, setSelectedVideo] = useState<File | null>(null);
-  const [selectedThumbnail, setSelectedThumbnail] = useState<File | null>(null);
-  const formRef = useRef<HTMLFormElement>(null);
 
-  // Filtrar videoaulas
   const filteredLessons = lessons.filter(lesson => {
     const matchesSearch = lesson.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          lesson.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -95,85 +131,14 @@ export function VideoaulasProfessor({
     return matchesSearch && matchesFilter;
   });
 
-  // Estatísticas
   const stats = {
     total: lessons.length,
     totalViews: lessons.reduce((acc, lesson) => acc + lesson.views, 0),
     avgViews: lessons.length > 0 ? Math.round(lessons.reduce((acc, lesson) => acc + lesson.views, 0) / lessons.length) : 0,
-    totalLikes: lessons.reduce((acc, lesson) => acc + (lesson.likes || 0), 0),
+    disciplinas: new Set(lessons.map(l => l.discipline)).size,
   };
 
-  // Disciplinas únicas
-  const disciplines = ["todas", ...Array.from(new Set(lessons.map(l => l.discipline)))];
-
-  const getStatusConfig = (status?: string) => {
-    switch(status) {
-      case "published":
-        return { color: "text-green-700 bg-green-100 border-green-200", label: "Publicado" };
-      case "draft":
-        return { color: "text-gray-700 bg-gray-100 border-gray-200", label: "Rascunho" };
-      case "scheduled":
-        return { color: "text-blue-700 bg-blue-100 border-blue-200", label: "Agendado" };
-      default:
-        return { color: "text-green-700 bg-green-100 border-green-200", label: "Publicado" };
-    }
-  };
-
-  const extractYouTubeVideoId = (url: string): string | null => {
-    if (!url) return null;
-    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
-    const match = url.match(regExp);
-    return (match && match[2].length === 11) ? match[2] : null;
-  };
-
-  const handleVideoSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      setSelectedVideo(file);
-    }
-  };
-
-  const handleThumbnailSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      setSelectedThumbnail(file);
-    }
-  };
-
-  const triggerVideoInput = () => {
-    const videoInput = document.getElementById('video-input') as HTMLInputElement;
-    videoInput?.click();
-  };
-
-  const triggerThumbnailInput = () => {
-    const thumbnailInput = document.getElementById('thumbnail-input') as HTMLInputElement;
-    thumbnailInput?.click();
-  };
-
-  const handleSaveDraft = () => {
-    if (formRef.current) {
-      const formData = new FormData(formRef.current);
-      const title = formData.get('title') as string;
-      
-      // Só salva se pelo menos o título estiver preenchido
-      if (title.trim()) {
-        onCreateLesson({
-          title,
-          description: formData.get('description') as string || '',
-          discipline: formData.get('discipline') as string || '',
-          youtubeUrl: formData.get('youtubeUrl') as string || undefined,
-          videoFile: selectedVideo?.name,
-          thumbnail: selectedThumbnail?.name,
-          status: 'draft',
-        });
-        setSelectedVideo(null);
-        setSelectedThumbnail(null);
-        setShowCreateForm(false);
-      } else {
-        alert('Por favor, preencha pelo menos o título para salvar como rascunho.');
-      }
-    }
-  };
+  const filterOptions = ["todas", ...Array.from(new Set(lessons.map(l => l.discipline)))];
 
   return (
     <div className="space-y-6 pb-8">
@@ -183,7 +148,7 @@ export function VideoaulasProfessor({
           <h1 className="text-3xl font-bold text-gray-900">Videoaulas</h1>
           <p className="text-gray-600 mt-1">Gerencie as videoaulas das suas disciplinas</p>
         </div>
-        <Button 
+        <Button
           onClick={() => setShowCreateForm(!showCreateForm)}
           className="rounded-xl bg-violet-600 hover:bg-violet-700"
         >
@@ -236,15 +201,15 @@ export function VideoaulasProfessor({
           </CardContent>
         </Card>
 
-        <Card className="rounded-xl shadow-sm border-l-4 border-l-pink-500">
+        <Card className="rounded-xl shadow-sm border-l-4 border-l-amber-500">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Curtidas</p>
-                <p className="text-2xl font-bold text-gray-900 mt-1">{stats.totalLikes}</p>
+                <p className="text-sm font-medium text-gray-600">Disciplinas</p>
+                <p className="text-2xl font-bold text-gray-900 mt-1">{stats.disciplinas}</p>
               </div>
-              <div className="h-10 w-10 rounded-lg bg-pink-100 flex items-center justify-center">
-                <ThumbsUp className="h-5 w-5 text-pink-600" />
+              <div className="h-10 w-10 rounded-lg bg-amber-100 flex items-center justify-center">
+                <BookOpen className="h-5 w-5 text-amber-600" />
               </div>
             </div>
           </CardContent>
@@ -265,8 +230,8 @@ export function VideoaulasProfessor({
                   <p className="text-sm text-gray-500">Adicione um novo vídeo educativo</p>
                 </div>
               </div>
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 onClick={() => setShowCreateForm(false)}
                 className="rounded-xl"
               >
@@ -274,48 +239,48 @@ export function VideoaulasProfessor({
               </Button>
             </div>
 
-            <form ref={formRef} className="space-y-4" onSubmit={(e) => {
+            <form className="space-y-4" onSubmit={async (e) => {
               e.preventDefault();
               const formData = new FormData(e.currentTarget);
-              onCreateLesson({
-                title: formData.get('title') as string,
-                description: formData.get('description') as string,
-                discipline: formData.get('discipline') as string,
-                youtubeUrl: formData.get('youtubeUrl') as string || undefined,
-                videoFile: selectedVideo?.name,
-                thumbnail: selectedThumbnail?.name,
-                status: 'published',
+              await onCreateLesson({
+                titulo: formData.get('titulo') as string,
+                descricao: formData.get('descricao') as string,
+                id_disciplina: formData.get('id_disciplina') as string,
+                url_video: (formData.get('url_video') as string) || undefined,
+                duracao_segundos: parseDuration((formData.get('duracao') as string) ?? ""),
               });
-              setSelectedVideo(null);
-              setSelectedThumbnail(null);
               setShowCreateForm(false);
             }}>
               <div className="grid gap-4 md:grid-cols-2">
                 <div>
                   <Label className="text-sm font-medium text-gray-700">Título</Label>
-                  <Input 
-                    name="title"
-                    placeholder="Ex: Introdução à Trigonometria" 
+                  <Input
+                    name="titulo"
+                    placeholder="Ex: Introdução à Trigonometria"
                     className="rounded-xl mt-1"
                     required
                   />
                 </div>
                 <div>
                   <Label className="text-sm font-medium text-gray-700">Disciplina</Label>
-                  <Input 
-                    name="discipline"
-                    placeholder="Ex: Matemática" 
-                    className="rounded-xl mt-1"
-                    required
-                  />
+                  <Select name="id_disciplina" required>
+                    <SelectTrigger className="rounded-xl mt-1 bg-white">
+                      <SelectValue placeholder="Selecione a disciplina" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {disciplinas.map((d) => (
+                        <SelectItem key={d.id} value={d.id}>{d.nome}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
 
               <div>
                 <Label className="text-sm font-medium text-gray-700">Descrição</Label>
-                <Textarea 
-                  name="description"
-                  placeholder="Descreva o conteúdo e objetivos da videoaula..." 
+                <Textarea
+                  name="descricao"
+                  placeholder="Descreva o conteúdo e objetivos da videoaula..."
                   className="min-h-[120px] rounded-xl mt-1"
                   required
                 />
@@ -325,93 +290,31 @@ export function VideoaulasProfessor({
                 <div>
                   <Label className="text-sm font-medium text-gray-700">Link do YouTube</Label>
                   <div className="flex gap-2 mt-1">
-                    <Input 
-                      name="youtubeUrl"
-                      placeholder="https://youtube.com/watch?v=..." 
-                      className="rounded-xl" 
-                    />
-                    <Button 
-                      type="button"
-                      variant="outline" 
-                      size="sm" 
+                    <Input
+                      name="url_video"
+                      placeholder="https://youtube.com/watch?v=..."
                       className="rounded-xl"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="rounded-xl"
+                      tabIndex={-1}
                     >
                       <Youtube className="h-4 w-4 text-red-600" />
                     </Button>
                   </div>
-                  <p className="text-xs text-gray-500 mt-1">Cole o link de um vídeo do YouTube</p>
+                  <p className="text-xs text-gray-500 mt-1">A thumbnail é obtida direto do YouTube</p>
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-gray-700">Ou faça upload</Label>
-                  <div className="space-y-2">
-                    <input
-                      id="video-input"
-                      type="file"
-                      accept="video/mp4,video/avi,video/mov,video/mkv"
-                      onChange={handleVideoSelect}
-                      className="hidden"
-                    />
-                    <Button 
-                      type="button"
-                      variant="outline" 
-                      onClick={triggerVideoInput}
-                      className="w-full rounded-xl mt-1"
-                    >
-                      <Upload className="h-4 w-4 mr-2" /> 
-                      Selecionar vídeo local
-                    </Button>
-                    {selectedVideo && (
-                      <div className="flex items-center justify-between text-sm bg-gray-50 p-2 rounded-lg">
-                        <span className="text-gray-700">{selectedVideo.name}</span>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setSelectedVideo(null)}
-                          className="h-6 w-6 p-0 text-red-500 hover:bg-red-50"
-                        >
-                          ×
-                        </Button>
-                      </div>
-                    )}
-                  </div>
-                  <p className="text-xs text-gray-500 mt-1">Formatos: MP4, AVI, MOV (max 500MB)</p>
-                </div>
-              </div>
-
-              <div>
-                <Label className="text-sm font-medium text-gray-700">Thumbnail (opcional)</Label>
-                <div className="space-y-2">
-                  <input
-                    id="thumbnail-input"
-                    type="file"
-                    accept="image/jpeg,image/jpg,image/png,image/webp"
-                    onChange={handleThumbnailSelect}
-                    className="hidden"
+                  <Label className="text-sm font-medium text-gray-700">Duração</Label>
+                  <Input
+                    name="duracao"
+                    placeholder="Ex: 18:24"
+                    className="rounded-xl mt-1"
                   />
-                  <Button 
-                    type="button"
-                    variant="outline" 
-                    onClick={triggerThumbnailInput}
-                    className="w-full rounded-xl mt-1"
-                  >
-                    <Upload className="h-4 w-4 mr-2" /> 
-                    Selecionar imagem de capa
-                  </Button>
-                  {selectedThumbnail && (
-                    <div className="flex items-center justify-between text-sm bg-gray-50 p-2 rounded-lg">
-                      <span className="text-gray-700">{selectedThumbnail.name}</span>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setSelectedThumbnail(null)}
-                        className="h-6 w-6 p-0 text-red-500 hover:bg-red-50"
-                      >
-                        ×
-                      </Button>
-                    </div>
-                  )}
+                  <p className="text-xs text-gray-500 mt-1">Formato minutos:segundos</p>
                 </div>
               </div>
 
@@ -419,15 +322,6 @@ export function VideoaulasProfessor({
                 <Button type="submit" className="rounded-xl bg-violet-600 hover:bg-violet-700">
                   <PlayCircle className="h-4 w-4 mr-2" />
                   Publicar Videoaula
-                </Button>
-                <Button 
-                  type="button"
-                  variant="outline" 
-                  onClick={handleSaveDraft}
-                  className="rounded-xl"
-                >
-                  <Save className="h-4 w-4 mr-2" />
-                  Salvar como Rascunho
                 </Button>
               </div>
             </form>
@@ -439,7 +333,6 @@ export function VideoaulasProfessor({
       <Card className="rounded-xl shadow-sm">
         <CardContent className="p-4">
           <div className="flex flex-col gap-4">
-            {/* Busca */}
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
               <Input
@@ -449,11 +342,10 @@ export function VideoaulasProfessor({
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
-            
-            {/* Filtros em Pills */}
+
             <div className="flex items-center gap-2 flex-wrap">
               <span className="text-sm font-medium text-gray-700">Disciplina:</span>
-              {disciplines.map((discipline) => (
+              {filterOptions.map((discipline) => (
                 <button
                   key={discipline}
                   onClick={() => setFilterDiscipline(discipline)}
@@ -481,7 +373,7 @@ export function VideoaulasProfessor({
                 <Video className="h-12 w-12 text-gray-300 mx-auto mb-4" />
                 <h3 className="text-lg font-semibold text-gray-900 mb-2">Nenhuma videoaula encontrada</h3>
                 <p className="text-gray-600">
-                  {searchTerm || filterDiscipline !== "todas" 
+                  {searchTerm || filterDiscipline !== "todas"
                     ? "Tente ajustar os filtros de busca"
                     : "Comece criando sua primeira videoaula"
                   }
@@ -491,15 +383,14 @@ export function VideoaulasProfessor({
           </div>
         ) : (
           filteredLessons.map((lesson) => {
-            const statusConfig = getStatusConfig(lesson.status);
+            const thumbnail = getThumbnailUrl(lesson.youtubeUrl);
 
             return (
               <Card key={lesson.id} className="rounded-xl shadow-sm hover:shadow-lg transition-shadow group">
-                {/* Thumbnail */}
                 <div className="relative aspect-video w-full overflow-hidden rounded-t-xl bg-gradient-to-br from-violet-100 to-blue-100">
-                  {lesson.thumbnail ? (
+                  {thumbnail ? (
                     <img
-                      src={lesson.thumbnail}
+                      src={thumbnail}
                       alt={lesson.title}
                       className="h-full w-full object-cover"
                     />
@@ -511,14 +402,9 @@ export function VideoaulasProfessor({
                   <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                     <PlayCircle className="h-16 w-16 text-white" />
                   </div>
-                  {lesson.duration && (
+                  {lesson.durationSegundos > 0 && (
                     <div className="absolute bottom-2 right-2 px-2 py-1 rounded-lg bg-black/70 text-white text-xs font-semibold">
-                      {lesson.duration}
-                    </div>
-                  )}
-                  {lesson.status && (
-                    <div className={`absolute top-2 left-2 px-2.5 py-1 rounded-full text-xs font-semibold border ${statusConfig.color}`}>
-                      {statusConfig.label}
+                      {formatDuration(lesson.durationSegundos)}
                     </div>
                   )}
                 </div>
@@ -537,39 +423,31 @@ export function VideoaulasProfessor({
                     {lesson.description}
                   </p>
 
-                  {/* Métricas */}
                   <div className="flex items-center gap-4 mb-4 pb-4 border-b text-sm text-gray-600">
                     <div className="flex items-center gap-1.5">
                       <Eye className="h-4 w-4" />
                       <span>{lesson.views}</span>
                     </div>
-                    {lesson.likes !== undefined && (
-                      <div className="flex items-center gap-1.5">
-                        <ThumbsUp className="h-4 w-4" />
-                        <span>{lesson.likes}</span>
-                      </div>
-                    )}
                     <div className="flex items-center gap-1.5 ml-auto">
                       <Clock className="h-4 w-4" />
                       <span>{new Date(lesson.createdAt).toLocaleDateString('pt-BR')}</span>
                     </div>
                   </div>
 
-                  {/* Ações */}
                   <div className="flex flex-col gap-2">
                     <div className="flex gap-2">
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
+                      <Button
+                        variant="outline"
+                        size="sm"
                         className="rounded-xl flex-1"
                         onClick={() => setPreviewingLesson(lesson)}
                       >
                         <Play className="h-4 w-4 mr-1.5" />
                         Preview
                       </Button>
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
+                      <Button
+                        variant="outline"
+                        size="sm"
                         className="rounded-xl flex-1"
                         onClick={() => setViewingStats(lesson)}
                       >
@@ -579,15 +457,15 @@ export function VideoaulasProfessor({
                     </div>
                     <div className="flex gap-2">
                       {lesson.youtubeUrl && (
-                        <a 
-                          href={lesson.youtubeUrl} 
-                          target="_blank" 
+                        <a
+                          href={lesson.youtubeUrl}
+                          target="_blank"
                           rel="noopener noreferrer"
                           className="flex-1"
                         >
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
+                          <Button
+                            variant="outline"
+                            size="sm"
                             className="rounded-xl w-full"
                           >
                             <Youtube className="h-4 w-4 mr-1.5 text-red-600" />
@@ -595,9 +473,9 @@ export function VideoaulasProfessor({
                           </Button>
                         </a>
                       )}
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
+                      <Button
+                        variant="outline"
+                        size="sm"
                         className="rounded-xl"
                         onClick={() => setEditingLesson(lesson)}
                       >
@@ -634,47 +512,32 @@ export function VideoaulasProfessor({
               </div>
             </div>
 
-            <form className="space-y-4" onSubmit={(e) => {
+            <form className="space-y-4" onSubmit={async (e) => {
               e.preventDefault();
               const formData = new FormData(e.currentTarget);
-              onEditLesson(editingLesson.id, {
-                title: formData.get('title') as string,
-                description: formData.get('description') as string,
-                discipline: formData.get('discipline') as string,
-                youtubeUrl: formData.get('youtubeUrl') as string,
-                duration: formData.get('duration') as string,
+              await onEditLesson(editingLesson.id, {
+                titulo: formData.get('titulo') as string,
+                descricao: formData.get('descricao') as string,
+                url_video: (formData.get('url_video') as string) || undefined,
+                duracao_segundos: parseDuration((formData.get('duracao') as string) ?? ""),
               });
               setEditingLesson(null);
             }}>
-              <div className="grid gap-4 md:grid-cols-2">
-                <div>
-                  <Label className="text-sm font-medium text-gray-700">Título da Aula</Label>
-                  <Input
-                    name="title"
-                    defaultValue={editingLesson.title}
-                    placeholder="Ex: Introdução à Trigonometria"
-                    className="rounded-xl mt-1"
-                    required
-                  />
-                </div>
-                <div>
-                  <Label className="text-sm font-medium text-gray-700">Disciplina</Label>
-                  <Input
-                    name="discipline"
-                    defaultValue={editingLesson.discipline}
-                    placeholder="Ex: Matemática"
-                    className="rounded-xl mt-1"
-                    required
-                  />
-                </div>
+              <div>
+                <Label className="text-sm font-medium text-gray-700">Título da Aula</Label>
+                <Input
+                  name="titulo"
+                  defaultValue={editingLesson.title}
+                  className="rounded-xl mt-1"
+                  required
+                />
               </div>
 
               <div>
                 <Label className="text-sm font-medium text-gray-700">Descrição</Label>
                 <Textarea
-                  name="description"
+                  name="descricao"
                   defaultValue={editingLesson.description}
-                  placeholder="Descreva o conteúdo da aula, objetivos, tópicos abordados..."
                   className="rounded-xl mt-1"
                   rows={3}
                   required
@@ -685,7 +548,7 @@ export function VideoaulasProfessor({
                 <div>
                   <Label className="text-sm font-medium text-gray-700">Link do YouTube</Label>
                   <Input
-                    name="youtubeUrl"
+                    name="url_video"
                     defaultValue={editingLesson.youtubeUrl}
                     placeholder="https://youtube.com/watch?v=..."
                     className="rounded-xl mt-1"
@@ -694,8 +557,8 @@ export function VideoaulasProfessor({
                 <div>
                   <Label className="text-sm font-medium text-gray-700">Duração</Label>
                   <Input
-                    name="duration"
-                    defaultValue={editingLesson.duration}
+                    name="duracao"
+                    defaultValue={formatDuration(editingLesson.durationSegundos)}
                     placeholder="Ex: 18:24"
                     className="rounded-xl mt-1"
                   />
@@ -707,9 +570,9 @@ export function VideoaulasProfessor({
                   <Save className="h-4 w-4 mr-2" />
                   Salvar Alterações
                 </Button>
-                <Button 
+                <Button
                   type="button"
-                  variant="outline" 
+                  variant="outline"
                   className="rounded-xl"
                   onClick={() => setEditingLesson(null)}
                 >
@@ -732,7 +595,7 @@ export function VideoaulasProfessor({
               <DialogTitle className="text-xl text-gray-900">Excluir Videoaula?</DialogTitle>
             </div>
             <DialogDescription className="text-base text-gray-600 pt-2">
-              Tem certeza que deseja excluir esta videoaula? Esta ação não pode ser desfeita e o conteúdo será perdido permanentemente.
+              Tem certeza que deseja excluir esta videoaula? Ela deixará de aparecer para os alunos.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="gap-2 sm:gap-2">
@@ -744,9 +607,9 @@ export function VideoaulasProfessor({
               Cancelar
             </Button>
             <Button
-              onClick={() => {
+              onClick={async () => {
                 if (deletingLessonId) {
-                  onDeleteLesson(deletingLessonId);
+                  await onDeleteLesson(deletingLessonId);
                   setDeletingLessonId(null);
                 }
               }}
@@ -775,9 +638,8 @@ export function VideoaulasProfessor({
               </div>
             </div>
           </DialogHeader>
-          
+
           <div className="flex-1 overflow-y-auto max-h-[calc(85vh-180px)] space-y-6 py-4">
-            {/* Estatísticas Gerais */}
             <div className="grid gap-4 md:grid-cols-3">
               <Card className="rounded-xl shadow-sm border-l-4 border-l-blue-500">
                 <CardContent className="p-4">
@@ -799,7 +661,7 @@ export function VideoaulasProfessor({
                     <div>
                       <p className="text-sm font-medium text-gray-600">Alunos que Assistiram</p>
                       <p className="text-2xl font-bold text-gray-900 mt-1">
-                        {viewingStats?.studentsWatched?.length || 0}
+                        {viewingStats?.studentsWatched.length || 0}
                       </p>
                     </div>
                     <div className="h-10 w-10 rounded-lg bg-green-100 flex items-center justify-center">
@@ -815,7 +677,7 @@ export function VideoaulasProfessor({
                     <div>
                       <p className="text-sm font-medium text-gray-600">Taxa de Conclusão</p>
                       <p className="text-2xl font-bold text-gray-900 mt-1">
-                        {viewingStats?.studentsWatched 
+                        {viewingStats?.studentsWatched.length
                           ? Math.round((viewingStats.studentsWatched.filter(s => s.completed).length / viewingStats.studentsWatched.length) * 100)
                           : 0}%
                       </p>
@@ -828,14 +690,13 @@ export function VideoaulasProfessor({
               </Card>
             </div>
 
-            {/* Lista de Alunos */}
             <div>
               <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
                 <Users className="h-5 w-5 text-violet-600" />
-                Alunos que Assistiram ({viewingStats?.studentsWatched?.length || 0})
+                Alunos que Assistiram ({viewingStats?.studentsWatched.length || 0})
               </h3>
-              
-              {viewingStats?.studentsWatched && viewingStats.studentsWatched.length > 0 ? (
+
+              {viewingStats && viewingStats.studentsWatched.length > 0 ? (
                 <div className="space-y-3">
                   {viewingStats.studentsWatched.map((student) => (
                     <Card key={student.id} className="rounded-xl shadow-sm hover:shadow-md transition-shadow">
@@ -857,24 +718,25 @@ export function VideoaulasProfessor({
                             <div className="flex items-center gap-4 text-sm text-gray-600">
                               <div className="flex items-center gap-1">
                                 <Clock className="h-4 w-4" />
-                                <span>Assistiu {student.timeWatched}</span>
+                                <span>Assistiu {formatDuration(student.timeWatchedSegundos)}</span>
                               </div>
                               <div className="flex items-center gap-1">
                                 <Eye className="h-4 w-4" />
                                 <span>Progresso: {student.progress}%</span>
                               </div>
                             </div>
-                            {/* Barra de progresso */}
                             <div className="mt-2 h-2 bg-gray-200 rounded-full overflow-hidden">
-                              <div 
+                              <div
                                 className="h-full bg-gradient-to-r from-violet-500 to-blue-500 rounded-full transition-all"
                                 style={{ width: `${student.progress}%` }}
                               />
                             </div>
                           </div>
-                          <div className="text-xs text-gray-500">
-                            {new Date(student.watchedAt).toLocaleDateString('pt-BR')}
-                          </div>
+                          {student.watchedAt && (
+                            <div className="text-xs text-gray-500">
+                              {new Date(student.watchedAt).toLocaleDateString('pt-BR')}
+                            </div>
+                          )}
                         </div>
                       </CardContent>
                     </Card>
@@ -919,10 +781,9 @@ export function VideoaulasProfessor({
               </div>
             </div>
           </DialogHeader>
-          
+
           <div className="flex-1 overflow-y-auto space-y-4 py-4">
-            {/* Player de Vídeo */}
-            {previewingLesson?.youtubeUrl && (
+            {previewingLesson?.youtubeUrl && extractYouTubeVideoId(previewingLesson.youtubeUrl) ? (
               <div className="relative aspect-video w-full overflow-hidden rounded-xl bg-black">
                 <iframe
                   src={`https://www.youtube.com/embed/${extractYouTubeVideoId(previewingLesson.youtubeUrl)}`}
@@ -932,9 +793,7 @@ export function VideoaulasProfessor({
                   allowFullScreen
                 />
               </div>
-            )}
-
-            {!previewingLesson?.youtubeUrl && (
+            ) : (
               <div className="relative aspect-video w-full overflow-hidden rounded-xl bg-gradient-to-br from-violet-100 to-blue-100 flex items-center justify-center">
                 <div className="text-center">
                   <Video className="h-16 w-16 text-violet-300 mx-auto mb-4" />
@@ -943,7 +802,6 @@ export function VideoaulasProfessor({
               </div>
             )}
 
-            {/* Informações do Vídeo */}
             <div className="space-y-4">
               <div>
                 <h3 className="text-lg font-semibold text-gray-900 mb-2">Descrição</h3>
@@ -952,18 +810,18 @@ export function VideoaulasProfessor({
                 </p>
               </div>
 
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="grid grid-cols-3 gap-4">
                 <div className="bg-gray-50 rounded-lg p-3">
                   <p className="text-xs text-gray-600 mb-1">Visualizações</p>
                   <p className="text-lg font-semibold text-gray-900">{previewingLesson?.views}</p>
                 </div>
                 <div className="bg-gray-50 rounded-lg p-3">
-                  <p className="text-xs text-gray-600 mb-1">Curtidas</p>
-                  <p className="text-lg font-semibold text-gray-900">{previewingLesson?.likes || 0}</p>
-                </div>
-                <div className="bg-gray-50 rounded-lg p-3">
                   <p className="text-xs text-gray-600 mb-1">Duração</p>
-                  <p className="text-lg font-semibold text-gray-900">{previewingLesson?.duration || "N/A"}</p>
+                  <p className="text-lg font-semibold text-gray-900">
+                    {previewingLesson && previewingLesson.durationSegundos > 0
+                      ? formatDuration(previewingLesson.durationSegundos)
+                      : "N/A"}
+                  </p>
                 </div>
                 <div className="bg-gray-50 rounded-lg p-3">
                   <p className="text-xs text-gray-600 mb-1">Publicado em</p>
@@ -977,9 +835,9 @@ export function VideoaulasProfessor({
 
           <DialogFooter className="border-t pt-4 flex gap-2">
             {previewingLesson?.youtubeUrl && (
-              <a 
-                href={previewingLesson.youtubeUrl} 
-                target="_blank" 
+              <a
+                href={previewingLesson.youtubeUrl}
+                target="_blank"
                 rel="noopener noreferrer"
               >
                 <Button className="rounded-xl bg-red-600 hover:bg-red-700">

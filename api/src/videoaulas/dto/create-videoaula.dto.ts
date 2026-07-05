@@ -10,6 +10,10 @@ export class CreateVideoaulaDto {
 
   @IsOptional()
   @IsString()
+  descricao?: string;
+
+  @IsOptional()
+  @IsString()
   url_video?: string;
 
   @IsOptional()

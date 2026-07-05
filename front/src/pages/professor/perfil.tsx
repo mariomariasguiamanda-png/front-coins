@@ -1,37 +1,89 @@
+import { useEffect, useState } from "react";
 import { PerfilProfessor } from "@/components/professor/PerfilProfessor";
 import { ProfessorLayout } from "@/components/professor/ProfessorLayout";
+import { api, resolveMediaUrl } from "@/lib/api";
+
+type ProfileData = {
+  readonly: {
+    nomeCompleto: string;
+    disciplinas: string[];
+    turmas: string[];
+    emailInstitucional: string;
+    cadastradoEm: string | null;
+  };
+  editable: {
+    telefone: string;
+    especialidade: string;
+    foto: string | null;
+  };
+  stats: {
+    totalAlunos: number;
+  };
+};
 
 export default function PerfilPage() {
-  // Mock data - replace with API calls later
-  const profileData = {
-    readonly: {
-      nomeCompleto: "Ana Silva Santos",
-      matricula: "PROF2024001",
-      cpf: "123.456.789-00",
-      disciplinas: ["Matemática", "Física", "Química"],
-      turmas: ["1º A", "1º B", "2º A", "2º B", "3º C"],
-      emailInstitucional: "ana.silva@escola.edu.br",
-      dataAdmissao: "2020-02-15",
-      departamento: "Ciências Exatas",
-    },
-    editable: {
-      emailAlternativo: "ana.silva@gmail.com",
-      telefone: "(11) 98765-4321",
-      senha: "",
-      foto: "/placeholder-avatar.png",
-      endereco: "Rua das Flores, 123 - Centro, São Paulo - SP",
-      biografia: "Professora de Matemática, Física e Química com 15 anos de experiência. Apaixonada por ensinar e ajudar os alunos a descobrirem o fascínio das ciências exatas.",
-    },
-    stats: {
-      totalAulas: 245,
-      totalAlunos: 156,
-      mediaAvaliacoes: 4.8,
-    },
+  const [profileData, setProfileData] = useState<ProfileData | null>(null);
+
+  const carregar = async () => {
+    try {
+      const data = await api.get("/professor/perfil");
+      setProfileData({
+        readonly: {
+          nomeCompleto: data.nome,
+          disciplinas: data.disciplinas ?? [],
+          turmas: data.turmas ?? [],
+          emailInstitucional: data.email,
+          cadastradoEm: data.criado_em,
+        },
+        editable: {
+          telefone: data.telefone ?? "",
+          especialidade: data.especialidade ?? "",
+          foto: resolveMediaUrl(data.foto_url),
+        },
+        stats: {
+          totalAlunos: data.total_alunos,
+        },
+      });
+    } catch (err) {
+      console.error("Erro ao carregar perfil:", err);
+    }
   };
+
+  useEffect(() => {
+    carregar();
+  }, []);
+
+  const handleSave = async (dados: { telefone: string; especialidade: string }) => {
+    await api.patch("/professor/perfil", dados);
+    await carregar();
+  };
+
+  const handleUploadFoto = async (file: File) => {
+    const formData = new FormData();
+    formData.append("foto", file);
+    await api.upload("/professor/perfil/foto", formData);
+    await carregar();
+  };
+
+  const handleChangePassword = async (senhaAtual: string, senhaNova: string) => {
+    await api.patch("/professor/perfil/senha", {
+      senha_atual: senhaAtual,
+      senha_nova: senhaNova,
+    });
+  };
+
+  if (!profileData) {
+    return <ProfessorLayout><div className="p-6 text-gray-500">Carregando perfil...</div></ProfessorLayout>;
+  }
 
   return (
     <ProfessorLayout>
-      <PerfilProfessor data={profileData} />
+      <PerfilProfessor
+        data={profileData}
+        onSave={handleSave}
+        onUploadFoto={handleUploadFoto}
+        onChangePassword={handleChangePassword}
+      />
     </ProfessorLayout>
   );
 }

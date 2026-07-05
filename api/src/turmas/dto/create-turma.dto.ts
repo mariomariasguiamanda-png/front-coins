@@ -10,6 +10,10 @@ export class CreateTurmaDto {
   descricao?: string;
 
   @IsOptional()
+  @IsString()
+  turno?: string;
+
+  @IsOptional()
   @IsInt()
   ano_letivo?: number;
 

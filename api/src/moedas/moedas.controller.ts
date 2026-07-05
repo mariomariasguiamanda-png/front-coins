@@ -36,6 +36,12 @@ export class MoedasController {
     );
   }
 
+  @Get('aluno/moedas/total-ganho')
+  @Roles('aluno')
+  getTotalGanho(@CurrentUser() user: AuthUser) {
+    return this.moedasService.getTotalGanho(user.id_aluno as number);
+  }
+
   @Get('aluno/moedas/ranking')
   @Roles('aluno')
   getRanking(@Query('turma') turmaId: string) {
@@ -58,6 +64,18 @@ export class MoedasController {
   @Roles('professor')
   setConfigPreco(@Body() body: ConfigPrecoDto, @CurrentUser() user: AuthUser) {
     return this.moedasService.setConfigPreco(body, user);
+  }
+
+  @Get('professor/moedas/config-precos')
+  @Roles('professor')
+  getConfigPrecosProfessor(@CurrentUser() user: AuthUser) {
+    return this.moedasService.getConfigPrecosProfessor(user);
+  }
+
+  @Get('professor/moedas/historico-precos')
+  @Roles('professor')
+  getHistoricoConfigPrecos(@CurrentUser() user: AuthUser) {
+    return this.moedasService.getHistoricoConfigPrecos(user);
   }
 
   @Post('admin/moedas/ajuste')

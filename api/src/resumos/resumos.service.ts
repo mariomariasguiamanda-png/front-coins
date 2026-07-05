@@ -60,11 +60,23 @@ export class ResumosService {
   }
 
   async findByProfessor(id_professor: number) {
-    return this.db.resumos.findMany({
-      where: { id_professor },
+    const resumos = await this.db.resumos.findMany({
+      where: { id_professor, ativo: true },
       include: { disciplinas: { select: { nome: true } } },
       orderBy: { data_criacao: 'desc' },
     });
+
+    const contagens = await this.db.aluno_resumo.groupBy({
+      by: ['id_resumo'],
+      where: { id_resumo: { in: resumos.map((r) => r.id_resumo) }, status: 'lido' },
+      _count: { _all: true },
+    });
+    const mapaViews = new Map(contagens.map((c) => [Number(c.id_resumo), c._count._all]));
+
+    return resumos.map((r) => ({
+      ...r,
+      views: mapaViews.get(Number(r.id_resumo)) ?? 0,
+    }));
   }
 
   private async buscarResumoDoProfessor(id_resumo: bigint, id_professor: number) {
@@ -89,6 +101,7 @@ export class ResumosService {
         id_professor: professor.id_professor as number,
         titulo: dto.titulo,
         conteudo: dto.conteudo,
+        links: dto.links ?? [],
       },
     });
   }
@@ -101,5 +114,21 @@ export class ResumosService {
   async remove(id_resumo: bigint, professor: AuthUser) {
     await this.buscarResumoDoProfessor(id_resumo, professor.id_professor as number);
     return this.db.resumos.update({ where: { id_resumo }, data: { ativo: false } });
+  }
+
+  async adicionarAnexos(id_resumo: bigint, professor: AuthUser, novosCaminhos: string[]) {
+    await this.buscarResumoDoProfessor(id_resumo, professor.id_professor as number);
+    return this.db.resumos.update({
+      where: { id_resumo },
+      data: { anexos_urls: { push: novosCaminhos } },
+    });
+  }
+
+  async removerAnexo(id_resumo: bigint, professor: AuthUser, caminho: string) {
+    const resumo = await this.buscarResumoDoProfessor(id_resumo, professor.id_professor as number);
+    return this.db.resumos.update({
+      where: { id_resumo },
+      data: { anexos_urls: resumo.anexos_urls.filter((a) => a !== caminho) },
+    });
   }
 }

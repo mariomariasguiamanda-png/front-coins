@@ -18,7 +18,8 @@ import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import type { AuthUser } from '../common/types/auth-user';
-import { UpdatePerfilDto } from './dto/update-perfil.dto';
+import { UpdatePerfilProfessorDto } from './dto/update-perfil-professor.dto';
+import { AlterarSenhaDto } from './dto/alterar-senha.dto';
 
 const EXTENSOES_PERMITIDAS = ['.jpg', '.jpeg', '.png', '.webp'];
 
@@ -34,8 +35,13 @@ export class ProfessorPerfilController {
   }
 
   @Patch()
-  updatePerfil(@CurrentUser() user: AuthUser, @Body() body: UpdatePerfilDto) {
-    return this.perfilService.updatePerfil(user.sub, body);
+  updatePerfil(@CurrentUser() user: AuthUser, @Body() body: UpdatePerfilProfessorDto) {
+    return this.perfilService.updatePerfilProfessor(user.sub, body);
+  }
+
+  @Patch('senha')
+  alterarSenha(@CurrentUser() user: AuthUser, @Body() body: AlterarSenhaDto) {
+    return this.perfilService.alterarSenha(user.sub, body);
   }
 
   @Post('foto')

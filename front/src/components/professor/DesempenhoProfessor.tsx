@@ -14,12 +14,11 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { 
-  BarChart2, 
-  Download, 
-  Filter, 
+import {
+  BarChart2,
+  Download,
+  Filter,
   TrendingUp,
-  TrendingDown,
   Award,
   Users,
   Target,
@@ -51,9 +50,6 @@ interface PerformanceData {
   ranking: number;
   discipline: string;
   class: string;
-  trend?: "up" | "down" | "stable";
-  attendance?: number;
-  period?: string;
 }
 
 interface DesempenhoProfessorProps {
@@ -62,7 +58,6 @@ interface DesempenhoProfessorProps {
   onFilterChange: (filters: {
     discipline?: string;
     class?: string;
-    period?: string;
   }) => void;
 }
 
@@ -73,15 +68,16 @@ export function DesempenhoProfessor({
 }: DesempenhoProfessorProps) {
   const [selectedDiscipline, setSelectedDiscipline] = useState<string>("todas");
   const [selectedClass, setSelectedClass] = useState<string>("todas");
-  const [selectedPeriod, setSelectedPeriod] = useState<string>("todos");
   const [selectedStudent, setSelectedStudent] = useState<PerformanceData | null>(null);
+
+  const disciplinasDisponiveis = Array.from(new Set(performanceData.map(d => d.discipline))).sort();
+  const turmasDisponiveis = Array.from(new Set(performanceData.map(d => d.class))).sort();
 
   // Filtrar dados
   const filteredData = performanceData.filter(data => {
     const matchesDiscipline = selectedDiscipline === "todas" || data.discipline === selectedDiscipline;
     const matchesClass = selectedClass === "todas" || data.class === selectedClass;
-    const matchesPeriod = selectedPeriod === "todos" || !data.period || data.period === selectedPeriod;
-    return matchesDiscipline && matchesClass && matchesPeriod;
+    return matchesDiscipline && matchesClass;
   });
 
   // Estatísticas
@@ -102,12 +98,6 @@ export function DesempenhoProfessor({
     good: filteredData.filter(d => d.averageGrade >= 7 && d.averageGrade < 9).length,
     average: filteredData.filter(d => d.averageGrade >= 5 && d.averageGrade < 7).length,
     belowAvg: filteredData.filter(d => d.averageGrade < 5).length,
-  };
-
-  const getTrendIcon = (trend?: string) => {
-    if (trend === "up") return <TrendingUp className="h-4 w-4 text-green-600" />;
-    if (trend === "down") return <TrendingDown className="h-4 w-4 text-red-600" />;
-    return <div className="h-4 w-4" />;
   };
 
   const getRankingIcon = (ranking: number) => {
@@ -209,7 +199,7 @@ export function DesempenhoProfessor({
             <h2 className="text-lg font-semibold text-gray-900">Filtros</h2>
           </div>
 
-          <div className="grid gap-4 md:grid-cols-3">
+          <div className="grid gap-4 md:grid-cols-2">
             <div>
               <label className="text-sm font-medium text-gray-700 mb-1 block">Disciplina</label>
               <Select
@@ -224,11 +214,9 @@ export function DesempenhoProfessor({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="todas">Todas</SelectItem>
-                  <SelectItem value="Matemática">Matemática</SelectItem>
-                  <SelectItem value="Física">Física</SelectItem>
-                  <SelectItem value="Química">Química</SelectItem>
-                  <SelectItem value="Biologia">Biologia</SelectItem>
-                  <SelectItem value="História">História</SelectItem>
+                  {disciplinasDisponiveis.map((nome) => (
+                    <SelectItem key={nome} value={nome}>{nome}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -247,33 +235,9 @@ export function DesempenhoProfessor({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="todas">Todas</SelectItem>
-                  <SelectItem value="1º A">1º A</SelectItem>
-                  <SelectItem value="1º B">1º B</SelectItem>
-                  <SelectItem value="2º A">2º A</SelectItem>
-                  <SelectItem value="2º B">2º B</SelectItem>
-                  <SelectItem value="3º C">3º C</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <label className="text-sm font-medium text-gray-700 mb-1 block">Período</label>
-              <Select
-                value={selectedPeriod}
-                onValueChange={(value) => {
-                  setSelectedPeriod(value);
-                  onFilterChange({ period: value });
-                }}
-              >
-                <SelectTrigger className="rounded-xl bg-white">
-                  <SelectValue placeholder="Todos os períodos" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="todos">Todos</SelectItem>
-                  <SelectItem value="bimestre1">1º Bimestre</SelectItem>
-                  <SelectItem value="bimestre2">2º Bimestre</SelectItem>
-                  <SelectItem value="bimestre3">3º Bimestre</SelectItem>
-                  <SelectItem value="bimestre4">4º Bimestre</SelectItem>
+                  {turmasDisponiveis.map((nome) => (
+                    <SelectItem key={nome} value={nome}>{nome}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -471,48 +435,6 @@ export function DesempenhoProfessor({
         </CardContent>
       </Card>
 
-      {/* Análise de Tendências */}
-      <Card className="rounded-xl shadow-sm bg-gradient-to-br from-violet-50 to-blue-50 border-violet-200">
-        <CardContent className="p-6">
-          <div className="mb-6 flex items-center gap-3">
-            <TrendingUp className="h-5 w-5 text-violet-600" />
-            <h2 className="text-lg font-semibold text-gray-900">Análise de Tendências</h2>
-          </div>
-          <div className="grid gap-4 md:grid-cols-3">
-            <div className="bg-white rounded-lg p-4 border border-green-200">
-              <div className="flex items-center gap-2 mb-2">
-                <TrendingUp className="h-5 w-5 text-green-600" />
-                <span className="font-semibold text-gray-900">Em Crescimento</span>
-              </div>
-              <p className="text-3xl font-bold text-green-700 mb-1">
-                {filteredData.filter(d => d.trend === "up").length}
-              </p>
-              <p className="text-xs text-gray-600">alunos melhorando</p>
-            </div>
-            <div className="bg-white rounded-lg p-4 border border-gray-200">
-              <div className="flex items-center gap-2 mb-2">
-                <Target className="h-5 w-5 text-gray-600" />
-                <span className="font-semibold text-gray-900">Estável</span>
-              </div>
-              <p className="text-3xl font-bold text-gray-700 mb-1">
-                {filteredData.filter(d => d.trend === "stable" || !d.trend).length}
-              </p>
-              <p className="text-xs text-gray-600">alunos mantendo</p>
-            </div>
-            <div className="bg-white rounded-lg p-4 border border-red-200">
-              <div className="flex items-center gap-2 mb-2">
-                <TrendingDown className="h-5 w-5 text-red-600" />
-                <span className="font-semibold text-gray-900">Necessitam Atenção</span>
-              </div>
-              <p className="text-3xl font-bold text-red-700 mb-1">
-                {filteredData.filter(d => d.trend === "down").length}
-              </p>
-              <p className="text-xs text-gray-600">alunos em declínio</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
       {/* Lista de Alunos */}
       <div id="ranking-individual" className="scroll-mt-20">
         <Card className="rounded-xl shadow-sm">
@@ -541,7 +463,6 @@ export function DesempenhoProfessor({
                     <th className="pb-3 pt-3 px-4 font-semibold text-gray-700">Turma</th>
                     <th className="pb-3 pt-3 px-4 font-semibold text-gray-700">Média</th>
                     <th className="pb-3 pt-3 px-4 font-semibold text-gray-700">Moedas</th>
-                    <th className="pb-3 pt-3 px-4 font-semibold text-gray-700">Tendência</th>
                     <th className="pb-3 pt-3 px-4 font-semibold text-gray-700">Ações</th>
                   </tr>
                 </thead>
@@ -586,9 +507,6 @@ export function DesempenhoProfessor({
                           </div>
                         </td>
                         <td className="py-4 px-4">
-                          {getTrendIcon(data.trend)}
-                        </td>
-                        <td className="py-4 px-4">
                           <Button
                             variant="outline"
                             size="sm"
@@ -630,7 +548,7 @@ export function DesempenhoProfessor({
           {selectedStudent && (
             <div className="space-y-6 py-4">
               {/* Cards de Estatísticas do Aluno */}
-              <div className="grid gap-4 md:grid-cols-4">
+              <div className="grid gap-4 md:grid-cols-3">
                 <Card className="rounded-xl shadow-sm border-l-4 border-l-blue-500">
                   <CardContent className="p-4">
                     <div className="flex flex-col">
@@ -657,15 +575,6 @@ export function DesempenhoProfessor({
                     </div>
                   </CardContent>
                 </Card>
-
-                <Card className="rounded-xl shadow-sm border-l-4 border-l-purple-500">
-                  <CardContent className="p-4">
-                    <div className="flex flex-col">
-                      <p className="text-xs font-medium text-gray-600 mb-1">Frequência</p>
-                      <p className="text-2xl font-bold text-gray-900">{selectedStudent.attendance}%</p>
-                    </div>
-                  </CardContent>
-                </Card>
               </div>
 
               {/* Informações da Turma */}
@@ -682,25 +591,6 @@ export function DesempenhoProfessor({
                       <Users className="h-4 w-4 text-gray-400" />
                       <span className="text-sm text-gray-600">Turma:</span>
                       <span className="text-sm font-semibold text-gray-900">{selectedStudent.class}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {selectedStudent.trend === "up" ? (
-                        <TrendingUp className="h-4 w-4 text-green-600" />
-                      ) : selectedStudent.trend === "down" ? (
-                        <TrendingDown className="h-4 w-4 text-red-600" />
-                      ) : (
-                        <Target className="h-4 w-4 text-gray-600" />
-                      )}
-                      <span className="text-sm text-gray-600">Tendência:</span>
-                      <span className={`text-sm font-semibold ${
-                        selectedStudent.trend === "up" ? "text-green-600" : 
-                        selectedStudent.trend === "down" ? "text-red-600" : 
-                        "text-gray-600"
-                      }`}>
-                        {selectedStudent.trend === "up" ? "Crescente" : 
-                         selectedStudent.trend === "down" ? "Decrescente" : 
-                         "Estável"}
-                      </span>
                     </div>
                     <div className="flex items-center gap-2">
                       <Award className="h-4 w-4 text-gray-400" />

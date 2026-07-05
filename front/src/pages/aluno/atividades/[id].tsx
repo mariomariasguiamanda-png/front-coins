@@ -15,10 +15,11 @@ import {
 } from "lucide-react";
 import Modal from "@/components/ui/Modal";
 
-// Questões da atividade (VF + múltipla escolha) - sem gabarito (a API não entrega
-// correta/letra_correta pro papel aluno)
+// Questões da atividade (VF + múltipla escolha + descritiva) - sem gabarito
+// (a API não entrega correta/letra_correta pro papel aluno)
 type Questao = {
   id_questao: number;
+  tipo: "vf" | "multipla" | "descritiva";
   enunciado: string;
   correta?: boolean | null;
   alternativa_a: string | null;
@@ -41,9 +42,9 @@ type Atividade = {
   data_entrega: string | null;
 };
 
-// helper: identifica se a questão é Verdadeiro/Falso (sem alternativas)
-const isVFQuestao = (q: Questao) =>
-  !q.alternativa_a && !q.alternativa_b && !q.alternativa_c && !q.alternativa_d;
+// resposta em branco ("" ou null) não conta como respondida, mesmo pra descritiva
+const foiRespondida = (valor: string | null | undefined) =>
+  valor != null && valor.trim() !== "";
 
 function AtividadeSkeleton() {
   return (
@@ -131,7 +132,7 @@ const AtividadeDetalhePage: NextPageWithLayout = () => {
   }, [id]);
 
   const isConcluida = atividade?.status === "entregue" || atividade?.status === "corrigida";
-  const totalRespondidas = questoes.filter((q) => respostas[q.id_questao] != null).length;
+  const totalRespondidas = questoes.filter((q) => foiRespondida(respostas[q.id_questao])).length;
   const todasRespondidas = questoes.length > 0 && totalRespondidas === questoes.length;
 
   // marcar resposta (string: "true"/"false" ou "A"/"B"/"C"/"D")
@@ -144,7 +145,7 @@ const AtividadeDetalhePage: NextPageWithLayout = () => {
   };
 
   const scrollParaPrimeiraPendente = () => {
-    const pendente = questoes.find((q) => respostas[q.id_questao] == null);
+    const pendente = questoes.find((q) => !foiRespondida(respostas[q.id_questao]));
     if (!pendente) return;
 
     questaoRefs.current[pendente.id_questao]?.scrollIntoView({
@@ -334,8 +335,7 @@ const AtividadeDetalhePage: NextPageWithLayout = () => {
                   <div className="space-y-4">
                     {questoes.map((q, index) => {
                       const respostaAtual = respostas[q.id_questao];
-                      const respondida = respostaAtual != null;
-                      const ehVF = isVFQuestao(q);
+                      const respondida = foiRespondida(respostaAtual);
                       const destacada = questaoDestacada === q.id_questao;
 
                       return (
@@ -369,7 +369,7 @@ const AtividadeDetalhePage: NextPageWithLayout = () => {
                             </p>
                           </div>
 
-                          {ehVF ? (
+                          {q.tipo === "vf" ? (
                             // ===== Questão Verdadeiro / Falso =====
                             <div className="grid grid-cols-2 gap-3 pl-9">
                               {(["true", "false"] as const).map((valor) => {
@@ -393,7 +393,7 @@ const AtividadeDetalhePage: NextPageWithLayout = () => {
                                 );
                               })}
                             </div>
-                          ) : (
+                          ) : q.tipo === "multipla" ? (
                             // ===== Questão Múltipla Escolha =====
                             <div className="flex flex-col gap-2 pl-9">
                               {(
@@ -431,6 +431,20 @@ const AtividadeDetalhePage: NextPageWithLayout = () => {
                                   </button>
                                 ) : null
                               )}
+                            </div>
+                          ) : (
+                            // ===== Questão Descritiva (resposta em texto livre) =====
+                            <div className="pl-9">
+                              <textarea
+                                disabled={isConcluida}
+                                value={respostaAtual ?? ""}
+                                onChange={(e) =>
+                                  handleRespostaChange(q.id_questao, e.target.value)
+                                }
+                                rows={4}
+                                placeholder="Digite sua resposta..."
+                                className="w-full rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm text-gray-700 transition-colors focus:border-purple-400 focus:outline-none disabled:cursor-not-allowed disabled:bg-gray-100"
+                              />
                             </div>
                           )}
                         </div>

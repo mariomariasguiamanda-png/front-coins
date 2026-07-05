@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -7,8 +8,13 @@ import {
   Patch,
   Post,
   Query,
+  UploadedFiles,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
+import { FilesInterceptor } from '@nestjs/platform-express';
+import { diskStorage } from 'multer';
+import { extname } from 'path';
 import { ResumosService } from './resumos.service';
 import { JwtGuard } from '../common/guards/jwt.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
@@ -17,6 +23,8 @@ import { CurrentUser } from '../common/decorators/current-user.decorator';
 import type { AuthUser } from '../common/types/auth-user';
 import { CreateResumoDto } from './dto/create-resumo.dto';
 import { UpdateResumoDto } from './dto/update-resumo.dto';
+
+const EXTENSOES_PERMITIDAS = ['.pdf', '.doc', '.docx', '.png', '.jpg', '.jpeg', '.zip'];
 
 @Controller()
 @UseGuards(JwtGuard, RolesGuard)
@@ -70,5 +78,49 @@ export class ResumosController {
   @Roles('professor')
   remove(@Param('id') id: string, @CurrentUser() user: AuthUser) {
     return this.resumosService.remove(BigInt(id), user);
+  }
+
+  @Post('professor/resumos/:id/anexos')
+  @Roles('professor')
+  @UseInterceptors(
+    FilesInterceptor('anexos', 5, {
+      storage: diskStorage({
+        destination: './uploads/resumos',
+        filename: (_req, file, callback) => {
+          const ext = extname(file.originalname).toLowerCase();
+          callback(null, `resumo-${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`);
+        },
+      }),
+      limits: { fileSize: 10 * 1024 * 1024 },
+      fileFilter: (_req, file, callback) => {
+        const ext = extname(file.originalname).toLowerCase();
+        if (!EXTENSOES_PERMITIDAS.includes(ext)) {
+          callback(new BadRequestException('Formato de arquivo não suportado'), false);
+          return;
+        }
+        callback(null, true);
+      },
+    }),
+  )
+  adicionarAnexos(
+    @Param('id') id: string,
+    @UploadedFiles() files: Express.Multer.File[],
+    @CurrentUser() user: AuthUser,
+  ) {
+    if (!files || files.length === 0) {
+      throw new BadRequestException('Nenhum arquivo enviado');
+    }
+    const caminhos = files.map((f) => `/uploads/resumos/${f.filename}`);
+    return this.resumosService.adicionarAnexos(BigInt(id), user, caminhos);
+  }
+
+  @Delete('professor/resumos/:id/anexos')
+  @Roles('professor')
+  removerAnexo(
+    @Param('id') id: string,
+    @Body('caminho') caminho: string,
+    @CurrentUser() user: AuthUser,
+  ) {
+    return this.resumosService.removerAnexo(BigInt(id), user, caminho);
   }
 }

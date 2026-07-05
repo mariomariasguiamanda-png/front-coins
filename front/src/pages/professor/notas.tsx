@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { ProfessorLayout } from "@/components/professor/ProfessorLayout";
 import { NotasProfessor } from "@/components/professor/NotasProfessor";
-import { supabase } from "@/lib/supabaseClient";
+import { api } from "@/lib/api";
 
 // Tipos básicos
 type DisciplinaOption = {
@@ -43,19 +43,16 @@ export default function NotasPage() {
       try {
         setErro(null);
 
-        const [
-          { data: discData, error: discError },
-          { data: turmaData, error: turmaError }
-        ] = await Promise.all([
-          supabase.from("disciplinas").select("id_disciplina, nome").order("nome"),
-          supabase.from("turmas").select("id_turma, nome").order("nome"),
+        const [discData, turmaData] = await Promise.all([
+          api.get("/disciplinas"),
+          api.get("/turmas"),
         ]);
 
-        if (discError) throw discError;
-        if (turmaError) throw turmaError;
+        const ordenarPorNome = <T extends { nome: string }>(rows: T[]) =>
+          [...rows].sort((a, b) => a.nome.localeCompare(b.nome));
 
-        setDisciplinas((discData ?? []) as DisciplinaOption[]);
-        setTurmas((turmaData ?? []) as TurmaOption[]);
+        setDisciplinas(ordenarPorNome((discData ?? []) as DisciplinaOption[]));
+        setTurmas(ordenarPorNome((turmaData ?? []) as TurmaOption[]));
       } catch (err: any) {
         console.error(err);
         setErro("Erro ao carregar disciplinas e turmas.");
@@ -65,30 +62,15 @@ export default function NotasPage() {
     carregarDisciplinasETurmas();
   }, []);
 
-  // Busca alunos + notas finais da view
+  // Busca alunos + notas finais da disciplina/turma na API
   const carregarNotas = async (idDisciplina: number, idTurma: number) => {
     try {
       setLoading(true);
       setErro(null);
 
-      const { data, error } = await supabase
-        .from("vw_lancamento_notas_professor")
-        .select(`
-          id_turma,
-          nome_turma,
-          id_disciplina,
-          nome_disciplina,
-          id_aluno,
-          matricula,
-          nome_aluno,
-          nota_final,
-          status_final,
-          atualizado_em
-        `)
-        .eq("id_disciplina", idDisciplina)
-        .eq("id_turma", idTurma);
-
-      if (error) throw error;
+      const data = await api.get(
+        `/professor/notas?disciplina=${idDisciplina}&turma=${idTurma}`
+      );
 
       const rows = (data ?? []) as NotaProfessorRow[];
 
@@ -128,15 +110,7 @@ export default function NotasPage() {
     }
   }, [disciplinaSelecionada, turmaSelecionada]);
 
-  // Regra do status final
-  const getStatusFromNota = (nota: number | null): string | null => {
-    if (nota === null || isNaN(nota)) return null;
-    if (nota >= 6) return "aprovado";
-    if (nota >= 4) return "recuperacao";
-    return "reprovado";
-  };
-
-  // Salvar nota editada
+  // Salvar nota editada (status final é calculado e persistido pela API)
   const handleEditGrade = async (id: string, updatedGrade: any) => {
     try {
       const atual = grades.find((g) => g.id === id);
@@ -146,22 +120,14 @@ export default function NotasPage() {
         updatedGrade.grade !== undefined ? updatedGrade.grade : atual.grade;
 
       const nota = Number(String(notaRaw).replace(",", "."));
-      const status_final = getStatusFromNota(nota);
 
-      const payload = {
-        id_aluno: atual._idAluno,
-        id_disciplina: atual._idDisciplina,
+      await api.put("/professor/notas", {
+        id_aluno: String(atual._idAluno),
+        id_disciplina: String(atual._idDisciplina),
         nota_final: nota,
-        status_final,
-      };
+      });
 
-      const { error } = await supabase
-        .from("notas_finais")
-        .upsert(payload, { onConflict: "id_aluno,id_disciplina" });
-
-      if (error) throw error;
-
-      // Atualizar UI recarregando da view
+      // Atualizar UI recarregando da API
       if (disciplinaSelecionada && turmaSelecionada) {
         await carregarNotas(disciplinaSelecionada, turmaSelecionada);
       }

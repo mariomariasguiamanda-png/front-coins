@@ -68,6 +68,7 @@ type ProgressoAtividadeRow = {
   data_vencimento: string | null;
   data_entrega: string | null;
   status: string | null;
+  nota: number | string | null;
   disciplinas: { nome: string | null } | null;
 };
 
@@ -168,6 +169,18 @@ const isConcluida = (status: string | null | undefined) => {
   return normalizado === "corrigida";
 };
 
+// A escala de aprovado/recuperação/reprovado é só para nota final de disciplina
+// (ver "Minhas Notas"). Aqui, por atividade, o corte é simples: nota < 6 já é
+// sinal de que o aluno precisa melhorar naquele ponto.
+const NOTA_MINIMA_ESPERADA = 6;
+
+const notaAbaixoDoEsperado = (nota: number | string | null | undefined): boolean => {
+  if (nota === null || nota === undefined) return false;
+  const valor = Number(nota);
+  if (Number.isNaN(valor)) return false;
+  return valor < NOTA_MINIMA_ESPERADA;
+};
+
 // Shim: a API já entrega o registro achatado (sem nesting de "atividades"),
 // então o próprio row já contém titulo/recompensa_moedas/id_disciplina.
 const obterAtividade = (row: ProgressoAtividadeRow) => row;
@@ -211,6 +224,7 @@ const Inicio: NextPageWithLayout = () => {
   >([]);
   const [error, setError] = useState<string | null>(null);
   const [nomeAluno, setNomeAluno] = useState<string | null>(null);
+  const [totalMoedasHistorico, setTotalMoedasHistorico] = useState(0);
 
   useEffect(() => {
     setMounted(true);
@@ -220,15 +234,18 @@ const Inicio: NextPageWithLayout = () => {
         setLoading(true);
         setError(null);
 
-        // Nome do aluno + atividades (já achatadas com status/nota/disciplinas.nome)
-        // não dependem uma da outra - buscar em paralelo evita esperar dois
-        // round-trips em sequência logo na primeira tela após o login.
-        const [me, atividades] = await Promise.all([
+        // Nome do aluno + atividades (já achatadas com status/nota/disciplinas.nome) + total
+        // histórico de moedas (mesmo cálculo do ranking, pra bater com o valor de lá) -
+        // não dependem uma da outra, buscar em paralelo evita esperar três round-trips
+        // em sequência logo na primeira tela após o login.
+        const [me, atividades, totalGanho] = await Promise.all([
           api.get("/auth/me"),
           api.get("/aluno/atividades"),
+          api.get("/aluno/moedas/total-ganho"),
         ]);
         setNomeAluno(me?.nome || null);
         setProgressoAtividades((atividades as ProgressoAtividadeRow[]) ?? []);
+        setTotalMoedasHistorico(totalGanho?.total_moedas_historico ?? 0);
       } catch (err: any) {
         console.error(err);
         setError(err.message ?? "Erro ao carregar dashboard.");
@@ -266,13 +283,6 @@ const Inicio: NextPageWithLayout = () => {
     [progressoFiltrado]
   );
 
-  const totalMoedas = useMemo(() => {
-    return concluidasFiltradas.reduce((acc, row) => {
-      const atividade = obterAtividade(row);
-      return acc + Number(atividade?.recompensa_moedas ?? 0);
-    }, 0);
-  }, [concluidasFiltradas]);
-
   const itensAtencaoCritica = useMemo(() => {
     if (progressoAtividades.length === 0) return [];
 
@@ -281,8 +291,10 @@ const Inicio: NextPageWithLayout = () => {
 
     return progressoAtividades
       .filter((row) => {
-        // deve ser não concluída
-        if (isConcluida(row.status)) return false;
+        // Corrigida com nota abaixo do esperado também é crítica.
+        if (isConcluida(row.status)) {
+          return notaAbaixoDoEsperado(row.nota);
+        }
 
         const criado = obterCriadoEspecifico(row) ?? obterDataReferencia(row);
         const prazo = obterPrazoAtividade(row);
@@ -296,14 +308,17 @@ const Inicio: NextPageWithLayout = () => {
         const atividade = obterAtividade(row);
         const prazo = obterPrazoAtividade(row);
         const atrasada = prazo ? prazo.getTime() < agora.getTime() : false;
+        const notaBaixa = isConcluida(row.status) && notaAbaixoDoEsperado(row.nota);
         return {
           id_atividade: atividade?.id_atividade ?? null,
           titulo: atividade?.titulo ?? "Atividade",
           disciplina: obterNomeDisciplina(row),
           status: statusParaExibicao(row.status),
           criadoEm: obterCriadoEspecifico(row) ?? obterDataReferencia(row),
-          prazo,
-          atrasada,
+          prazo: notaBaixa ? null : prazo,
+          atrasada: notaBaixa ? false : atrasada,
+          notaBaixa,
+          nota: row.nota !== null && row.nota !== undefined ? Number(row.nota) : null,
         };
       })
       .sort((a, b) => {
@@ -433,7 +448,7 @@ const Inicio: NextPageWithLayout = () => {
                     Total de Moedas
                   </p>
                   <p className="text-2xl font-bold text-violet-700">
-                    {loading ? "..." : totalMoedas}
+                    {loading ? "..." : totalMoedasHistorico}
                   </p>
                 </div>
                 <div className="p-3 bg-gradient-to-br from-yellow-400 to-yellow-500 rounded-xl">
@@ -501,7 +516,7 @@ const Inicio: NextPageWithLayout = () => {
         {/* Gráfico de Evolução de Moedas */}
         <GraficoMoedas
           dados={dadosGrafico}
-          totalAcumulado={totalMoedas}
+          totalAcumulado={totalMoedasHistorico}
           loading={loading}
           error={error}
         />
@@ -651,8 +666,9 @@ const Inicio: NextPageWithLayout = () => {
                       <div className="mt-4 h-1 w-24 rounded-full bg-red-600" />
 
                       <p className="mt-4 max-w-2xl text-sm font-medium leading-relaxed text-gray-500">
-                        Atividades atrasadas ou pendentes há mais de 7 dias, em
-                        qualquer disciplina.
+                        Atividades atrasadas, pendentes há mais de 7 dias ou
+                        corrigidas com nota abaixo do esperado, em qualquer
+                        disciplina.
                       </p>
                     </div>
                   </div>
@@ -665,7 +681,8 @@ const Inicio: NextPageWithLayout = () => {
 
                       <div>
                         <p className="text-lg font-black text-green-700">
-                          Nenhuma atividade atrasada ou pendente há muito tempo.
+                          Nenhuma atividade atrasada, pendente há muito tempo
+                          ou com nota abaixo do esperado.
                         </p>
                         <p className="mt-1 text-sm text-gray-500">
                           Continue assim! Você está em dia com seus prazos.
@@ -715,19 +732,25 @@ const Inicio: NextPageWithLayout = () => {
                             <div className="mt-4 flex items-center justify-between">
                               <span
                                 className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-bold ${
-                                  item.atrasada
+                                  item.notaBaixa || item.atrasada
                                     ? "bg-red-100 text-red-700"
                                     : "bg-amber-100 text-amber-700"
                                 }`}
                               >
-                                <Clock className="h-3 w-3" />
-                                {item.atrasada
-                                  ? dias && dias > 0
-                                    ? `Atrasada há ${dias} dia${dias > 1 ? "s" : ""}`
-                                    : "Atrasada"
-                                  : dias && dias > 0
-                                    ? `Pendente há ${dias} dias`
-                                    : "Pendente"}
+                                {item.notaBaixa ? (
+                                  <AlertTriangle className="h-3 w-3" />
+                                ) : (
+                                  <Clock className="h-3 w-3" />
+                                )}
+                                {item.notaBaixa
+                                  ? `Nota baixa (${item.nota?.toFixed(1)})`
+                                  : item.atrasada
+                                    ? dias && dias > 0
+                                      ? `Atrasada há ${dias} dia${dias > 1 ? "s" : ""}`
+                                      : "Atrasada"
+                                    : dias && dias > 0
+                                      ? `Pendente há ${dias} dias`
+                                      : "Pendente"}
                               </span>
 
                               {item.id_atividade && (

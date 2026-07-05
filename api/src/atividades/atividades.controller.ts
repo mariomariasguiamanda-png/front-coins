@@ -21,6 +21,7 @@ import { CreateAtividadeDto } from './dto/create-atividade.dto';
 import { UpdateAtividadeDto } from './dto/update-atividade.dto';
 import { CreateQuestaoDto } from './dto/create-questao.dto';
 import { UpdateQuestaoDto } from './dto/update-questao.dto';
+import { AvaliarQuestaoDto } from './dto/avaliar-questao.dto';
 
 @Controller()
 @UseGuards(JwtGuard, RolesGuard)
@@ -129,5 +130,23 @@ export class AtividadesController {
   @Roles('professor')
   removeQuestao(@Param('id') id: string, @CurrentUser() user: AuthUser) {
     return this.atividadesService.removeQuestao(BigInt(id), user);
+  }
+
+  @Patch('professor/atividades/:id/entregas/:idAluno/questoes/:idQuestao')
+  @Roles('professor')
+  avaliarQuestaoDescritiva(
+    @Param('id') id: string,
+    @Param('idAluno') idAluno: string,
+    @Param('idQuestao') idQuestao: string,
+    @Body() body: AvaliarQuestaoDto,
+    @CurrentUser() user: AuthUser,
+  ) {
+    return this.atividadesService.avaliarQuestaoDescritiva(
+      BigInt(id),
+      BigInt(idQuestao),
+      Number(idAluno),
+      body.pontuacao,
+      user,
+    );
   }
 }

@@ -11,6 +11,10 @@ export class UpdateTurmaDto {
   descricao?: string;
 
   @IsOptional()
+  @IsString()
+  turno?: string;
+
+  @IsOptional()
   @IsInt()
   ano_letivo?: number;
 

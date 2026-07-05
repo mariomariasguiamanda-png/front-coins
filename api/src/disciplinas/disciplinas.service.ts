@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { DatabaseService } from '../database/database.service';
 import { CreateDisciplinaDto } from './dto/create-disciplina.dto';
 import { UpdateDisciplinaDto } from './dto/update-disciplina.dto';
+import type { AuthUser } from '../common/types/auth-user';
 
 type DisciplinaStats = {
   progresso_percent: number;
@@ -164,6 +165,60 @@ export class DisciplinasService {
       id_disciplina: Number(matricula.disciplinas.id_disciplina),
       ...stats.get(String(id_disciplina)),
     };
+  }
+
+  async findByProfessor(professor: AuthUser) {
+    const vinculos = await this.db.professor_disciplina.findMany({
+      where: { id_professor: professor.id_professor as number },
+      include: { disciplinas: true },
+    });
+
+    return Promise.all(
+      vinculos.map(async (v) => {
+        const disciplina = v.disciplinas;
+        const id_disciplina = disciplina.id_disciplina;
+
+        const matriculas = await this.db.matriculas_aluno_disciplina.findMany({
+          where: { id_disciplina },
+          include: { alunos: { include: { turmas: { select: { nome: true } } } } },
+        });
+        const totalAlunos = matriculas.length;
+        const turmas = Array.from(
+          new Set(
+            matriculas
+              .map((m) => m.alunos.turmas?.nome)
+              .filter((nome): nome is string => !!nome),
+          ),
+        );
+
+        const [totalAtividades, totalCorrigidas, mediaNotas] = await Promise.all([
+          this.db.atividades.count({ where: { id_disciplina, ativo: true } }),
+          this.db.aluno_atividade.count({
+            where: { status: 'corrigida', atividades: { id_disciplina } },
+          }),
+          this.db.notas_finais.aggregate({
+            where: { id_disciplina },
+            _avg: { nota_final: true },
+          }),
+        ]);
+
+        const totalPossivel = totalAtividades * totalAlunos;
+
+        return {
+          id_disciplina: Number(id_disciplina),
+          nome: disciplina.nome,
+          codigo: disciplina.codigo,
+          descricao: disciplina.descricao,
+          carga_horaria: disciplina.carga_horaria,
+          ativo: disciplina.ativo,
+          turmas,
+          total_alunos: totalAlunos,
+          media_nota: mediaNotas._avg.nota_final,
+          taxa_conclusao:
+            totalPossivel > 0 ? Math.round((totalCorrigidas / totalPossivel) * 100) : 0,
+        };
+      }),
+    );
   }
 
   async findOne(id: bigint) {
