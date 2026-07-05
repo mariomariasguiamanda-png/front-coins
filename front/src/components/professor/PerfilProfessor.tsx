@@ -15,7 +15,7 @@ import {
   EyeOff,
 } from "lucide-react";
 import { useEffect, useState } from "react";
-import { useAuth } from "@/services/auth/AuthContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { ProfileHero, type ProfileStat } from "@/components/perfil/ProfileHero";
 
 interface ProfileData {

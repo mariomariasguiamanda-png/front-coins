@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { getAlunoLayout } from "@/components/layout/AlunoLayout";
+import { getAlunoLayout } from "@/components/aluno/AlunoLayout";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { Button } from "@/components/ui/Button";

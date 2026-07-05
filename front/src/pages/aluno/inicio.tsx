@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/router";
-import { getAlunoLayout } from "../../components/layout/AlunoLayout";
-import { Card, CardContent } from "../../components/ui/Card";
+import { getAlunoLayout } from "@/components/aluno/AlunoLayout";
+import { Card, CardContent } from "@/components/ui/Card";
 import type { NextPageWithLayout } from "@/pages/_app";
 import {
   TrendingUp,

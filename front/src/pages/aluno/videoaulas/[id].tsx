@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/router";
 import { api } from "@/lib/api";
-import { getAlunoLayout } from "@/components/layout/AlunoLayout";
+import { getAlunoLayout } from "@/components/aluno/AlunoLayout";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { CheckCircle2, PlayCircle, Loader2, Sparkles } from "lucide-react";
 import type { NextPageWithLayout } from "@/pages/_app";

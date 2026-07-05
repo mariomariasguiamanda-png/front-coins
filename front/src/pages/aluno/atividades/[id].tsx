@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/router";
 import { api } from "@/lib/api";
-import { getAlunoLayout } from "@/components/layout/AlunoLayout";
+import { getAlunoLayout } from "@/components/aluno/AlunoLayout";
 import { Skeleton } from "@/components/ui/Skeleton";
 import type { NextPageWithLayout } from "@/pages/_app";
 import {

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
-import { getAlunoLayout } from "@/components/layout/AlunoLayout";
+import { getAlunoLayout } from "@/components/aluno/AlunoLayout";
 import { Card, CardContent } from "@/components/ui/Card";
 import type { NextPageWithLayout } from "@/pages/_app";
 import {

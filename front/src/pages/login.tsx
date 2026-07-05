@@ -6,7 +6,7 @@ import { Eye, EyeOff } from "@/components/ui/Icons";
 import { FormEvent, useState } from "react";
 import { HiOutlineMail, HiOutlineLockClosed } from "react-icons/hi";
 import { api } from "@/lib/api";
-import { useAuth } from "@/services/auth/AuthContext";
+import { useAuth } from "@/contexts/AuthContext";
 
 const roboto = Roboto({ subsets: ["latin"], weight: ["400", "500", "700"] });
 

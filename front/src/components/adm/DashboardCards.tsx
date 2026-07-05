@@ -1,5 +1,5 @@
 import { Card, CardContent } from "@/components/ui/Card";
-import { formatNumber } from "@/utils/helpers/formatters";
+import { formatNumber } from "@/lib/formatters";
 import {
   Users,
   GraduationCap,

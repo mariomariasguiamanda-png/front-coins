@@ -1,7 +1,7 @@
 "use client";
 
-import { getAlunoLayout } from "@/components/layout/AlunoLayout";
-import MinhasNotas from "@/modules/aluno/MinhasNotas";
+import { getAlunoLayout } from "@/components/aluno/AlunoLayout";
+import MinhasNotas from "@/components/aluno/MinhasNotas";
 import type { NextPageWithLayout } from "@/pages/_app";
 
 const MinhasNotasPage: NextPageWithLayout = () => <MinhasNotas />;

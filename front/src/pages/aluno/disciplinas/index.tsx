@@ -1,7 +1,7 @@
 "use client";
 
-import { getAlunoLayout } from "@/components/layout/AlunoLayout";
-import Disciplinas from "@/modules/aluno/Disciplinas";
+import { getAlunoLayout } from "@/components/aluno/AlunoLayout";
+import Disciplinas from "@/components/aluno/Disciplinas";
 import type { NextPageWithLayout } from "@/pages/_app";
 
 const DisciplinasPage: NextPageWithLayout = () => <Disciplinas />;

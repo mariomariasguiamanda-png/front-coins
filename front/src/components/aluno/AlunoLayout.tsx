@@ -15,8 +15,8 @@ import { PiBooksBold } from "react-icons/pi";
 import { FaUserAlt } from "react-icons/fa";
 import { IoHome } from "react-icons/io5";
 import { Card, CardContent } from "@/components/ui/Card";
-import AlunoHeader from "@/components/layout/AlunoHeader";
-import SidebarAluno from "@/components/layout/SidebarAluno";
+import AlunoHeader from "@/components/aluno/AlunoHeader";
+import SidebarAluno from "@/components/aluno/SidebarAluno";
 
 const roboto = Roboto({ subsets: ["latin"], weight: ["400", "500", "700"] });
 

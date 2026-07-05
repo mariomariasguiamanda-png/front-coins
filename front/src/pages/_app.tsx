@@ -4,7 +4,7 @@ import type { ReactElement, ReactNode } from "react";
 import Head from "next/head";
 import "@/styles/globals.css";
 import { ThemeProvider } from "@/contexts/ThemeContext";
-import { AuthProvider } from "@/services/auth/AuthContext";
+import { AuthProvider } from "@/contexts/AuthContext";
 import { Roboto } from "next/font/google";
 import Router from "next/router";
 import { useEffect } from "react";

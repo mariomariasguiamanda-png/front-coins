@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import { api, resolveMediaUrl } from "@/lib/api";
-import { getAlunoLayout } from "@/components/layout/AlunoLayout";
+import { getAlunoLayout } from "@/components/aluno/AlunoLayout";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {

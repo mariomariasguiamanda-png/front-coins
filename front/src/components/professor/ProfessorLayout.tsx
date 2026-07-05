@@ -17,8 +17,8 @@ import {
 import { PiBooksBold } from "react-icons/pi";
 import { FaUserAlt } from "react-icons/fa";
 import { IoHome } from "react-icons/io5";
-import ProfessorHeader from "@/components/layout/ProfessorHeader";
-import SidebarProfessor from "@/components/layout/SidebarProfessor";
+import ProfessorHeader from "@/components/professor/ProfessorHeader";
+import SidebarProfessor from "@/components/professor/SidebarProfessor";
 
 const roboto = Roboto({ subsets: ["latin"], weight: ["400", "500", "700"] });
 

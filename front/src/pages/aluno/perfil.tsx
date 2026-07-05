@@ -1,7 +1,7 @@
 "use client";
 
-import { getAlunoLayout } from "@/components/layout/AlunoLayout";
-import Perfil from "@/modules/aluno/Perfil";
+import { getAlunoLayout } from "@/components/aluno/AlunoLayout";
+import Perfil from "@/components/aluno/Perfil";
 import type { NextPageWithLayout } from "@/pages/_app";
 
 const PerfilPage: NextPageWithLayout = () => <Perfil />;

@@ -19,7 +19,7 @@ import {
   EyeOff,
 } from "lucide-react";
 import { api, resolveMediaUrl } from "@/lib/api";
-import { useAuth } from "@/services/auth/AuthContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { ProfileHero, type ProfileStat } from "@/components/perfil/ProfileHero";
 
 type NotificationType = "success" | "error" | "info";
