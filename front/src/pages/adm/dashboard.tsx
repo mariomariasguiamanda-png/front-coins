@@ -33,7 +33,23 @@ import Link from "next/link";
 import { useMemo, useState, useEffect } from "react";
 import { api } from "@/lib/api";
 
-const COLORS = ["#8b5cf6", "#3b82f6", "#22c55e", "#eab308"];
+const SUBJECT_COLORS: Record<string, string> = {
+  "Matemática": "#3b82f6", // blue
+  "Português": "#ef4444", // red
+  "História": "#eab308", // yellow
+  "Geografia": "#22c55e", // green
+  "Ciências": "#8b5cf6", // purple
+  "Inglês": "#f97316", // orange
+  "Artes": "#ec4899", // pink
+  "Física": "#0ea5e9", // sky
+  "Química": "#14b8a6", // teal
+  "Biologia": "#84cc16", // lime
+  "Educação Física": "#64748b", // slate
+  "Filosofia": "#6366f1", // indigo
+  "Sociologia": "#a855f7", // purple
+};
+
+const COLORS = ["#8b5cf6", "#3b82f6", "#22c55e", "#eab308", "#f97316", "#ef4444", "#14b8a6", "#ec4899"];
 
 type DashboardData = {
   students: { total: number; active: number; inactive: number };
@@ -312,36 +328,69 @@ export default function DashboardPage() {
                   </div>
                 </div>
               </div>
-              <div className="h-[280px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <RePieChart>
-                    <Pie
-                      data={coinsByDisciplineData}
-                      dataKey="coins"
-                      nameKey="discipline"
-                      cx="50%"
-                      cy="50%"
-                      outerRadius={90}
-                      label={(entry: any) => `${entry.name} ${(entry.percent * 100).toFixed(0)}%`}
-                      labelLine={false}
-                    >
-                      {coinsByDisciplineData.map((entry, index) => (
-                        <Cell
-                          key={`cell-${index}`}
-                          fill={COLORS[index % COLORS.length]}
-                        />
-                      ))}
-                    </Pie>
-                    <Tooltip 
-                      contentStyle={{ 
-                        backgroundColor: 'white', 
-                        border: '1px solid #e5e7eb',
-                        borderRadius: '8px',
-                        boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'
-                      }}
-                    />
-                  </RePieChart>
-                </ResponsiveContainer>
+              <div className="flex flex-col h-[340px]">
+                <div className="flex-1 min-h-[180px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <RePieChart>
+                      <Pie
+                        data={coinsByDisciplineData}
+                        dataKey="coins"
+                        nameKey="discipline"
+                        cx="50%"
+                        cy="50%"
+                        outerRadius={85}
+                        innerRadius={60}
+                        paddingAngle={5}
+                        label={false}
+                        stroke="none"
+                      >
+                        {coinsByDisciplineData.map((entry, index) => (
+                          <Cell
+                            key={`cell-${index}`}
+                            fill={SUBJECT_COLORS[entry.discipline] || COLORS[index % COLORS.length]}
+                            style={{ filter: 'drop-shadow(0px 2px 4px rgba(0,0,0,0.1))', transition: 'all 0.3s ease' }}
+                            className="hover:opacity-80"
+                          />
+                        ))}
+                      </Pie>
+                      <Tooltip 
+                        formatter={(value: number, name: string) => [`${value} moedas`, name]}
+                        contentStyle={{ 
+                          backgroundColor: 'rgba(255, 255, 255, 0.95)', 
+                          border: 'none',
+                          borderRadius: '12px',
+                          boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)',
+                          backdropFilter: 'blur(4px)'
+                        }}
+                        itemStyle={{ fontWeight: 600, color: '#1f2937' }}
+                      />
+                    </RePieChart>
+                  </ResponsiveContainer>
+                </div>
+                
+                <div className="mt-4 grid grid-cols-2 gap-x-4 gap-y-3 px-2 overflow-y-auto pr-1">
+                  {coinsByDisciplineData.map((item, index) => {
+                    const totalCoins = coinsByDisciplineData.reduce((acc, curr) => acc + curr.coins, 0);
+                    const percent = totalCoins > 0 ? ((item.coins / totalCoins) * 100).toFixed(0) : "0";
+                    
+                    return (
+                      <div key={item.discipline} className="flex items-center justify-between">
+                        <div className="flex items-center gap-2 truncate">
+                          <div 
+                            className="w-3 h-3 rounded-full flex-shrink-0 shadow-sm" 
+                            style={{ backgroundColor: SUBJECT_COLORS[item.discipline] || COLORS[index % COLORS.length] }} 
+                          />
+                          <span className="text-sm text-gray-600 font-medium truncate" title={item.discipline}>
+                            {item.discipline}
+                          </span>
+                        </div>
+                        <span className="text-sm font-bold text-gray-900 bg-gray-50 px-2 py-0.5 rounded-md">
+                          {percent}%
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             </CardContent>
           </Card>
