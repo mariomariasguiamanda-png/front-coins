@@ -17,30 +17,64 @@ import {
   Users,
   Download,
 } from "lucide-react";
-import { mockTransacoes } from "@/lib/mock/compras";
+import { api } from "@/lib/api";
+
+type CompraRow = {
+  id: string;
+  data: string;
+  alunoNome: string;
+  alunoTurma: string;
+  disciplinaNome: string;
+  pontosComprados: number;
+  moedasGastas: number;
+  status: string;
+};
 
 export default function ComprasRelatoriosPage() {
   const router = useRouter();
   const [disciplina, setDisciplina] = useState<string>("todas");
   const [periodoDe, setPeriodoDe] = useState<string>("");
   const [periodoAte, setPeriodoAte] = useState<string>("");
+  const [compras, setCompras] = useState<CompraRow[]>([]);
 
   useEffect(() => {
     const q = router.query?.disciplina;
     if (typeof q === "string") setDisciplina(q);
   }, [router.query?.disciplina]);
 
-  const disciplinas = useMemo(() => Array.from(new Set(mockTransacoes.map(t => t.disciplinaNome))), []);
+  useEffect(() => {
+    (async () => {
+      try {
+        const rows = await api.get("/admin/compras");
+        setCompras(
+          (rows ?? []).map((r: any): CompraRow => ({
+            id: String(r.id_compra),
+            data: r.criado_em ?? new Date().toISOString(),
+            alunoNome: r.alunos?.usuarios?.nome ?? "Aluno",
+            alunoTurma: r.alunos?.turmas?.nome ?? "Sem turma",
+            disciplinaNome: r.disciplinas?.nome ?? "-",
+            pontosComprados: r.quantidade_pontos ?? 0,
+            moedasGastas: r.custo_em_moedas ?? 0,
+            status: r.status ?? "concluida",
+          })),
+        );
+      } catch (err) {
+        console.error("Erro ao carregar compras:", err);
+      }
+    })();
+  }, []);
+
+  const disciplinas = useMemo(() => Array.from(new Set(compras.map(t => t.disciplinaNome))), [compras]);
 
   const data = useMemo(() => {
-    return mockTransacoes.filter(t => {
+    return compras.filter(t => {
       const okDisc = disciplina === "todas" || t.disciplinaNome === disciplina;
       const ts = new Date(t.data).getTime();
       const de = periodoDe ? new Date(periodoDe).getTime() : -Infinity;
       const ate = periodoAte ? new Date(periodoAte).getTime() + 24*60*60*1000 - 1 : Infinity;
       return okDisc && ts >= de && ts <= ate;
     });
-  }, [disciplina, periodoDe, periodoAte]);
+  }, [compras, disciplina, periodoDe, periodoAte]);
 
   const kpis = useMemo(() => {
     const totalPontos = data.reduce((s, t) => s + t.pontosComprados, 0);
@@ -62,9 +96,9 @@ export default function ComprasRelatoriosPage() {
     }
 
     const csv = [
-      "Data,Aluno,Turma,Disciplina,Pontos Comprados,Moedas Gastas,Saldo Antes,Saldo Depois,Status",
+      "Data,Aluno,Turma,Disciplina,Pontos Comprados,Moedas Gastas,Status",
       ...data.map(t =>
-        `${t.data},${t.alunoNome},${t.alunoTurma},${t.disciplinaNome},${t.pontosComprados},${t.moedasGastas},${t.saldoAntes},${t.saldoDepois},${t.status}`
+        `${t.data},${t.alunoNome},${t.alunoTurma},${t.disciplinaNome},${t.pontosComprados},${t.moedasGastas},${t.status}`
       ),
     ].join("\n");
 
@@ -249,7 +283,7 @@ export default function ComprasRelatoriosPage() {
                       <th className="py-3 px-4 text-left font-semibold text-gray-700">Disciplina</th>
                       <th className="py-3 px-4 text-left font-semibold text-gray-700">Pontos</th>
                       <th className="py-3 px-4 text-left font-semibold text-gray-700">Moedas</th>
-                      <th className="py-3 px-4 text-left font-semibold text-gray-700">Saldo</th>
+                      <th className="py-3 px-4 text-left font-semibold text-gray-700">Status</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -276,11 +310,15 @@ export default function ComprasRelatoriosPage() {
                           </span>
                         </td>
                         <td className="py-3 px-4">
-                          <div className="text-xs text-gray-500">
-                            <span className="text-gray-600">{t.saldoAntes}</span>
-                            <span className="mx-1">→</span>
-                            <span className="font-semibold text-gray-900">{t.saldoDepois}</span>
-                          </div>
+                          <span
+                            className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${
+                              t.status === "cancelada"
+                                ? "bg-red-100 text-red-700"
+                                : "bg-green-100 text-green-700"
+                            }`}
+                          >
+                            {t.status === "cancelada" ? "Cancelada" : "Concluída"}
+                          </span>
                         </td>
                       </tr>
                     ))}

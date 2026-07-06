@@ -89,7 +89,7 @@ export function useAlunoNotifications() {
       setError(null);
 
       // A API já resolve o usuário logado a partir do JWT
-      const data: NotificacaoRow[] = await api.get("/aluno/notificacoes");
+      const data: NotificacaoRow[] = await api.get("/notificacoes");
 
       const mapped: Notification[] = (data ?? []).map((row) => {
         const type = (row.tipo as Notification["type"]) ?? "info";
@@ -129,7 +129,7 @@ export function useAlunoNotifications() {
   const markAsRead = async (id: string) => {
     if (!id) return;
     try {
-      await api.patch(`/aluno/notificacoes/${id}/lida`, {});
+      await api.patch(`/notificacoes/${id}/lida`, {});
 
       setNotifications((prev) =>
         prev.map((n) => (n.id === id ? { ...n, read: true } : n))
@@ -143,7 +143,7 @@ export function useAlunoNotifications() {
 
   const markAllAsRead = async () => {
     try {
-      await api.patch("/aluno/notificacoes/lidas-todas", {});
+      await api.patch("/notificacoes/lidas-todas", {});
 
       setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
       setUnreadCount(0);

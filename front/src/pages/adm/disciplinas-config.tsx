@@ -1,5 +1,4 @@
-import { useState } from "react";
-import Link from "next/link";
+import { useEffect, useState } from "react";
 import { AdminLayout } from "@/components/adm/AdminLayout";
 import { AdmBackButton } from "@/components/adm/AdmBackButton";
 import { Card, CardContent } from "@/components/ui/Card";
@@ -7,16 +6,44 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
 import { Save } from "lucide-react";
+import { getSystemSettings, updateSystemSettings } from "@/services/api/system-settings";
 
 export default function DisciplinasConfigPage() {
   const [defaultMaxPoints, setDefaultMaxPoints] = useState(50);
   const [defaultPointPrice, setDefaultPointPrice] = useState(20);
   const [allowNegative, setAllowNegative] = useState(false);
+  const [saving, setSaving] = useState(false);
 
-  const handleSave = () => {
-    // aqui integrar com API futuramente
-    console.log({ defaultMaxPoints, defaultPointPrice, allowNegative });
-    alert("Configurações salvas.");
+  useEffect(() => {
+    (async () => {
+      try {
+        const settings: any = await getSystemSettings();
+        const r = settings.regrasDisciplinas;
+        if (r) {
+          setDefaultMaxPoints(r.defaultMaxPoints ?? 50);
+          setDefaultPointPrice(r.defaultPointPrice ?? 20);
+          setAllowNegative(r.allowNegative ?? false);
+        }
+      } catch (err) {
+        console.error("Erro ao carregar configurações:", err);
+      }
+    })();
+  }, []);
+
+  const handleSave = async () => {
+    try {
+      setSaving(true);
+      const settings: any = await getSystemSettings();
+      await updateSystemSettings({
+        ...settings,
+        regrasDisciplinas: { defaultMaxPoints, defaultPointPrice, allowNegative },
+      });
+      alert("Configurações salvas.");
+    } catch (err: any) {
+      alert(err?.message ?? "Erro ao salvar");
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -29,8 +56,8 @@ export default function DisciplinasConfigPage() {
           </div>
           <div className="flex gap-2">
             <AdmBackButton href="/adm/disciplinas" />
-            <Button className="rounded-lg bg-violet-600 hover:bg-violet-700" onClick={handleSave}>
-              <Save className="h-4 w-4" /> Salvar
+            <Button className="rounded-lg bg-violet-600 hover:bg-violet-700" onClick={handleSave} disabled={saving}>
+              <Save className="h-4 w-4" /> {saving ? "Salvando..." : "Salvar"}
             </Button>
           </div>
         </header>

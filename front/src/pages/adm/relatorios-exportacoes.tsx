@@ -1,47 +1,64 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AdminLayout } from "@/components/adm/AdminLayout";
 import { AdmBackButton } from "@/components/adm/AdmBackButton";
 import { Button } from "@/components/ui/Button";
 import { Card, CardContent } from "@/components/ui/Card";
+import { api } from "@/lib/api";
 import {
   Download,
   FileText,
   Users,
   BookOpen,
   CheckCircle,
-  Calendar,
   Database,
 } from "lucide-react";
 
-// Mock minimal
-const alunos = [
-  { nome: "João Silva", matricula: "2023001", turma: "3º A", saldo: 450 },
-  { nome: "Maria Fernandes", matricula: "2023002", turma: "3º A", saldo: 510 },
-  { nome: "Pedro Santos", matricula: "2023003", turma: "3º B", saldo: 380 },
-];
-
-const turmas = [
-  {
-    turma: "3º A",
-    disciplina: "Matemática",
-    professor: "Prof. Carlos",
-    mediaMoedas: 120,
-    mediaNotas: 7.8,
-    totalAlunos: 30,
-  },
-  {
-    turma: "3º B",
-    disciplina: "Português",
-    professor: "Profa. Ana",
-    mediaMoedas: 110,
-    mediaNotas: 8.2,
-    totalAlunos: 28,
-  },
-];
+type AlunoRow = { nome: string; matricula: string; turma: string; saldo: number };
+type TurmaRow = {
+  turma: string;
+  disciplina: string;
+  professor: string;
+  mediaMoedas: number;
+  mediaNotas: number;
+  totalAlunos: number;
+};
 
 export default function RelatoriosExportacoesPage() {
   const [kind, setKind] = useState<"alunos" | "turmas" | "disciplinas">("alunos");
   const [exported, setExported] = useState(false);
+  const [alunos, setAlunos] = useState<AlunoRow[]>([]);
+  const [turmas, setTurmas] = useState<TurmaRow[]>([]);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const [dataAlunos, dataTurmas] = await Promise.all([
+          api.get("/admin/relatorios/alunos"),
+          api.get("/admin/relatorios/turmas"),
+        ]);
+        setAlunos(
+          (dataAlunos ?? []).map((a: any) => ({
+            nome: a.nome,
+            matricula: a.matricula,
+            turma: a.turma,
+            saldo: a.saldo_moedas,
+          })),
+        );
+        setTurmas(
+          (dataTurmas ?? []).map((t: any) => ({
+            turma: t.turma,
+            disciplina: t.disciplina,
+            professor: t.professor,
+            mediaMoedas: t.media_moedas,
+            mediaNotas: t.media_notas ?? 0,
+            totalAlunos: t.total_alunos,
+          })),
+        );
+      } catch (err) {
+        console.error("Erro ao carregar dados para exportação:", err);
+      }
+    })();
+  }, []);
 
   function exportCsv(filename: string, header: string[], rows: (string | number)[][]) {
     const csv = [
@@ -112,7 +129,6 @@ export default function RelatoriosExportacoesPage() {
     alunos: alunos.length,
     turmas: turmas.length,
     disciplinas: new Set(turmas.map((t) => t.disciplina)).size,
-    exportacoesHoje: 12,
   };
 
   const campos = {
@@ -202,19 +218,6 @@ export default function RelatoriosExportacoesPage() {
               </CardContent>
             </Card>
 
-            <Card className="rounded-xl border-l-4 border-l-green-500 bg-gradient-to-br from-green-50 to-white">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600">Exportações Hoje</p>
-                    <p className="text-2xl font-bold text-gray-900 mt-1">{stats.exportacoesHoje}</p>
-                  </div>
-                  <div className="h-10 w-10 rounded-lg bg-green-100 flex items-center justify-center">
-                    <Calendar className="h-5 w-5 text-green-600" />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
           </div>
         </header>
 

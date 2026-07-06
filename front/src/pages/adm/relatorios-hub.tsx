@@ -13,14 +13,6 @@ import {
 } from "lucide-react";
 
 export default function RelatoriosHubPage() {
-  // Mock stats
-  const stats = {
-    totalRelatorios: 156,
-    exportacoesHoje: 12,
-    alunosMonitorados: 450,
-    turmasAtivas: 15,
-  };
-
   const items = [
     {
       href: "/adm/relatorios-turmas",
@@ -68,22 +60,6 @@ export default function RelatoriosHubPage() {
             </div>
           </div>
 
-          {/* Stats Cards */}
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1">
-            <Card className="rounded-xl border-l-4 border-l-green-500 bg-gradient-to-br from-green-50 to-white">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600">Exportações Hoje</p>
-                    <p className="text-2xl font-bold text-gray-900 mt-1">{stats.exportacoesHoje}</p>
-                  </div>
-                  <div className="h-10 w-10 rounded-lg bg-green-100 flex items-center justify-center">
-                    <Download className="h-5 w-5 text-green-600" />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
         </header>
 
         {/* Main Cards */}

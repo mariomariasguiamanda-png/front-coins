@@ -2,9 +2,142 @@ import { Injectable } from '@nestjs/common';
 import { DatabaseService } from '../database/database.service';
 import type { AuthUser } from '../common/types/auth-user';
 
+const MESES_PT = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+const DIAS_PT = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+
 @Injectable()
 export class DashboardService {
   constructor(private db: DatabaseService) {}
+
+  async getDashboardAdmin() {
+    const seteDiasAtras = new Date();
+    seteDiasAtras.setDate(seteDiasAtras.getDate() - 6);
+    seteDiasAtras.setHours(0, 0, 0, 0);
+
+    const seisMesesAtras = new Date();
+    seisMesesAtras.setMonth(seisMesesAtras.getMonth() - 5);
+    seisMesesAtras.setDate(1);
+    seisMesesAtras.setHours(0, 0, 0, 0);
+
+    const [
+      usuarios,
+      disciplinas,
+      creditosAgg,
+      debitosAgg,
+      saldosPorDisciplina,
+      matriculasPorDisciplina,
+      nomesDisciplinas,
+      comprasRecentes,
+      transacoesRecentes,
+      alunosComCriacao,
+      chamadosAbertos,
+    ] = await Promise.all([
+      this.db.usuarios.groupBy({ by: ['tipo_usuario', 'status'], _count: { _all: true } }),
+      this.db.disciplinas.groupBy({ by: ['ativo'], _count: { _all: true } }),
+      this.db.transacoes_moedas.aggregate({
+        where: { quantidade: { gt: 0 } },
+        _sum: { quantidade: true },
+      }),
+      this.db.transacoes_moedas.aggregate({
+        where: { quantidade: { lt: 0 } },
+        _sum: { quantidade: true },
+      }),
+      this.db.moedas_saldo.groupBy({ by: ['id_disciplina'], _sum: { saldo: true } }),
+      this.db.matriculas_aluno_disciplina.groupBy({
+        by: ['id_disciplina'],
+        _count: { _all: true },
+      }),
+      this.db.disciplinas.findMany({ select: { id_disciplina: true, nome: true } }),
+      this.db.compras_pontos.findMany({
+        where: { criado_em: { gte: seteDiasAtras } },
+        select: { criado_em: true },
+      }),
+      this.db.transacoes_moedas.findMany({
+        where: { criado_em: { gte: seteDiasAtras }, quantidade: { gt: 0 } },
+        select: { criado_em: true, quantidade: true },
+      }),
+      this.db.alunos.findMany({ select: { criado_em: true } }),
+      this.db.suporte_chamados.count({ where: { status: { notIn: ['respondido', 'fechado'] } } }),
+    ]);
+
+    const contar = (tipo: string, status?: string) =>
+      usuarios
+        .filter((u) => u.tipo_usuario === tipo && (status === undefined || u.status === status))
+        .reduce((s, u) => s + u._count._all, 0);
+
+    const mapaNomes = new Map(nomesDisciplinas.map((d) => [String(d.id_disciplina), d.nome]));
+    const mapaAlunosDisc = new Map(
+      matriculasPorDisciplina.map((m) => [String(m.id_disciplina), m._count._all]),
+    );
+
+    const coinsByDiscipline = saldosPorDisciplina
+      .map((s) => ({
+        discipline: mapaNomes.get(String(s.id_disciplina)) ?? `#${s.id_disciplina}`,
+        coins: s._sum.saldo ?? 0,
+        students: mapaAlunosDisc.get(String(s.id_disciplina)) ?? 0,
+      }))
+      .sort((a, b) => b.coins - a.coins);
+
+    // Atividade dos últimos 7 dias (compras de pontos + moedas creditadas)
+    const activity: { day: string; date: string; purchases: number; coins: number }[] = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      d.setHours(0, 0, 0, 0);
+      const chave = d.toDateString();
+      activity.push({
+        day: DIAS_PT[d.getDay()],
+        date: d.toISOString().slice(0, 10),
+        purchases: comprasRecentes.filter((c) => c.criado_em?.toDateString() === chave).length,
+        coins: transacoesRecentes
+          .filter((t) => t.criado_em?.toDateString() === chave)
+          .reduce((s, t) => s + t.quantidade, 0),
+      });
+    }
+
+    // Evolução de alunos cadastrados (acumulado) nos últimos 6 meses
+    const evolution: { month: string; total: number }[] = [];
+    for (let i = 5; i >= 0; i--) {
+      const fimDoMes = new Date();
+      fimDoMes.setMonth(fimDoMes.getMonth() - i + 1, 0);
+      fimDoMes.setHours(23, 59, 59, 999);
+      evolution.push({
+        month: MESES_PT[new Date(fimDoMes).getMonth()],
+        total: alunosComCriacao.filter((a) => (a.criado_em ?? new Date(0)) <= fimDoMes).length,
+      });
+    }
+
+    const distribuido = creditosAgg._sum.quantidade ?? 0;
+    const gasto = Math.abs(debitosAgg._sum.quantidade ?? 0);
+
+    return {
+      students: {
+        total: contar('aluno'),
+        active: contar('aluno', 'ativo'),
+        inactive: contar('aluno') - contar('aluno', 'ativo'),
+      },
+      teachers: {
+        total: contar('professor'),
+        active: contar('professor', 'ativo'),
+      },
+      disciplines: {
+        total: disciplinas.reduce((s, d) => s + d._count._all, 0),
+        active: disciplinas.filter((d) => d.ativo === true).reduce((s, d) => s + d._count._all, 0),
+        inactive: disciplinas
+          .filter((d) => d.ativo !== true)
+          .reduce((s, d) => s + d._count._all, 0),
+      },
+      coins: {
+        distributed: distribuido,
+        spent: gasto,
+        circulating: distribuido - gasto,
+      },
+      openTickets: chamadosAbertos,
+      coinsByDiscipline,
+      activityLast7Days: activity,
+      studentEvolution: evolution,
+    };
+  }
 
   async getDashboardProfessor(professor: AuthUser) {
     const id_professor = professor.id_professor as number;

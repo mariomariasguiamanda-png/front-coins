@@ -8,7 +8,6 @@ import { Input } from "@/components/ui/Input";
 import { Save } from "lucide-react";
 import { useToast } from "@/components/ui/Toast";
 import { getSystemSettings, updateSystemSettings, diffSystemSettings, type SystemSettings } from "@/services/api/system-settings";
-import { createNotification } from "@/services/api/notifications";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 export default function ConfigIntegracoesPage() {
@@ -68,8 +67,7 @@ export default function ConfigIntegracoesPage() {
                     <Button className={`rounded-xl ${it.status === "ativo" ? "bg-red-600 hover:bg-red-700" : "bg-violet-600 hover:bg-violet-700"}`} onClick={async () => {
                       const nextStatus = it.status === "ativo" ? "inativo" : "ativo";
                       setDraft({ ...draft, integrations: (draft.integrations || []).map(ix => ix.id === it.id ? { ...ix, status: nextStatus, ultimaSincronizacao: nextStatus === "ativo" ? new Date().toISOString() : ix.ultimaSincronizacao } : ix) });
-                      await createNotification({ message: `Integração ${nextStatus === "ativo" ? "ativada" : "desativada"}: ${it.nome}`, actionType: "integration_toggled", recipients: ["Administrador", "Coordenador"] });
-                      show({ variant: "success", title: `Integração ${nextStatus === "ativo" ? "ativada" : "desativada"}` });
+                      show({ variant: "success", title: `Integração ${nextStatus === "ativo" ? "ativada" : "desativada"}`, description: "Lembre de salvar as alterações." });
                     }}>
                       {it.status === "ativo" ? "Desativar" : "Ativar"}
                     </Button>

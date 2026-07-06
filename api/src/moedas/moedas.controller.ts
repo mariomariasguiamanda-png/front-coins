@@ -78,6 +78,18 @@ export class MoedasController {
     return this.moedasService.getHistoricoConfigPrecos(user);
   }
 
+  @Get('admin/moedas/config-precos')
+  @Roles('admin')
+  getConfigPrecosAdmin() {
+    return this.moedasService.getConfigPrecosAdmin();
+  }
+
+  @Put('admin/moedas/config-preco')
+  @Roles('admin')
+  setConfigPrecoAdmin(@Body() body: ConfigPrecoDto) {
+    return this.moedasService.setConfigPrecoAdmin(body);
+  }
+
   @Post('admin/moedas/ajuste')
   @Roles('admin')
   ajuste(@Body() body: AjusteMoedasDto, @CurrentUser() user: AuthUser) {
@@ -118,7 +130,11 @@ export class MoedasController {
 
   @Post('admin/compras/:id/cancelar')
   @Roles('admin')
-  cancelarCompra(@Param('id') id: string, @CurrentUser() user: AuthUser) {
-    return this.moedasService.cancelarCompra(BigInt(id), user);
+  cancelarCompra(
+    @Param('id') id: string,
+    @CurrentUser() user: AuthUser,
+    @Body('motivo') motivo?: string,
+  ) {
+    return this.moedasService.cancelarCompra(BigInt(id), user, motivo);
   }
 }

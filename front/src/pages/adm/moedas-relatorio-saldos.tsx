@@ -1,5 +1,6 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { api } from "@/lib/api";
 import { AdminLayout } from "@/components/adm/AdminLayout";
 import { AdmBackButton } from "@/components/adm/AdmBackButton";
 import { AdmFiltersCard } from "@/components/adm/AdmFiltersCard";
@@ -37,64 +38,30 @@ export default function MoedasRelatorioSaldosPage() {
   const [periodo, setPeriodo] = useState<string>("current");
   const [showGraphs, setShowGraphs] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<StudentBalance | null>(null);
+  const [students, setStudents] = useState<StudentBalance[]>([]);
 
-  const students: StudentBalance[] = [
-    {
-      id: "1",
-      name: "João Silva",
-      email: "joao.silva@escola.edu.br",
-      class: "1º A",
-      balance: 450,
-      totalReceived: 850,
-      totalSpent: 400,
-      lastTransaction: "2024-11-01",
-      status: "positive"
-    },
-    {
-      id: "2",
-      name: "Maria Santos",
-      email: "maria.santos@escola.edu.br",
-      class: "1º B",
-      balance: 220,
-      totalReceived: 620,
-      totalSpent: 400,
-      lastTransaction: "2024-10-30",
-      status: "positive"
-    },
-    {
-      id: "3",
-      name: "Pedro Oliveira",
-      email: "pedro.oliveira@escola.edu.br",
-      class: "2º A",
-      balance: -50,
-      totalReceived: 450,
-      totalSpent: 500,
-      lastTransaction: "2024-10-28",
-      status: "negative"
-    },
-    {
-      id: "4",
-      name: "Ana Costa",
-      email: "ana.costa@escola.edu.br",
-      class: "2º B",
-      balance: 0,
-      totalReceived: 300,
-      totalSpent: 300,
-      lastTransaction: "2024-10-25",
-      status: "zero"
-    },
-    {
-      id: "5",
-      name: "Carlos Mendes",
-      email: "carlos.mendes@escola.edu.br",
-      class: "3º A",
-      balance: 680,
-      totalReceived: 1200,
-      totalSpent: 520,
-      lastTransaction: "2024-11-02",
-      status: "positive"
-    },
-  ];
+  useEffect(() => {
+    (async () => {
+      try {
+        const data = await api.get("/admin/moedas/saldos");
+        setStudents(
+          (data ?? []).map((a: any): StudentBalance => ({
+            id: String(a.id_aluno),
+            name: a.nome,
+            email: a.email ?? "",
+            class: a.turma ?? "Sem turma",
+            balance: a.saldo_total ?? 0,
+            totalReceived: a.total_recebido ?? 0,
+            totalSpent: a.total_gasto ?? 0,
+            lastTransaction: a.ultima_transacao ?? "",
+            status: (a.saldo_total ?? 0) > 0 ? "positive" : (a.saldo_total ?? 0) < 0 ? "negative" : "zero",
+          })),
+        );
+      } catch (err) {
+        console.error("Erro ao carregar saldos:", err);
+      }
+    })();
+  }, []);
 
   const filtered = useMemo(() => {
     const s = search.trim().toLowerCase();

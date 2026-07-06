@@ -1,127 +1,127 @@
 generator client {
-  provider = "prisma-client-js"
+provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "postgresql"
+provider = "postgresql"
 }
 
 model logs_auditoria {
-  id_log     BigInt    @id @default(autoincrement())
-  id_usuario BigInt?
-  acao       String    @db.VarChar(255)
-  detalhes   String?
-  ip_address String?   @db.VarChar(50)
-  criado_em  DateTime? @default(now()) @db.Timestamptz(6)
-  usuarios   usuarios? @relation(fields: [id_usuario], references: [id_usuario], onDelete: SetNull, onUpdate: NoAction)
+id_log     BigInt    @id @default(autoincrement())
+id_usuario BigInt?
+acao       String    @db.VarChar(255)
+detalhes   String?
+ip_address String?   @db.VarChar(50)
+criado_em  DateTime? @default(now()) @db.Timestamptz(6)
+usuarios   usuarios? @relation(fields: [id_usuario], references: [id_usuario], onDelete: SetNull, onUpdate: NoAction)
 
-  @@index([id_usuario], map: "idx_logs_auditoria_usuario")
-  @@index([criado_em(sort: Desc)], map: "idx_logs_auditoria_criado_em")
+@@index([id_usuario], map: "idx_logs_auditoria_usuario")
+@@index([criado_em(sort: Desc)], map: "idx_logs_auditoria_criado_em")
 }
 
 model aluno_atividade {
-  id             BigInt     @id @default(autoincrement())
-  id_aluno       BigInt
-  id_atividade   BigInt
-  status         String?    @default("pendente") @db.VarChar(50)
-  data_entrega   DateTime?  @db.Timestamptz(6)
-  nota           Decimal?   @db.Decimal(5, 2)
-  feedback       String?
-  resposta_texto String?
-  criado_em      DateTime?  @default(now()) @db.Timestamptz(6)
-  alunos         alunos     @relation(fields: [id_aluno], references: [id_aluno], onDelete: Cascade, onUpdate: NoAction)
-  atividades     atividades @relation(fields: [id_atividade], references: [id_atividade], onDelete: Cascade, onUpdate: NoAction)
+id             BigInt     @id @default(autoincrement())
+id_aluno       BigInt
+id_atividade   BigInt
+status         String?    @default("pendente") @db.VarChar(50)
+data_entrega   DateTime?  @db.Timestamptz(6)
+nota           Decimal?   @db.Decimal(5, 2)
+feedback       String?
+resposta_texto String?
+criado_em      DateTime?  @default(now()) @db.Timestamptz(6)
+alunos         alunos     @relation(fields: [id_aluno], references: [id_aluno], onDelete: Cascade, onUpdate: NoAction)
+atividades     atividades @relation(fields: [id_atividade], references: [id_atividade], onDelete: Cascade, onUpdate: NoAction)
 
-  @@unique([id_aluno, id_atividade])
-  @@index([status], map: "idx_aluno_atividade_status")
+@@unique([id_aluno, id_atividade])
+@@index([status], map: "idx_aluno_atividade_status")
 }
 
 model alunos {
-  id_aluno                    BigInt                        @id @default(autoincrement())
-  id_usuario                  BigInt                        @unique
-  id_turma                    BigInt?
-  matricula                   String                        @unique @db.VarChar(50)
-  data_nascimento             DateTime?                     @db.Date
-  endereco                    String?
-  foto_url                    String?                       @db.VarChar(500)
-  cpf                         String?                       @db.VarChar(20)
-  criado_em                   DateTime?                     @default(now()) @db.Timestamptz(6)
-  aluno_atividade             aluno_atividade[]
-  turmas                      turmas?                       @relation(fields: [id_turma], references: [id_turma], onUpdate: NoAction)
-  usuarios                    usuarios                      @relation(fields: [id_usuario], references: [id_usuario], onDelete: Cascade, onUpdate: NoAction)
-  compras_pontos              compras_pontos[]
-  matriculas_aluno_disciplina matriculas_aluno_disciplina[]
-  moedas_saldo                moedas_saldo[]
-  notas_finais                notas_finais[]
-  transacoes_moedas           transacoes_moedas[]
-  respostas_atividade_aluno   respostas_atividade_aluno[]
-  aluno_resumo                aluno_resumo[]
-  aluno_videoaula             aluno_videoaula[]
-  agenda_estudos              agenda_estudos[]
+id_aluno                    BigInt                        @id @default(autoincrement())
+id_usuario                  BigInt                        @unique
+id_turma                    BigInt?
+matricula                   String                        @unique @db.VarChar(50)
+data_nascimento             DateTime?                     @db.Date
+endereco                    String?
+foto_url                    String?                       @db.VarChar(500)
+cpf                         String?                       @db.VarChar(20)
+criado_em                   DateTime?                     @default(now()) @db.Timestamptz(6)
+aluno_atividade             aluno_atividade[]
+turmas                      turmas?                       @relation(fields: [id_turma], references: [id_turma], onUpdate: NoAction)
+usuarios                    usuarios                      @relation(fields: [id_usuario], references: [id_usuario], onDelete: Cascade, onUpdate: NoAction)
+compras_pontos              compras_pontos[]
+matriculas_aluno_disciplina matriculas_aluno_disciplina[]
+moedas_saldo                moedas_saldo[]
+notas_finais                notas_finais[]
+transacoes_moedas           transacoes_moedas[]
+respostas_atividade_aluno   respostas_atividade_aluno[]
+aluno_resumo                aluno_resumo[]
+aluno_videoaula             aluno_videoaula[]
+agenda_estudos              agenda_estudos[]
 
-  @@index([id_turma], map: "idx_alunos_id_turma")
-  @@index([id_usuario], map: "idx_alunos_id_usuario")
+@@index([id_turma], map: "idx_alunos_id_turma")
+@@index([id_usuario], map: "idx_alunos_id_usuario")
 }
 
 model atividades {
-  id_atividade              BigInt                      @id @default(autoincrement())
-  id_disciplina             BigInt
-  id_professor              BigInt
-  titulo                    String                      @db.VarChar(255)
-  descricao                 String?
-  recompensa_moedas         Int?                        @default(0)
-  tipo                      String?                     @db.VarChar(50)
-  data_criacao              DateTime?                   @default(now()) @db.Timestamptz(6)
-  data_vencimento           DateTime?                   @db.Timestamptz(6)
-  ativo                     Boolean?                    @default(true)
-  aluno_atividade           aluno_atividade[]
-  disciplinas               disciplinas                 @relation(fields: [id_disciplina], references: [id_disciplina], onDelete: Cascade, onUpdate: NoAction)
-  professores               professores                 @relation(fields: [id_professor], references: [id_professor], onDelete: SetNull, onUpdate: NoAction)
-  transacoes_moedas         transacoes_moedas[]
-  questoes_atividade        questoes_atividade[]
-  respostas_atividade_aluno respostas_atividade_aluno[]
+id_atividade              BigInt                      @id @default(autoincrement())
+id_disciplina             BigInt
+id_professor              BigInt
+titulo                    String                      @db.VarChar(255)
+descricao                 String?
+recompensa_moedas         Int?                        @default(0)
+tipo                      String?                     @db.VarChar(50)
+data_criacao              DateTime?                   @default(now()) @db.Timestamptz(6)
+data_vencimento           DateTime?                   @db.Timestamptz(6)
+ativo                     Boolean?                    @default(true)
+aluno_atividade           aluno_atividade[]
+disciplinas               disciplinas                 @relation(fields: [id_disciplina], references: [id_disciplina], onDelete: Cascade, onUpdate: NoAction)
+professores               professores                 @relation(fields: [id_professor], references: [id_professor], onDelete: SetNull, onUpdate: NoAction)
+transacoes_moedas         transacoes_moedas[]
+questoes_atividade        questoes_atividade[]
+respostas_atividade_aluno respostas_atividade_aluno[]
 
-  @@index([id_disciplina], map: "idx_atividades_disciplina")
-  @@index([data_vencimento], map: "idx_atividades_vencimento")
+@@index([id_disciplina], map: "idx_atividades_disciplina")
+@@index([data_vencimento], map: "idx_atividades_vencimento")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 model compras_pontos {
-  id_compra           BigInt            @id @default(autoincrement())
-  id_aluno            BigInt
-  id_disciplina       BigInt
-  quantidade_pontos   Int
-  custo_em_moedas     Int
-  id_transacao_debito BigInt
-  status              String?           @default("concluida") @db.VarChar(50)
-  criado_em           DateTime?         @default(now()) @db.Timestamptz(6)
-  alunos              alunos            @relation(fields: [id_aluno], references: [id_aluno], onDelete: Cascade, onUpdate: NoAction)
-  disciplinas         disciplinas       @relation(fields: [id_disciplina], references: [id_disciplina], onDelete: Cascade, onUpdate: NoAction)
-  transacoes_moedas   transacoes_moedas @relation(fields: [id_transacao_debito], references: [id_transacao], onDelete: NoAction, onUpdate: NoAction)
+id_compra           BigInt            @id @default(autoincrement())
+id_aluno            BigInt
+id_disciplina       BigInt
+quantidade_pontos   Int
+custo_em_moedas     Int
+id_transacao_debito BigInt
+status              String?           @default("concluida") @db.VarChar(50)
+criado_em           DateTime?         @default(now()) @db.Timestamptz(6)
+alunos              alunos            @relation(fields: [id_aluno], references: [id_aluno], onDelete: Cascade, onUpdate: NoAction)
+disciplinas         disciplinas       @relation(fields: [id_disciplina], references: [id_disciplina], onDelete: Cascade, onUpdate: NoAction)
+transacoes_moedas   transacoes_moedas @relation(fields: [id_transacao_debito], references: [id_transacao], onDelete: NoAction, onUpdate: NoAction)
 
-  @@index([id_aluno, criado_em(sort: Desc)], map: "idx_compras_aluno")
+@@index([id_aluno, criado_em(sort: Desc)], map: "idx_compras_aluno")
 }
 
 model disciplinas {
-  id_disciplina               BigInt                        @id @default(autoincrement())
-  nome                        String                        @db.VarChar(255)
-  codigo                      String                        @unique @db.VarChar(50)
-  descricao                   String?
-  carga_horaria               Int?
-  ativo                       Boolean?                      @default(true)
-  criado_em                   DateTime?                     @default(now()) @db.Timestamptz(6)
-  atividades                  atividades[]
-  compras_pontos              compras_pontos[]
-  matriculas_aluno_disciplina matriculas_aluno_disciplina[]
-  moedas_saldo                moedas_saldo[]
-  notas_finais                notas_finais[]
-  professor_disciplina        professor_disciplina[]
-  resumos                     resumos[]
-  transacoes_moedas           transacoes_moedas[]
-  videoaulas                  videoaulas[]
-  config_compra_pontos        config_compra_pontos?
-  agenda_estudos              agenda_estudos[]
-  config_compra_pontos_historico config_compra_pontos_historico[]
+id_disciplina               BigInt                        @id @default(autoincrement())
+nome                        String                        @db.VarChar(255)
+codigo                      String                        @unique @db.VarChar(50)
+descricao                   String?
+carga_horaria               Int?
+ativo                       Boolean?                      @default(true)
+criado_em                   DateTime?                     @default(now()) @db.Timestamptz(6)
+atividades                  atividades[]
+compras_pontos              compras_pontos[]
+matriculas_aluno_disciplina matriculas_aluno_disciplina[]
+moedas_saldo                moedas_saldo[]
+notas_finais                notas_finais[]
+professor_disciplina        professor_disciplina[]
+resumos                     resumos[]
+transacoes_moedas           transacoes_moedas[]
+videoaulas                  videoaulas[]
+config_compra_pontos        config_compra_pontos?
+agenda_estudos              agenda_estudos[]
+config_compra_pontos_historico config_compra_pontos_historico[]
 
   @@index([codigo], map: "idx_disciplinas_codigo")
 }
@@ -415,16 +415,50 @@ model config_compra_pontos {
 }
 
 model config_compra_pontos_historico {
-  id              BigInt      @id @default(autoincrement())
+  id              BigInt       @id @default(autoincrement())
   id_disciplina   BigInt
-  id_professor    BigInt
+  id_professor    BigInt? // null quando a alteração foi feita pelo admin
   preco_anterior  Int?
   preco_novo      Int?
   pontos_anterior Int?
   pontos_novo     Int?
-  criado_em       DateTime?   @default(now()) @db.Timestamptz(6)
-  disciplinas     disciplinas @relation(fields: [id_disciplina], references: [id_disciplina], onDelete: Cascade, onUpdate: NoAction)
-  professores     professores @relation(fields: [id_professor], references: [id_professor], onDelete: Cascade, onUpdate: NoAction)
+  criado_em       DateTime?    @default(now()) @db.Timestamptz(6)
+  disciplinas     disciplinas  @relation(fields: [id_disciplina], references: [id_disciplina], onDelete: Cascade, onUpdate: NoAction)
+  professores     professores? @relation(fields: [id_professor], references: [id_professor], onDelete: Cascade, onUpdate: NoAction)
 
   @@index([id_disciplina], map: "idx_config_historico_disciplina")
+}
+
+// Configurações do sistema (branding, integrações, calendário acadêmico,
+// permissões por papel) - um documento JSON por chave, editado pelo admin.
+model system_settings {
+  chave         String    @id @db.VarChar(50)
+  valor         Json
+  atualizado_em DateTime? @default(now()) @db.Timestamptz(6)
+}
+
+model faq_categorias {
+  id_categoria BigInt @id @default(autoincrement())
+  nome         String @db.VarChar(255)
+  faqs         faqs[]
+}
+
+model faqs {
+  id_faq         BigInt         @id @default(autoincrement())
+  id_categoria   BigInt
+  pergunta       String
+  resposta       String
+  criado_em      DateTime?      @default(now()) @db.Timestamptz(6)
+  faq_categorias faq_categorias @relation(fields: [id_categoria], references: [id_categoria], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([id_categoria], map: "idx_faqs_categoria")
+}
+
+model suporte_respostas_padrao {
+  id_resposta BigInt    @id @default(autoincrement())
+  categoria   String    @db.VarChar(100)
+  titulo      String    @db.VarChar(255)
+  texto       String
+  tags        String[]  @default([])
+  criado_em   DateTime? @default(now()) @db.Timestamptz(6)
 }

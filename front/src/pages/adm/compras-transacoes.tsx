@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { AdminLayout } from "@/components/adm/AdminLayout";
 import { AdmBackButton } from "@/components/adm/AdmBackButton";
@@ -6,7 +6,7 @@ import { AdmFiltersCard } from "@/components/adm/AdmFiltersCard";
 import { Button } from "@/components/ui/Button";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Search,
   Download,
@@ -17,13 +17,34 @@ import {
 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { CancelarCompraDialog } from "@/components/adm/dialogs/CancelarCompraDialog";
-import { createNotification, composeMessages } from "@/services/api/notifications";
+import { api } from "@/lib/api";
 
-// Shared mock
-import { Transacao, mockTransacoes } from "@/lib/mock/compras";
+type Transacao = {
+  id: string;
+  data: string;
+  alunoNome: string;
+  alunoTurma: string;
+  disciplinaNome: string;
+  pontosComprados: number;
+  moedasGastas: number;
+  status: "concluida" | "cancelada";
+};
+
+function mapCompra(row: any): Transacao {
+  return {
+    id: String(row.id_compra),
+    data: row.criado_em ?? new Date().toISOString(),
+    alunoNome: row.alunos?.usuarios?.nome ?? "Aluno",
+    alunoTurma: row.alunos?.turmas?.nome ?? "Sem turma",
+    disciplinaNome: row.disciplinas?.nome ?? "-",
+    pontosComprados: row.quantidade_pontos ?? 0,
+    moedasGastas: row.custo_em_moedas ?? 0,
+    status: row.status === "cancelada" ? "cancelada" : "concluida",
+  };
+}
 
 export default function ComprasTransacoesPage() {
-  const [transacoes, setTransacoes] = useState<Transacao[]>(mockTransacoes);
+  const [transacoes, setTransacoes] = useState<Transacao[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [currentTab, setCurrentTab] = useState("todas");
   const [filtroTurma, setFiltroTurma] = useState("todas");
@@ -32,16 +53,28 @@ export default function ComprasTransacoesPage() {
   const [showCancelarDialog, setShowCancelarDialog] = useState(false);
   const [logsCancelamentos, setLogsCancelamentos] = useState<Array<{id:string; quando:string; admin:string; motivo:string;}>>([]);
 
+  const carregarCompras = async () => {
+    try {
+      const data = await api.get("/admin/compras");
+      setTransacoes((data ?? []).map(mapCompra));
+    } catch (err) {
+      console.error("Erro ao carregar compras:", err);
+    }
+  };
+
+  useEffect(() => {
+    carregarCompras();
+  }, []);
+
   // Dados únicos para filtros
   const turmas = useMemo(() => Array.from(new Set(transacoes.map(t => t.alunoTurma))), [transacoes]);
   const disciplinas = useMemo(() => Array.from(new Set(transacoes.map(t => t.disciplinaNome))), [transacoes]);
 
   // Filtragem de transações
   const transacoesFiltradas = transacoes.filter(transacao => {
-    const matchesSearch = 
+    const matchesSearch =
       transacao.alunoNome.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      transacao.disciplinaNome.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      transacao.professorNome.toLowerCase().includes(searchTerm.toLowerCase());
+      transacao.disciplinaNome.toLowerCase().includes(searchTerm.toLowerCase());
     
     const matchesStatus = 
       currentTab === "todas" || 
@@ -64,9 +97,9 @@ export default function ComprasTransacoesPage() {
 
   const handleExportar = () => {
     const csv = [
-      "ID,Data,Aluno,Turma,Disciplina,Professor,Pontos Comprados,Moedas Gastas,Status",
+      "ID,Data,Aluno,Turma,Disciplina,Pontos Comprados,Moedas Gastas,Status",
       ...transacoesFiltradas.map(t =>
-        `${t.id},${t.data},${t.alunoNome},${t.alunoTurma},${t.disciplinaNome},${t.professorNome},${t.pontosComprados},${t.moedasGastas},${t.status}`
+        `${t.id},${t.data},${t.alunoNome},${t.alunoTurma},${t.disciplinaNome},${t.pontosComprados},${t.moedasGastas},${t.status}`
       ),
     ].join("\n");
 
@@ -81,34 +114,24 @@ export default function ComprasTransacoesPage() {
 
   const handleCancelarTransacao = async (motivo: string) => {
     if (selectedTransacao) {
-      // Atualizar o status da transação
-      setTransacoes(prev => 
-        prev.map(t => 
-          t.id === selectedTransacao.id 
-            ? { ...t, status: "cancelada" as const }
-            : t
-        )
-      );
+      try {
+        // Cancela de verdade: estorna as moedas e notifica o aluno (backend)
+        await api.post(`/admin/compras/${selectedTransacao.id}/cancelar`, { motivo });
+        await carregarCompras();
 
-      const { message, actionType } = composeMessages.purchaseCanceled({
-        motivo,
-        transacaoId: selectedTransacao.id,
-      });
-      await createNotification({ 
-        message, 
-        actionType, 
-        recipients: ["Administrador", "Coordenador"] 
-      });
-      
-      setLogsCancelamentos((prev) => [
-        { 
-          id: selectedTransacao.id, 
-          quando: new Date().toISOString(), 
-          admin: "Administrador (sessão)", 
-          motivo 
-        },
-        ...prev,
-      ]);
+        setLogsCancelamentos((prev) => [
+          {
+            id: selectedTransacao.id,
+            quando: new Date().toISOString(),
+            admin: "Administrador (sessão)",
+            motivo,
+          },
+          ...prev,
+        ]);
+      } catch (err: any) {
+        console.error(err);
+        alert(err?.message ?? "Erro ao cancelar a compra");
+      }
     }
     setShowCancelarDialog(false);
     setSelectedTransacao(null);
@@ -288,7 +311,6 @@ export default function ComprasTransacoesPage() {
                             <Link href={{ pathname: "/adm/compras-relatorios", query: { disciplina: transacao.disciplinaNome } }} className="text-violet-600 hover:underline">
                               {transacao.disciplinaNome}
                             </Link>
-                            <p className="text-sm text-muted-foreground">Prof. {transacao.professorNome}</p>
                           </div>
                         </td>
                         <td className="py-3 px-4">

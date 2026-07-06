@@ -1,3 +1,5 @@
+import { api } from "@/lib/api";
+
 export type TicketStatus = "aberto" | "em_andamento" | "resolvido";
 
 export type TicketResponse = {
@@ -11,8 +13,11 @@ export type TicketResponse = {
 export type Ticket = {
   id: string;
   solicitante: string;
+  solicitantePerfil?: string;
   tipo: "tecnico" | "pedagogico" | "administrativo";
   descricao: string;
+  assunto?: string;
+  anexos?: string[];
   status: TicketStatus;
   dataAbertura: string; // ISO
   prazoEstimado: string; // ISO
@@ -20,73 +25,75 @@ export type Ticket = {
   respostas: TicketResponse[];
 };
 
-const memory: { tickets: Ticket[] } = {
-  tickets: [
-    {
-      id: "t_1",
-      solicitante: "Ana Paula",
-      tipo: "tecnico",
-      descricao: "Não consigo acessar a plataforma no celular.",
-      status: "aberto",
-      dataAbertura: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(),
-      prazoEstimado: new Date(Date.now() + 1000 * 60 * 60 * 24 * 2).toISOString(),
-      responsavel: null,
-      respostas: [],
-    },
-    {
-      id: "t_2",
-      solicitante: "Carlos Mendes",
-      tipo: "administrativo",
-      descricao: "Solicitação de ajuste de cadastro.",
-      status: "em_andamento",
-      dataAbertura: new Date(Date.now() - 1000 * 60 * 60 * 48).toISOString(),
-      prazoEstimado: new Date(Date.now() + 1000 * 60 * 60 * 24).toISOString(),
-      responsavel: "Equipe ADM",
-      respostas: [
-        {
-          id: "r_1",
-          autorId: "sup_1",
-          autorNome: "Atendente 01",
-          mensagem: "Estamos analisando sua solicitação.",
-          dataHora: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
-        },
-      ],
-    },
-  ],
+// O backend guarda uma resposta única por chamado (campo resposta +
+// respondido_em); a UI trabalha com lista de respostas, então mapeamos a
+// resposta existente como o único item da lista.
+const STATUS_API_PARA_UI: Record<string, TicketStatus> = {
+  aberto: "aberto",
+  em_andamento: "em_andamento",
+  respondido: "resolvido",
+  fechado: "resolvido",
+};
+const STATUS_UI_PARA_API: Record<TicketStatus, string> = {
+  aberto: "aberto",
+  em_andamento: "em_andamento",
+  resolvido: "fechado",
 };
 
+const PRAZO_PADRAO_MS = 48 * 60 * 60 * 1000;
+
+function mapChamado(row: any): Ticket {
+  const abertura = row.criado_em ?? new Date().toISOString();
+  return {
+    id: String(row.id_chamado),
+    solicitante: row.usuarios?.nome ?? "Usuário",
+    solicitantePerfil: row.usuarios?.tipo_usuario,
+    tipo: "administrativo",
+    assunto: row.assunto ?? undefined,
+    descricao: row.assunto ? `${row.assunto}${row.mensagem ? ` — ${row.mensagem}` : ""}` : (row.mensagem ?? ""),
+    anexos: row.anexos ?? [],
+    status: STATUS_API_PARA_UI[row.status ?? "aberto"] ?? "aberto",
+    dataAbertura: abertura,
+    prazoEstimado: new Date(new Date(abertura).getTime() + PRAZO_PADRAO_MS).toISOString(),
+    responsavel: row.resposta ? "Equipe ADM" : null,
+    respostas: row.resposta
+      ? [
+          {
+            id: `resp_${row.id_chamado}`,
+            autorId: "adm",
+            autorNome: "Equipe ADM",
+            mensagem: row.resposta,
+            dataHora: row.respondido_em ?? abertura,
+          },
+        ]
+      : [],
+  };
+}
+
 export async function getTickets(): Promise<Ticket[]> {
-  // return a shallow copy to avoid external mutation
-  return [...memory.tickets];
+  const rows = await api.get("/admin/suporte/chamados");
+  return (rows ?? []).map(mapChamado);
 }
 
 export async function addTicketResponse(
   ticketId: string,
-  response: { autorId: string; autorNome: string; mensagem: string }
+  response: { autorId: string; autorNome: string; mensagem: string },
 ): Promise<Ticket> {
-  const t = memory.tickets.find((x) => x.id === ticketId);
-  if (!t) throw new Error("Ticket não encontrado");
-  const r: TicketResponse = {
-    id: `r_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
-    autorId: response.autorId,
-    autorNome: response.autorNome,
-    mensagem: response.mensagem,
-    dataHora: new Date().toISOString(),
-  };
-  t.respostas.push(r);
-  // opcional: marcar como em andamento ao responder
-  if (t.status === "aberto") t.status = "em_andamento";
-  return { ...t };
+  const row = await api.patch(`/admin/suporte/chamados/${ticketId}/responder`, {
+    resposta: response.mensagem,
+  });
+  return mapChamado(row);
 }
 
 export async function updateTicket(next: Ticket): Promise<Ticket> {
-  const idx = memory.tickets.findIndex((x) => x.id === next.id);
-  if (idx === -1) throw new Error("Ticket não encontrado");
-  memory.tickets[idx] = { ...next, respostas: next.respostas ?? memory.tickets[idx].respostas };
-  return { ...memory.tickets[idx] };
+  const row = await api.patch(`/admin/suporte/chamados/${next.id}/status`, {
+    status: STATUS_UI_PARA_API[next.status] ?? next.status,
+  });
+  return mapChamado({ ...row, usuarios: undefined });
 }
 
-// FAQs types and functions
+// ===== FAQs (tabelas faq_categorias + faqs) =====
+
 export type FaqItem = {
   id: string;
   pergunta: string;
@@ -99,84 +106,57 @@ export type FaqCategory = {
   perguntas: FaqItem[];
 };
 
-const faqMemory: { categories: FaqCategory[] } = {
-  categories: [
-    {
-      id: "cat_1",
-      nome: "Geral",
-      perguntas: [
-        {
-          id: "faq_1",
-          pergunta: "Como faço para acessar a plataforma?",
-          resposta: "Você pode acessar a plataforma através do site oficial utilizando seu e-mail e senha cadastrados.",
-        },
-      ],
-    },
-  ],
-};
+function mapCategoria(row: any): FaqCategory {
+  return {
+    id: String(row.id_categoria),
+    nome: row.nome,
+    perguntas: (row.perguntas ?? []).map((f: any) => ({
+      id: String(f.id_faq),
+      pergunta: f.pergunta,
+      resposta: f.resposta,
+    })),
+  };
+}
 
 export async function getFaqCategories(): Promise<FaqCategory[]> {
-  return [...faqMemory.categories];
+  const rows = await api.get("/faqs");
+  return (rows ?? []).map(mapCategoria);
 }
 
 export async function createFaqCategory(nome: string): Promise<FaqCategory> {
-  const cat: FaqCategory = {
-    id: `cat_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
-    nome,
-    perguntas: [],
-  };
-  faqMemory.categories.push(cat);
-  return { ...cat };
+  const row = await api.post("/admin/faqs/categorias", { nome });
+  return mapCategoria(row);
 }
 
 export async function updateFaqCategory(id: string, nome: string): Promise<FaqCategory> {
-  const cat = faqMemory.categories.find((c) => c.id === id);
-  if (!cat) throw new Error("Categoria não encontrada");
-  cat.nome = nome;
-  return { ...cat };
+  const row = await api.patch(`/admin/faqs/categorias/${id}`, { nome });
+  return { ...mapCategoria(row), perguntas: [] };
 }
 
 export async function deleteFaqCategory(id: string): Promise<void> {
-  const idx = faqMemory.categories.findIndex((c) => c.id === id);
-  if (idx === -1) throw new Error("Categoria não encontrada");
-  faqMemory.categories.splice(idx, 1);
+  await api.delete(`/admin/faqs/categorias/${id}`);
 }
 
 export async function addFaqItem(categoryId: string, pergunta: string, resposta: string): Promise<FaqItem> {
-  const cat = faqMemory.categories.find((c) => c.id === categoryId);
-  if (!cat) throw new Error("Categoria não encontrada");
-  const item: FaqItem = {
-    id: `faq_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
-    pergunta,
-    resposta,
-  };
-  cat.perguntas.push(item);
-  return { ...item };
+  const row = await api.post(`/admin/faqs/categorias/${categoryId}/perguntas`, { pergunta, resposta });
+  return { id: String(row.id_faq), pergunta: row.pergunta, resposta: row.resposta };
 }
 
 export async function updateFaqItem(
-  categoryId: string,
+  _categoryId: string,
   faqId: string,
-  data: { pergunta: string; resposta: string }
+  data: { pergunta: string; resposta: string },
 ): Promise<FaqItem> {
-  const cat = faqMemory.categories.find((c) => c.id === categoryId);
-  if (!cat) throw new Error("Categoria não encontrada");
-  const item = cat.perguntas.find((f) => f.id === faqId);
-  if (!item) throw new Error("FAQ não encontrado");
-  item.pergunta = data.pergunta;
-  item.resposta = data.resposta;
-  return { ...item };
+  const row = await api.patch(`/admin/faqs/${faqId}`, data);
+  return { id: String(row.id_faq), pergunta: row.pergunta, resposta: row.resposta };
 }
 
-export async function deleteFaqItem(categoryId: string, faqId: string): Promise<void> {
-  const cat = faqMemory.categories.find((c) => c.id === categoryId);
-  if (!cat) throw new Error("Categoria não encontrada");
-  const idx = cat.perguntas.findIndex((f) => f.id === faqId);
-  if (idx === -1) throw new Error("FAQ não encontrado");
-  cat.perguntas.splice(idx, 1);
+export async function deleteFaqItem(_categoryId: string, faqId: string): Promise<void> {
+  await api.delete(`/admin/faqs/${faqId}`);
 }
 
-// Standard Responses
+// ===== Respostas padrão (tabela suporte_respostas_padrao) =====
+
 export type StandardResponse = {
   id: string;
   categoria: string;
@@ -185,36 +165,36 @@ export type StandardResponse = {
   tags?: string[];
 };
 
-let responses: StandardResponse[] = [
-  {
-    id: "1",
-    categoria: "Técnico",
-    titulo: "Problema de Login",
-    texto: "Para resolver problemas de login, tente limpar o cache do navegador e verificar se suas credenciais estão corretas.",
-    tags: ["login", "acesso"],
-  },
-];
+function mapResposta(row: any): StandardResponse {
+  return {
+    id: String(row.id_resposta),
+    categoria: row.categoria,
+    titulo: row.titulo,
+    texto: row.texto,
+    tags: row.tags ?? [],
+  };
+}
 
 export async function getStandardResponses(): Promise<StandardResponse[]> {
-  return JSON.parse(JSON.stringify(responses));
+  const rows = await api.get("/admin/suporte/respostas-padrao");
+  return (rows ?? []).map(mapResposta);
 }
 
-export async function createStandardResponse(response: Omit<StandardResponse, "id">): Promise<StandardResponse> {
-  const newResponse: StandardResponse = {
-    ...response,
-    id: `${Date.now()}`,
-  };
-  responses.push(newResponse);
-  return newResponse;
+export async function createStandardResponse(
+  response: Omit<StandardResponse, "id">,
+): Promise<StandardResponse> {
+  const row = await api.post("/admin/suporte/respostas-padrao", response);
+  return mapResposta(row);
 }
 
-export async function updateStandardResponse(id: string, updates: Partial<StandardResponse>): Promise<StandardResponse> {
-  const idx = responses.findIndex((r) => r.id === id);
-  if (idx === -1) throw new Error("Response not found");
-  responses[idx] = { ...responses[idx], ...updates };
-  return responses[idx];
+export async function updateStandardResponse(
+  id: string,
+  updates: Partial<StandardResponse>,
+): Promise<StandardResponse> {
+  const row = await api.patch(`/admin/suporte/respostas-padrao/${id}`, updates);
+  return mapResposta(row);
 }
 
 export async function deleteStandardResponse(id: string): Promise<void> {
-  responses = responses.filter((r) => r.id !== id);
+  await api.delete(`/admin/suporte/respostas-padrao/${id}`);
 }

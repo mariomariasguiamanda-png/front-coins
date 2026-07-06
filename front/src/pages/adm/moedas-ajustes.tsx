@@ -6,8 +6,7 @@ import { Card, CardContent } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { AdminLog, createLog, listLogs } from "@/services/api/logs";
-import { createNotification, composeMessages } from "@/services/api/notifications";
+import { api } from "@/lib/api";
 import {
   ArrowUpDown,
   Plus,
@@ -15,7 +14,6 @@ import {
   History,
   Save,
   TrendingUp,
-  TrendingDown,
   Activity,
   AlertCircle,
   User,
@@ -32,22 +30,16 @@ interface AjusteForm {
   justificativa: string;
 }
 
-// Mock data para dropdowns
-const mockAlunos = [
-  { id: "1", nome: "João Silva", turma: "3º A" },
-  { id: "2", nome: "Maria Souza", turma: "3º A" },
-  { id: "3", nome: "Pedro Santos", turma: "3º B" },
-  { id: "4", nome: "Ana Costa", turma: "3º A" },
-  { id: "5", nome: "Carlos Lima", turma: "3º B" },
-];
-
-const mockDisciplinas = [
-  { id: "1", nome: "Matemática" },
-  { id: "2", nome: "Português" },
-  { id: "3", nome: "Física" },
-  { id: "4", nome: "Química" },
-  { id: "5", nome: "Biologia" },
-];
+type AlunoOption = { id: string; nome: string; turma: string };
+type DisciplinaOption = { id: string; nome: string };
+type Transacao = {
+  id_transacao: number;
+  quantidade: number;
+  descricao: string | null;
+  criado_em: string | null;
+  alunos?: { matricula: string; usuarios: { nome: string } };
+  disciplinas?: { nome: string };
+};
 
 export default function MoedasAjustesPage() {
   const [form, setForm] = useState<AjusteForm>({
@@ -57,72 +49,92 @@ export default function MoedasAjustesPage() {
     tipo: "credito",
     justificativa: "",
   });
-  const [logs, setLogs] = useState<AdminLog[]>([]);
+  const [alunos, setAlunos] = useState<AlunoOption[]>([]);
+  const [disciplinas, setDisciplinas] = useState<DisciplinaOption[]>([]);
+  const [historico, setHistorico] = useState<Transacao[]>([]);
   const [saved, setSaved] = useState(false);
+  const [salvando, setSalvando] = useState(false);
+  const [erro, setErro] = useState<string | null>(null);
+
+  const carregarHistorico = async () => {
+    try {
+      const data = await api.get("/admin/moedas/transacoes?tipo=ajuste_admin");
+      setHistorico((data ?? []).slice(0, 15));
+    } catch {
+      // noop
+    }
+  };
 
   useEffect(() => {
     let mounted = true;
     (async () => {
       try {
-        const data = await listLogs();
-        if (mounted) setLogs(data.slice(-15).reverse());
-      } catch {
-        // noop
+        const [saldos, discs] = await Promise.all([
+          api.get("/admin/moedas/saldos"),
+          api.get("/disciplinas"),
+        ]);
+        if (!mounted) return;
+        setAlunos(
+          (saldos ?? []).map((a: any) => ({
+            id: String(a.id_aluno),
+            nome: a.nome,
+            turma: a.turma ?? "Sem turma",
+          })),
+        );
+        setDisciplinas(
+          (discs ?? []).map((d: any) => ({ id: String(d.id_disciplina), nome: d.nome })),
+        );
+      } catch (err) {
+        console.error("Erro ao carregar alunos/disciplinas:", err);
       }
     })();
+    carregarHistorico();
     return () => {
       mounted = false;
     };
-  }, [saved]);
+  }, []);
 
-  const handleAjustar = () => {
-    if (!form.alunoId || !form.disciplinaId || !form.quantidade) {
-      alert("Preencha todos os campos obrigatórios");
+  const handleAjustar = async () => {
+    if (!form.alunoId || !form.disciplinaId || !form.quantidade || !form.justificativa.trim()) {
+      alert("Preencha todos os campos obrigatórios (incluindo a justificativa)");
       return;
     }
 
     try {
-      const { message, actionType } = composeMessages.coinsAdjusted({
-        adminNome: "Administrador (sessão)",
-        alunoId: form.alunoId,
-        disciplinaId: form.disciplinaId,
+      setSalvando(true);
+      setErro(null);
+
+      await api.post("/admin/moedas/ajuste", {
+        id_aluno: form.alunoId,
+        id_disciplina: form.disciplinaId,
         quantidade: form.tipo === "debito" ? -form.quantidade : form.quantidade,
-        justificativa: form.justificativa,
+        motivo: form.justificativa.trim(),
       });
-      createNotification({
-        message,
-        actionType,
-        recipients: ["Administrador", "Coordenador"],
-        context: { ...form },
-      });
-    } catch {}
 
-    createLog({
-      usuarioNome: "Administrador (sessão)",
-      usuarioPerfil: "Administrador",
-      acao: `Ajuste manual (${form.tipo}): Aluno ${form.alunoId}, Disciplina ${form.disciplinaId}, ${form.tipo === "debito" ? "-" : "+"}${form.quantidade} moedas - ${form.justificativa}`,
-    });
-
-    setSaved(true);
-    setTimeout(() => setSaved(false), 3000);
-
-    setForm({
-      alunoId: "",
-      disciplinaId: "",
-      quantidade: 0,
-      tipo: "credito",
-      justificativa: "",
-    });
+      setSaved(true);
+      setTimeout(() => setSaved(false), 3000);
+      setForm({ alunoId: "", disciplinaId: "", quantidade: 0, tipo: "credito", justificativa: "" });
+      await carregarHistorico();
+    } catch (err: any) {
+      console.error(err);
+      setErro(err?.message ?? "Erro ao realizar o ajuste");
+    } finally {
+      setSalvando(false);
+    }
   };
 
-  const alunoSelecionado = mockAlunos.find((a) => a.id === form.alunoId);
-  const disciplinaSelecionada = mockDisciplinas.find((d) => d.id === form.disciplinaId);
+  const alunoSelecionado = alunos.find((a) => a.id === form.alunoId);
+  const disciplinaSelecionada = disciplinas.find((d) => d.id === form.disciplinaId);
 
+  const hoje = new Date().toDateString();
+  const ajustesHoje = historico.filter(
+    (t) => t.criado_em && new Date(t.criado_em).toDateString() === hoje,
+  );
   const stats = {
-    ajustesHoje: 12,
-    creditosHoje: 8,
-    debitosHoje: 4,
-    totalMoedas: 450,
+    ajustesHoje: ajustesHoje.length,
+    creditosHoje: ajustesHoje.filter((t) => t.quantidade > 0).length,
+    debitosHoje: ajustesHoje.filter((t) => t.quantidade < 0).length,
+    totalMoedas: ajustesHoje.reduce((s, t) => s + t.quantidade, 0),
   };
 
   return (
@@ -195,8 +207,11 @@ export default function MoedasAjustesPage() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-gray-600">Total Ajustado</p>
-                    <p className="text-2xl font-bold text-gray-900 mt-1">+{stats.totalMoedas}</p>
-                    <p className="text-xs text-gray-500 mt-1">moedas líquidas</p>
+                    <p className="text-2xl font-bold text-gray-900 mt-1">
+                      {stats.totalMoedas >= 0 ? "+" : ""}
+                      {stats.totalMoedas}
+                    </p>
+                    <p className="text-xs text-gray-500 mt-1">moedas líquidas (hoje)</p>
                   </div>
                   <div className="h-10 w-10 rounded-lg bg-amber-100 flex items-center justify-center">
                     <TrendingUp className="h-5 w-5 text-amber-600" />
@@ -248,7 +263,7 @@ export default function MoedasAjustesPage() {
                     <SelectValue placeholder="Selecione um aluno" />
                   </SelectTrigger>
                   <SelectContent>
-                    {mockAlunos.map((aluno) => (
+                    {alunos.map((aluno) => (
                       <SelectItem key={aluno.id} value={aluno.id}>
                         {aluno.nome} - {aluno.turma}
                       </SelectItem>
@@ -271,7 +286,7 @@ export default function MoedasAjustesPage() {
                     <SelectValue placeholder="Selecione uma disciplina" />
                   </SelectTrigger>
                   <SelectContent>
-                    {mockDisciplinas.map((disc) => (
+                    {disciplinas.map((disc) => (
                       <SelectItem key={disc.id} value={disc.id}>
                         {disc.nome}
                       </SelectItem>
@@ -398,12 +413,19 @@ export default function MoedasAjustesPage() {
                     : "bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700"
                 }`}
                 onClick={handleAjustar}
-                disabled={!form.alunoId || !form.disciplinaId || !form.quantidade}
+                disabled={salvando || !form.alunoId || !form.disciplinaId || !form.quantidade}
               >
                 <Save className="h-4 w-4" />
-                {saved ? "Ajuste Realizado!" : form.tipo === "credito" ? "Creditar Moedas" : "Debitar Moedas"}
+                {salvando
+                  ? "Salvando..."
+                  : saved
+                  ? "Ajuste Realizado!"
+                  : form.tipo === "credito"
+                  ? "Creditar Moedas"
+                  : "Debitar Moedas"}
               </Button>
             </div>
+            {erro && <p className="text-sm text-red-600 text-right">{erro}</p>}
           </CardContent>
         </Card>
 
@@ -420,20 +442,19 @@ export default function MoedasAjustesPage() {
             </div>
 
             <div className="space-y-3">
-              {logs.length === 0 && (
+              {historico.length === 0 && (
                 <div className="text-center py-8">
                   <Clock className="h-12 w-12 text-gray-300 mx-auto mb-3" />
-                  <p className="text-gray-500">Nenhum registro encontrado</p>
+                  <p className="text-gray-500">Nenhum ajuste registrado</p>
                 </div>
               )}
-              {logs.map((log: AdminLog, idx: number) => {
-                const isCredito = log.acao.includes("credito") || log.acao.includes("+");
-                const isDebito = log.acao.includes("debito") || log.acao.includes("-");
-                const borderColor = isCredito ? "border-l-green-500" : isDebito ? "border-l-red-500" : "border-l-blue-500";
+              {historico.map((t) => {
+                const isCredito = t.quantidade > 0;
+                const borderColor = isCredito ? "border-l-green-500" : "border-l-red-500";
 
                 return (
                   <Card
-                    key={log.id ?? idx}
+                    key={t.id_transacao}
                     className={`rounded-lg border-l-4 hover:shadow-sm transition-shadow ${borderColor}`}
                   >
                     <CardContent className="p-4">
@@ -441,29 +462,32 @@ export default function MoedasAjustesPage() {
                         <div className="flex items-start gap-3 flex-1">
                           <div
                             className={`h-8 w-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                              isCredito
-                                ? "bg-green-100"
-                                : isDebito
-                                ? "bg-red-100"
-                                : "bg-blue-100"
+                              isCredito ? "bg-green-100" : "bg-red-100"
                             }`}
                           >
                             {isCredito ? (
                               <Plus className="h-4 w-4 text-green-600" />
-                            ) : isDebito ? (
-                              <Minus className="h-4 w-4 text-red-600" />
                             ) : (
-                              <Activity className="h-4 w-4 text-blue-600" />
+                              <Minus className="h-4 w-4 text-red-600" />
                             )}
                           </div>
                           <div className="flex-1">
-                            <p className="font-semibold text-gray-900 mb-1">{log.usuarioNome}</p>
-                            <p className="text-sm text-gray-600">{log.acao}</p>
+                            <p className="font-semibold text-gray-900 mb-1">
+                              {t.alunos?.usuarios?.nome ?? "Aluno"}
+                              {t.disciplinas?.nome ? ` • ${t.disciplinas.nome}` : ""}
+                            </p>
+                            <p className="text-sm text-gray-600">
+                              <span className={`font-bold ${isCredito ? "text-green-600" : "text-red-600"}`}>
+                                {isCredito ? "+" : ""}
+                                {t.quantidade} moedas
+                              </span>
+                              {t.descricao ? ` — ${t.descricao}` : ""}
+                            </p>
                           </div>
                         </div>
                         <div className="text-right ml-4">
                           <p className="text-xs text-gray-500">
-                            {new Date(log.dataHora).toLocaleString("pt-BR")}
+                            {t.criado_em ? new Date(t.criado_em).toLocaleString("pt-BR") : "-"}
                           </p>
                         </div>
                       </div>

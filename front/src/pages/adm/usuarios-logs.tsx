@@ -7,7 +7,7 @@ import { Card, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Download, Search } from "lucide-react";
-import { AdminLog, exportLogsCsv, listLogs, createLog } from "@/services/api/logs";
+import { AdminLog, exportLogsCsv, listLogs } from "@/services/api/logs";
 
 export default function UsuariosLogsPage() {
   const [logs, setLogs] = useState<AdminLog[]>([]);
@@ -17,12 +17,10 @@ export default function UsuariosLogsPage() {
   useEffect(() => {
     let mounted = true;
     (async () => {
+      // A auditoria é gravada pelo backend (interceptor nas ações de admin);
+      // aqui só listamos.
       const data = await listLogs();
       if (mounted) setLogs(data);
-      // exemplo: registrar visita
-      await createLog({ usuarioNome: "Administrador (sessão)", usuarioPerfil: "Administrador", acao: "Acessou Logs de Usuários" });
-      const again = await listLogs();
-      if (mounted) setLogs(again);
     })();
     return () => { mounted = false; };
   }, []);

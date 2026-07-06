@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { AdminLayout } from "@/components/adm/AdminLayout";
 import { AdmBackButton } from "@/components/adm/AdmBackButton";
@@ -6,6 +6,7 @@ import { Card, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Search, Archive, History, Pencil } from "lucide-react";
+import { api } from "@/lib/api";
 import { EditDisciplineDialog } from "@/components/adm/dialogs/EditDisciplineDialog";
 import { ViewDisciplineHistoryDialog } from "@/components/adm/dialogs/ViewDisciplineHistoryDialog";
 
@@ -39,22 +40,7 @@ interface Discipline {
   }>;
 }
 
-const archivedMock: Discipline[] = [
-  {
-    id: "10",
-    code: "HIS001",
-    name: "História",
-    color: "#EA580C",
-    icon: "book",
-    classes: ["3º A"],
-    teachers: [{ id: "9", name: "Carlos Pereira", role: "principal" }],
-    points: { maxPoints: 30, pointPrice: 10 },
-    status: "archived",
-    createdAt: "2022-03-01",
-    updatedAt: "2023-02-11",
-    history: [],
-  },
-];
+const CORES = ["#4F46E5", "#059669", "#DC2626", "#7C3AED", "#10B981", "#F59E0B"];
 
 function Row({ d, onRestore, onEdit, onViewHistory }: { d: Discipline; onRestore: (id: string) => void; onEdit: (d: Discipline) => void; onViewHistory: (d: Discipline) => void }) {
   return (
@@ -86,25 +72,70 @@ function Row({ d, onRestore, onEdit, onViewHistory }: { d: Discipline; onRestore
 }
 
 export default function DisciplinasArquivadasPage() {
-  const [disciplines, setDisciplines] = useState<Discipline[]>(archivedMock);
+  const [disciplines, setDisciplines] = useState<Discipline[]>([]);
   const [search, setSearch] = useState("");
   const [editDiscipline, setEditDiscipline] = useState<Discipline | null>(null);
   const [historyDiscipline, setHistoryDiscipline] = useState<Discipline | null>(null);
+
+  const carregar = async () => {
+    try {
+      const discs = await api.get("/disciplinas");
+      setDisciplines(
+        (discs ?? [])
+          .filter((d: any) => d.ativo === false)
+          .map((d: any, idx: number): Discipline => ({
+            id: String(d.id_disciplina),
+            code: d.codigo ?? "",
+            name: d.nome,
+            color: CORES[idx % CORES.length],
+            icon: "book",
+            classes: [],
+            teachers: [],
+            points: { maxPoints: 10, pointPrice: 10 },
+            status: "archived",
+            createdAt: d.criado_em ?? "",
+            updatedAt: d.criado_em ?? "",
+            history: [],
+          })),
+      );
+    } catch (err) {
+      console.error("Erro ao carregar disciplinas arquivadas:", err);
+    }
+  };
+
+  useEffect(() => {
+    carregar();
+  }, []);
 
   const list = useMemo(() => {
     const s = search.trim().toLowerCase();
     return disciplines.filter((d) => d.status === "archived" && (!s || d.name.toLowerCase().includes(s) || d.code.toLowerCase().includes(s)));
   }, [disciplines, search]);
 
-  const restore = (id: string) => {
-    setDisciplines((prev) => prev.map((d) => (d.id === id ? { ...d, status: "active" } : d)));
-    alert("Disciplina restaurada.");
+  const restore = async (id: string) => {
+    try {
+      await api.patch(`/admin/disciplinas/${id}`, { ativo: true });
+      await carregar();
+    } catch (err: any) {
+      console.error(err);
+      alert(err?.message ?? "Erro ao restaurar a disciplina");
+    }
+  };
+
+  const handleEdit = async (data: any) => {
+    try {
+      await api.patch(`/admin/disciplinas/${data.id}`, { nome: data.name, codigo: data.code });
+      await carregar();
+    } catch (err: any) {
+      console.error(err);
+      alert(err?.message ?? "Erro ao editar a disciplina");
+    }
   };
 
   return (
     <AdminLayout>
       <div className="space-y-6 pb-8">
-        <EditDisciplineDialog open={!!editDiscipline} onClose={() => setEditDiscipline(null)} onSave={(data: any) => console.log("edit", data)} discipline={editDiscipline as any} />
+        <EditDisciplineDialog open={!!editDiscipline} onClose={() => setEditDiscipline(null)} onSave={handleEdit} discipline={editDiscipline as any} />
         <ViewDisciplineHistoryDialog open={!!historyDiscipline} onClose={() => setHistoryDiscipline(null)} discipline={historyDiscipline as any} />
 
         <header className="flex items-center justify-between">

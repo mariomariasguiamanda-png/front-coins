@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { api } from "@/lib/api";
 import { AdminLayout } from "@/components/adm/AdminLayout";
 import { AdmBackButton } from "@/components/adm/AdmBackButton";
 import { AdmFiltersCard } from "@/components/adm/AdmFiltersCard";
@@ -58,127 +59,66 @@ interface AlunoDesempenho {
   historicoMoedas: Mov[];
 }
 
-const mockAlunos: AlunoDesempenho[] = [
-  {
-    id: "1",
-    nome: "João Silva",
-    matricula: "2023001",
-    turma: "3º A",
-    saldoMoedas: 450,
-    ranking: {
-      posicaoTurma: 2,
-      totalAlunosTurma: 30,
-      posicaoEscola: 5,
-      totalAlunosEscola: 150,
-    },
-    notas: [
-      { disciplina: "Matemática", nota: 8.5, mediaMinima: 7, data: "2025-10-01" },
-      { disciplina: "História", nota: 6.5, mediaMinima: 7, data: "2025-10-05" },
-      { disciplina: "Português", nota: 9.0, mediaMinima: 7, data: "2025-10-10" },
-      { disciplina: "Física", nota: 7.5, mediaMinima: 7, data: "2025-10-12" },
-    ],
-    historicoMoedas: [
-      {
-        id: "1",
-        tipo: "ganho",
-        quantidade: 20,
-        motivo: "Atividade com nota máxima",
-        disciplina: "Matemática",
-        data: "2025-10-01",
-      },
-      {
-        id: "2",
-        tipo: "ganho",
-        quantidade: 15,
-        motivo: "Resumo postado",
-        disciplina: "Português",
-        data: "2025-10-03",
-      },
-      {
-        id: "3",
-        tipo: "gasto",
-        quantidade: 30,
-        motivo: "Troca por material",
-        disciplina: "Matemática",
-        data: "2025-10-05",
-      },
-    ],
-  },
-  {
-    id: "2",
-    nome: "Maria Fernandes",
-    matricula: "2023002",
-    turma: "3º A",
-    saldoMoedas: 510,
-    ranking: {
-      posicaoTurma: 1,
-      totalAlunosTurma: 30,
-      posicaoEscola: 2,
-      totalAlunosEscola: 150,
-    },
-    notas: [
-      { disciplina: "História", nota: 8.1, mediaMinima: 7, data: "2025-10-05" },
-      { disciplina: "Matemática", nota: 9.5, mediaMinima: 7, data: "2025-10-08" },
-    ],
-    historicoMoedas: [
-      {
-        id: "4",
-        tipo: "gasto",
-        quantidade: 30,
-        motivo: "Compra de bônus",
-        disciplina: "Matemática",
-        data: "2025-09-30",
-      },
-    ],
-  },
-  {
-    id: "3",
-    nome: "Pedro Santos",
-    matricula: "2023003",
-    turma: "3º B",
-    saldoMoedas: 380,
-    ranking: {
-      posicaoTurma: 3,
-      totalAlunosTurma: 28,
-      posicaoEscola: 12,
-      totalAlunosEscola: 150,
-    },
-    notas: [
-      { disciplina: "Física", nota: 7.8, mediaMinima: 7, data: "2025-10-02" },
-      { disciplina: "Química", nota: 8.2, mediaMinima: 7, data: "2025-10-06" },
-    ],
-    historicoMoedas: [
-      {
-        id: "5",
-        tipo: "ganho",
-        quantidade: 25,
-        motivo: "Quiz concluído",
-        disciplina: "Física",
-        data: "2025-10-04",
-      },
-    ],
-  },
-];
 
 export default function RelatoriosAlunosPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [filtroTurma, setFiltroTurma] = useState<string>("todas");
+  const [alunos, setAlunos] = useState<AlunoDesempenho[]>([]);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const data = await api.get("/admin/relatorios/alunos");
+        setAlunos(
+          (data ?? []).map((a: any): AlunoDesempenho => ({
+            id: String(a.id_aluno),
+            nome: a.nome,
+            matricula: a.matricula,
+            turma: a.turma,
+            saldoMoedas: a.saldo_moedas,
+            ranking: {
+              posicaoTurma: a.ranking.posicao_turma,
+              totalAlunosTurma: a.ranking.total_alunos_turma,
+              posicaoEscola: a.ranking.posicao_escola,
+              totalAlunosEscola: a.ranking.total_alunos_escola,
+            },
+            notas: a.notas.map((n: any) => ({
+              disciplina: n.disciplina,
+              nota: n.nota,
+              mediaMinima: n.media_minima,
+              data: n.data,
+            })),
+            historicoMoedas: a.historico_moedas.map((h: any) => ({
+              id: String(h.id_transacao),
+              tipo: h.tipo,
+              quantidade: h.quantidade,
+              motivo: h.motivo,
+              disciplina: h.disciplina,
+              data: h.data,
+            })),
+          })),
+        );
+      } catch (err) {
+        console.error("Erro ao carregar relatório de alunos:", err);
+      }
+    })();
+  }, []);
 
   const turmasUnicas = useMemo(
-    () => Array.from(new Set(mockAlunos.map((a) => a.turma))),
-    []
+    () => Array.from(new Set(alunos.map((a) => a.turma))),
+    [alunos]
   );
 
   const alunosFiltrados = useMemo(() => {
     const termo = searchTerm.trim().toLowerCase();
-    return mockAlunos.filter(
+    return alunos.filter(
       (a) =>
         (!termo ||
           a.nome.toLowerCase().includes(termo) ||
           a.matricula.includes(searchTerm.trim())) &&
         (filtroTurma === "todas" || a.turma === filtroTurma)
     );
-  }, [searchTerm, filtroTurma]);
+  }, [alunos, searchTerm, filtroTurma]);
 
   const [selectedAlunoId, setSelectedAlunoId] = useState<string | null>(null);
 
@@ -285,7 +225,7 @@ export default function RelatoriosAlunosPage() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-gray-600">Total de Alunos</p>
-                    <p className="text-2xl font-bold text-gray-900 mt-1">{mockAlunos.length}</p>
+                    <p className="text-2xl font-bold text-gray-900 mt-1">{alunos.length}</p>
                   </div>
                   <div className="h-10 w-10 rounded-lg bg-blue-100 flex items-center justify-center">
                     <User className="h-5 w-5 text-blue-600" />

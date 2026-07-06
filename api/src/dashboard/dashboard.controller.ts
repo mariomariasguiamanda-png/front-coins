@@ -16,4 +16,10 @@ export class DashboardController {
   getDashboardProfessor(@CurrentUser() user: AuthUser) {
     return this.dashboardService.getDashboardProfessor(user);
   }
+
+  @Get('admin/dashboard')
+  @Roles('admin')
+  getDashboardAdmin() {
+    return this.dashboardService.getDashboardAdmin();
+  }
 }

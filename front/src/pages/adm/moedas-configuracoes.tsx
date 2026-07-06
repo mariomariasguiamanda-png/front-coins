@@ -1,14 +1,14 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AdminLayout } from "@/components/adm/AdminLayout";
 import { AdmBackButton } from "@/components/adm/AdmBackButton";
 import { Button } from "@/components/ui/Button";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
-import { 
-  Settings, 
-  Save, 
-  Info, 
+import {
+  Settings,
+  Save,
+  Info,
   Award,
   BookOpen,
   ListChecks,
@@ -17,7 +17,7 @@ import {
   Shield,
   AlertCircle
 } from "lucide-react";
-import { createLog } from "@/services/api/logs";
+import { getSystemSettings, updateSystemSettings } from "@/services/api/system-settings";
 
 interface RegrasDistribuicao {
   atividadeEntregue: number;
@@ -28,7 +28,7 @@ interface RegrasDistribuicao {
   periodoDias: number;
 }
 
-const mockRegras: RegrasDistribuicao = {
+const REGRAS_PADRAO: RegrasDistribuicao = {
   atividadeEntregue: 10,
   atividadeNotaMaxima: 20,
   resumoPostado: 15,
@@ -38,17 +38,36 @@ const mockRegras: RegrasDistribuicao = {
 };
 
 export default function MoedasConfiguracoesPage() {
-  const [regras, setRegras] = useState<RegrasDistribuicao>(mockRegras);
+  const [regras, setRegras] = useState<RegrasDistribuicao>(REGRAS_PADRAO);
   const [saved, setSaved] = useState(false);
+  const [saving, setSaving] = useState(false);
 
-  const handleSave = () => {
-    createLog({
-      usuarioNome: "Administrador (sessão)",
-      usuarioPerfil: "Administrador",
-      acao: `Atualizou regras de distribuição: ${JSON.stringify(regras)}`,
-    });
-    setSaved(true);
-    setTimeout(() => setSaved(false), 3000);
+  // As regras são persistidas dentro do documento de configurações do
+  // sistema (tabela system_settings) como valores de referência do admin.
+  useEffect(() => {
+    (async () => {
+      try {
+        const settings: any = await getSystemSettings();
+        if (settings.regrasMoedas) setRegras({ ...REGRAS_PADRAO, ...settings.regrasMoedas });
+      } catch (err) {
+        console.error("Erro ao carregar regras:", err);
+      }
+    })();
+  }, []);
+
+  const handleSave = async () => {
+    try {
+      setSaving(true);
+      const settings: any = await getSystemSettings();
+      await updateSystemSettings({ ...settings, regrasMoedas: regras });
+      setSaved(true);
+      setTimeout(() => setSaved(false), 3000);
+    } catch (err: any) {
+      console.error(err);
+      alert(err?.message ?? "Erro ao salvar as regras");
+    } finally {
+      setSaving(false);
+    }
   };
 
   const totalPorPeriodo = regras.atividadeEntregue + regras.atividadeNotaMaxima + regras.resumoPostado + regras.quizConcluido;
@@ -342,9 +361,10 @@ export default function MoedasConfiguracoesPage() {
           <Button
             className="rounded-lg inline-flex items-center gap-2 bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700"
             onClick={handleSave}
+            disabled={saving}
           >
             <Save className="h-4 w-4" />
-            {saved ? "Salvo com sucesso!" : "Salvar Configurações"}
+            {saving ? "Salvando..." : saved ? "Salvo com sucesso!" : "Salvar Configurações"}
           </Button>
         </div>
       </div>

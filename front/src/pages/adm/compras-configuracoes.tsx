@@ -1,42 +1,64 @@
-import { useState } from "react";
-import Link from "next/link";
+import { useEffect, useState } from "react";
 import { AdminLayout } from "@/components/adm/AdminLayout";
 import { AdmBackButton } from "@/components/adm/AdmBackButton";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
-import { Label } from "@/components/ui/Label";
 import { Button } from "@/components/ui/Button";
-import {
-  Settings,
-  DollarSign,
-  Shield,
-  AlertCircle,
-  Save,
-  RotateCcw,
-  Coins,
-} from "lucide-react";
+import { Settings, DollarSign, AlertCircle, Save, Users, Coins } from "lucide-react";
 import { useToast } from "@/components/ui/Toast";
+import { api } from "@/lib/api";
+
+type ConfigDisciplina = {
+  id_disciplina: number;
+  nome: string;
+  pontos_por_compra_max: number;
+  preco_moedas_por_ponto: number;
+  total_alunos: number;
+  moedas_circulacao: number;
+};
 
 export default function ComprasConfiguracoesPage() {
   const { show } = useToast();
-  const [limitePontosPorCompra, setLimitePontosPorCompra] = useState<number>(5);
-  const [taxaConversao, setTaxaConversao] = useState<number>(10);
-  const [permiteCancelamentoSemJustificativa, setPermiteCancelamentoSemJustificativa] = useState<boolean>(false);
-  const [saving, setSaving] = useState(false);
+  const [configs, setConfigs] = useState<ConfigDisciplina[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [salvandoId, setSalvandoId] = useState<number | null>(null);
 
-  const handleSave = async () => {
-    setSaving(true);
-    // Simular save
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    setSaving(false);
-    show({ variant: "success", title: "Configurações salvas com sucesso!" });
+  const carregar = async () => {
+    try {
+      const data = await api.get("/admin/moedas/config-precos");
+      setConfigs(data ?? []);
+    } catch (err) {
+      console.error("Erro ao carregar configurações:", err);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleReset = () => {
-    setLimitePontosPorCompra(5);
-    setTaxaConversao(10);
-    setPermiteCancelamentoSemJustificativa(false);
-    show({ variant: "success", title: "Configurações redefinidas para os valores padrão" });
+  useEffect(() => {
+    carregar();
+  }, []);
+
+  const atualizarLocal = (id: number, campo: "pontos_por_compra_max" | "preco_moedas_por_ponto", valor: number) => {
+    setConfigs((prev) =>
+      prev.map((c) => (c.id_disciplina === id ? { ...c, [campo]: Math.max(1, valor) } : c)),
+    );
+  };
+
+  const salvar = async (config: ConfigDisciplina) => {
+    try {
+      setSalvandoId(config.id_disciplina);
+      await api.put("/admin/moedas/config-preco", {
+        id_disciplina: String(config.id_disciplina),
+        pontos_por_compra_max: config.pontos_por_compra_max,
+        preco_moedas_por_ponto: config.preco_moedas_por_ponto,
+      });
+      show({ variant: "success", title: `Configuração de ${config.nome} salva!` });
+    } catch (err: any) {
+      console.error(err);
+      show({ variant: "error", title: err?.message ?? "Erro ao salvar" });
+    } finally {
+      setSalvandoId(null);
+    }
   };
 
   return (
@@ -51,7 +73,9 @@ export default function ComprasConfiguracoesPage() {
               </div>
               <div>
                 <h1 className="text-3xl font-bold text-gray-900">Configurações de Compras</h1>
-                <p className="text-gray-600 mt-1">Regras, limites e políticas de troca</p>
+                <p className="text-gray-600 mt-1">
+                  Preço e limite da compra de pontos, por disciplina
+                </p>
               </div>
             </div>
             <AdmBackButton href="/adm/compras" className="no-underline" />
@@ -68,111 +92,93 @@ export default function ComprasConfiguracoesPage() {
               <div>
                 <h4 className="font-semibold text-gray-900 mb-1">Importante</h4>
                 <p className="text-sm text-gray-600">
-                  As alterações nas configurações afetarão todas as novas transações. Transações já realizadas não serão modificadas.
+                  Essas são as mesmas configurações que os professores veem em "Configurar Pontos".
+                  As alterações valem para novas compras; transações já realizadas não mudam.
                 </p>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        {/* Limites e Conversão */}
+        {/* Configs por disciplina */}
         <Card className="rounded-xl shadow-sm">
           <div className="h-2 bg-gradient-to-r from-purple-500 to-purple-600 rounded-t-xl"></div>
           <CardContent className="p-6 space-y-6">
             <div className="flex items-center gap-2 mb-2">
               <DollarSign className="h-5 w-5 text-purple-600" />
-              <h3 className="text-lg font-semibold text-gray-900">Limites e Conversão</h3>
+              <h3 className="text-lg font-semibold text-gray-900">Limites e Conversão por Disciplina</h3>
             </div>
 
-            <div className="grid gap-6 md:grid-cols-2">
-              <div className="space-y-2">
-                <Label className="text-sm font-medium text-gray-700">
-                  Limite de pontos por compra
-                </Label>
-                <Input
-                  type="number"
-                  min={1}
-                  max={50}
-                  value={limitePontosPorCompra}
-                  onChange={(e) => setLimitePontosPorCompra(Math.max(1, Number(e.target.value)))}
-                  className="rounded-lg"
-                />
-                <p className="text-xs text-gray-500">
-                  Máximo de pontos que podem ser comprados em uma única transação
-                </p>
-              </div>
+            {loading ? (
+              <p className="text-sm text-muted-foreground py-6 text-center">Carregando...</p>
+            ) : configs.length === 0 ? (
+              <p className="text-sm text-muted-foreground py-6 text-center">
+                Nenhuma disciplina ativa encontrada.
+              </p>
+            ) : (
+              <div className="grid gap-4">
+                {configs.map((c) => (
+                  <Card key={c.id_disciplina} className="rounded-lg border-2 border-gray-200">
+                    <CardContent className="p-4">
+                      <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+                        <div className="min-w-[200px]">
+                          <p className="font-semibold text-gray-900">{c.nome}</p>
+                          <div className="flex items-center gap-4 mt-1 text-xs text-gray-500">
+                            <span className="inline-flex items-center gap-1">
+                              <Users className="h-3 w-3" /> {c.total_alunos} alunos
+                            </span>
+                            <span className="inline-flex items-center gap-1">
+                              <Coins className="h-3 w-3" /> {c.moedas_circulacao} moedas em circulação
+                            </span>
+                          </div>
+                        </div>
 
-              <div className="space-y-2">
-                <Label className="text-sm font-medium text-gray-700 flex items-center gap-1">Taxa de conversão (<Coins className="h-4 w-4" />/ponto)</Label>
-                <Input
-                  type="number"
-                  min={1}
-                  max={100}
-                  value={taxaConversao}
-                  onChange={(e) => setTaxaConversao(Math.max(1, Number(e.target.value)))}
-                  className="rounded-lg"
-                />
-                <p className="text-xs text-gray-500">
-                  Quantas moedas são necessárias para comprar 1 ponto
-                </p>
+                        <div className="flex flex-wrap items-end gap-4">
+                          <div className="space-y-1">
+                            <label className="text-xs font-medium text-gray-600">
+                              Máx. pontos por compra
+                            </label>
+                            <Input
+                              type="number"
+                              min={1}
+                              value={c.pontos_por_compra_max}
+                              onChange={(e) =>
+                                atualizarLocal(c.id_disciplina, "pontos_por_compra_max", Number(e.target.value))
+                              }
+                              className="rounded-lg w-32 text-center font-semibold"
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <label className="text-xs font-medium text-gray-600">
+                              Moedas por ponto
+                            </label>
+                            <Input
+                              type="number"
+                              min={1}
+                              value={c.preco_moedas_por_ponto}
+                              onChange={(e) =>
+                                atualizarLocal(c.id_disciplina, "preco_moedas_por_ponto", Number(e.target.value))
+                              }
+                              className="rounded-lg w-32 text-center font-semibold"
+                            />
+                          </div>
+                          <Button
+                            className="rounded-lg inline-flex items-center gap-2 bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700"
+                            onClick={() => salvar(c)}
+                            disabled={salvandoId === c.id_disciplina}
+                          >
+                            <Save className="h-4 w-4" />
+                            {salvandoId === c.id_disciplina ? "Salvando..." : "Salvar"}
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
               </div>
-            </div>
+            )}
           </CardContent>
         </Card>
-
-        {/* Políticas de Cancelamento */}
-        <Card className="rounded-xl shadow-sm">
-          <div className="h-2 bg-gradient-to-r from-red-500 to-red-600 rounded-t-xl"></div>
-          <CardContent className="p-6 space-y-6">
-            <div className="flex items-center gap-2 mb-2">
-              <Shield className="h-5 w-5 text-red-600" />
-              <h3 className="text-lg font-semibold text-gray-900">Políticas de Cancelamento</h3>
-            </div>
-
-            <div className="space-y-4">
-              <div className="flex items-center justify-between p-4 rounded-lg border border-gray-200 bg-gray-50">
-                <div className="flex-1">
-                  <Label className="text-sm font-medium text-gray-700 cursor-pointer">
-                    Permitir cancelamento sem justificativa
-                  </Label>
-                  <p className="text-xs text-gray-500 mt-1">
-                    Se desativado, será obrigatório fornecer uma justificativa ao cancelar
-                  </p>
-                </div>
-                <label className="relative inline-flex items-center cursor-pointer ml-4">
-                  <input
-                    type="checkbox"
-                    className="sr-only peer"
-                    checked={permiteCancelamentoSemJustificativa}
-                    onChange={(e) => setPermiteCancelamentoSemJustificativa(e.target.checked)}
-                  />
-                  <div className="w-11 h-6 bg-gray-300 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
-                </label>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Actions */}
-        <div className="flex items-center justify-end gap-3">
-          <Button
-            variant="outline"
-            className="rounded-lg inline-flex items-center gap-2"
-            onClick={handleReset}
-          >
-            <RotateCcw className="h-4 w-4" />
-            Redefinir
-          </Button>
-          <Button
-            className="rounded-lg inline-flex items-center gap-2 bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700"
-            onClick={handleSave}
-            disabled={saving}
-            isLoading={saving}
-          >
-            <Save className="h-4 w-4" />
-            {saving ? "Salvando..." : "Salvar Alterações"}
-          </Button>
-        </div>
       </div>
     </AdminLayout>
   );

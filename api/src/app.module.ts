@@ -23,6 +23,8 @@ import { SuporteModule } from './suporte/suporte.module';
 import { LogsModule } from './logs/logs.module';
 import { AgendaEstudosModule } from './agenda-estudos/agenda-estudos.module';
 import { DashboardModule } from './dashboard/dashboard.module';
+import { ConfiguracoesModule } from './configuracoes/configuracoes.module';
+import { RelatoriosModule } from './relatorios/relatorios.module';
 
 @Module({
   imports: [
@@ -53,6 +55,8 @@ import { DashboardModule } from './dashboard/dashboard.module';
     LogsModule,
     AgendaEstudosModule,
     DashboardModule,
+    ConfiguracoesModule,
+    RelatoriosModule,
   ],
   controllers: [AppController],
   providers: [AppService],

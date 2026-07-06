@@ -1,3 +1,5 @@
+import { api } from "@/lib/api";
+
 export type AcademicEvent = {
   id: string;
   titulo: string;
@@ -40,108 +42,19 @@ export type SystemSettings = {
   }>;
 };
 
-let state: SystemSettings = {
-  branding: {
-    logoUrl: "/logo.svg",
-    primaryColor: "#7C3AED",
-    secondaryColor: "#06B6D4",
-    fontFamily: "Inter",
-  },
-  periods: [
-    {
-      id: "p_2025_1",
-      nome: "1º Semestre 2025",
-      tipo: "semestre",
-      dataInicio: new Date().toISOString().slice(0,10),
-      dataFim: new Date().toISOString().slice(0,10),
-      eventos: [],
-    },
-  ],
-  integrations: [
-    {
-      id: "int_google",
-      nome: "Google Classroom",
-      tipo: "google_classroom",
-      status: "inativo",
-      ultimaSincronizacao: undefined,
-      configuracao: {
-        clientId: "",
-        clientSecret: "",
-      },
-    },
-    {
-      id: "int_moodle",
-      nome: "Moodle LMS",
-      tipo: "moodle",
-      status: "inativo",
-      ultimaSincronizacao: undefined,
-      configuracao: {
-        url: "",
-        token: "",
-      },
-    },
-    {
-      id: "int_api",
-      nome: "API Personalizada",
-      tipo: "api",
-      status: "inativo",
-      ultimaSincronizacao: undefined,
-      configuracao: {
-        baseUrl: "",
-        apiKey: "",
-      },
-    },
-  ],
-  permissions: [
-    {
-      perfil: "Administrador",
-      recursos: {
-        usuarios: { visualizar: true, criar: true, editar: true, excluir: true },
-        disciplinas: { visualizar: true, criar: true, editar: true, excluir: true },
-        moedas: { visualizar: true, criar: true, editar: true, excluir: true },
-        relatorios: { visualizar: true, criar: true, editar: false, excluir: false },
-        compras: { visualizar: true, criar: false, editar: true, excluir: true },
-        suporte: { visualizar: true, criar: true, editar: true, excluir: true },
-        configuracoes: { visualizar: true, criar: true, editar: true, excluir: false },
-        seguranca: { visualizar: true, criar: true, editar: true, excluir: true },
-      },
-    },
-    {
-      perfil: "Professor",
-      recursos: {
-        usuarios: { visualizar: true, criar: false, editar: false, excluir: false },
-        disciplinas: { visualizar: true, criar: false, editar: false, excluir: false },
-        moedas: { visualizar: true, criar: true, editar: false, excluir: false },
-        relatorios: { visualizar: true, criar: false, editar: false, excluir: false },
-        compras: { visualizar: false, criar: false, editar: false, excluir: false },
-        suporte: { visualizar: true, criar: true, editar: false, excluir: false },
-        configuracoes: { visualizar: false, criar: false, editar: false, excluir: false },
-        seguranca: { visualizar: false, criar: false, editar: false, excluir: false },
-      },
-    },
-    {
-      perfil: "Aluno",
-      recursos: {
-        usuarios: { visualizar: false, criar: false, editar: false, excluir: false },
-        disciplinas: { visualizar: true, criar: false, editar: false, excluir: false },
-        moedas: { visualizar: true, criar: false, editar: false, excluir: false },
-        relatorios: { visualizar: false, criar: false, editar: false, excluir: false },
-        compras: { visualizar: true, criar: true, editar: false, excluir: false },
-        suporte: { visualizar: true, criar: true, editar: false, excluir: false },
-        configuracoes: { visualizar: false, criar: false, editar: false, excluir: false },
-        seguranca: { visualizar: false, criar: false, editar: false, excluir: false },
-      },
-    },
-  ],
-};
-
+// Documento persistido no banco (tabela system_settings) via API do admin.
 export async function getSystemSettings(): Promise<SystemSettings> {
-  return JSON.parse(JSON.stringify(state));
+  return api.get("/admin/configuracoes");
 }
 
 export async function updateSystemSettings(next: SystemSettings): Promise<SystemSettings> {
-  state = JSON.parse(JSON.stringify(next));
-  return getSystemSettings();
+  return api.put("/admin/configuracoes", next);
+}
+
+// Notifica todos os alunos ativos (usado pelo calendário acadêmico ao
+// publicar um evento com "notificar" ligado).
+export async function broadcastParaAlunos(titulo: string, mensagem: string) {
+  return api.post("/admin/configuracoes/broadcast", { titulo, mensagem });
 }
 
 export function diffSystemSettings(a: SystemSettings, b: SystemSettings): string[] {

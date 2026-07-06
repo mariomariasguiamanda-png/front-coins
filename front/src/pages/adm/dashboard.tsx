@@ -31,68 +31,50 @@ import {
 } from "recharts";
 import Link from "next/link";
 import { useMemo, useState, useEffect } from "react";
-
-// Mock data - replace with API calls
-const studentEvolutionData = [
-  { month: "Jan", active: 150, total: 180 },
-  { month: "Fev", active: 180, total: 200 },
-  { month: "Mar", active: 200, total: 230 },
-  { month: "Abr", active: 220, total: 250 },
-  { month: "Mai", active: 250, total: 280 },
-  { month: "Jun", active: 280, total: 320 },
-];
-
-const coinsByDisciplineData = [
-  { discipline: "Matemática", coins: 5000, students: 120 },
-  { discipline: "Física", coins: 3500, students: 95 },
-  { discipline: "Química", coins: 4200, students: 110 },
-  { discipline: "Biologia", coins: 3800, students: 100 },
-];
-
-const activityData = [
-  { day: "Seg", purchases: 45, coins: 1200 },
-  { day: "Ter", purchases: 52, coins: 1450 },
-  { day: "Qua", purchases: 38, coins: 980 },
-  { day: "Qui", purchases: 61, coins: 1680 },
-  { day: "Sex", purchases: 48, coins: 1300 },
-  { day: "Sáb", purchases: 25, coins: 650 },
-  { day: "Dom", purchases: 18, coins: 420 },
-];
+import { api } from "@/lib/api";
 
 const COLORS = ["#8b5cf6", "#3b82f6", "#22c55e", "#eab308"];
 
+type DashboardData = {
+  students: { total: number; active: number; inactive: number };
+  teachers: { total: number; active: number };
+  disciplines: { total: number; active: number; inactive: number };
+  coins: { distributed: number; spent: number; circulating: number };
+  openTickets: number;
+  coinsByDiscipline: { discipline: string; coins: number; students: number }[];
+  activityLast7Days: { day: string; date: string; purchases: number; coins: number }[];
+  studentEvolution: { month: string; total: number }[];
+};
+
 export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
+  const [data, setData] = useState<DashboardData | null>(null);
 
-  // Simulate loading delay
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setLoading(false);
-    }, 600);
-    return () => clearTimeout(timer);
+    (async () => {
+      try {
+        const result = await api.get("/admin/dashboard");
+        setData(result);
+      } catch (err) {
+        console.error("Erro ao carregar dashboard:", err);
+      } finally {
+        setLoading(false);
+      }
+    })();
   }, []);
 
-  // Mock stats - replace with API calls
+  const studentEvolutionData = data?.studentEvolution ?? [];
+  const coinsByDisciplineData = data?.coinsByDiscipline ?? [];
+  const activityData = data?.activityLast7Days ?? [];
+
   const dashboardStats = {
-    students: {
-      total: 500,
-      active: 450,
-      inactive: 50,
-    },
-    teachers: {
-      total: 30,
-      active: 25,
-      pending: 5,
-    },
-    disciplines: {
-      total: 12,
-      active: 10,
-      inactive: 2,
-    },
+    students: data?.students ?? { total: 0, active: 0, inactive: 0 },
+    teachers: { ...(data?.teachers ?? { total: 0, active: 0 }), pending: 0 },
+    disciplines: data?.disciplines ?? { total: 0, active: 0, inactive: 0 },
     coins: {
-      total: 50000,
-      distributed: 35000,
-      available: 15000,
+      total: data?.coins.distributed ?? 0,
+      distributed: data?.coins.spent ?? 0,
+      available: data?.coins.circulating ?? 0,
     },
   };
 
@@ -100,14 +82,24 @@ export default function DashboardPage() {
   const metrics = useMemo(() => {
     const lastMonth = studentEvolutionData[studentEvolutionData.length - 2];
     const currentMonth = studentEvolutionData[studentEvolutionData.length - 1];
-    const growth = ((currentMonth.active - lastMonth.active) / lastMonth.active) * 100;
-    
+    const growth =
+      lastMonth && currentMonth && lastMonth.total > 0
+        ? ((currentMonth.total - lastMonth.total) / lastMonth.total) * 100
+        : 0;
+
     return {
       studentGrowth: growth.toFixed(1),
-      coinDistributionRate: ((dashboardStats.coins.distributed / dashboardStats.coins.total) * 100).toFixed(1),
-      activeRate: ((dashboardStats.students.active / dashboardStats.students.total) * 100).toFixed(1),
+      coinDistributionRate:
+        dashboardStats.coins.total > 0
+          ? ((dashboardStats.coins.distributed / dashboardStats.coins.total) * 100).toFixed(1)
+          : "0",
+      activeRate:
+        dashboardStats.students.total > 0
+          ? ((dashboardStats.students.active / dashboardStats.students.total) * 100).toFixed(1)
+          : "0",
     };
-  }, [dashboardStats]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data]);
 
   return (
     <AdminLayout>
@@ -231,20 +223,11 @@ export default function DashboardPage() {
                     <Area
                       type="monotone"
                       dataKey="total"
-                      stroke="#3b82f6"
-                      strokeWidth={2}
-                      fillOpacity={1}
-                      fill="url(#colorTotal)"
-                      name="Total"
-                    />
-                    <Area
-                      type="monotone"
-                      dataKey="active"
                       stroke="#8b5cf6"
                       strokeWidth={2}
                       fillOpacity={1}
                       fill="url(#colorActive)"
-                      name="Ativos"
+                      name="Alunos cadastrados"
                     />
                   </AreaChart>
                 </ResponsiveContainer>

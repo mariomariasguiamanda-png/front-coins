@@ -1,4 +1,5 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { api } from "@/lib/api";
 import Link from "next/link";
 import { AdminLayout } from "@/components/adm/AdminLayout";
 import { Button } from "@/components/ui/Button";
@@ -44,64 +45,40 @@ interface DadosTurma {
   evolucaoMensal: { mes: string; moedas: number; notas: number }[];
 }
 
-const mockTurmas: DadosTurma[] = [
-  {
-    turma: "3º A",
-    disciplina: "Matemática",
-    professor: "Prof. Carlos",
-    mediaMoedas: 120,
-    mediaNotas: 7.8,
-    totalAlunos: 30,
-    distribuicaoMoedas: [
-      { nome: "Maria", moedas: 160 },
-      { nome: "João", moedas: 150 },
-      { nome: "Pedro", moedas: 95 },
-      { nome: "Camila", moedas: 80 },
-      { nome: "Lucas", moedas: 115 },
-    ],
-    evolucaoMensal: [
-      { mes: "Jan", moedas: 100, notas: 7.5 },
-      { mes: "Fev", moedas: 110, notas: 7.6 },
-      { mes: "Mar", moedas: 125, notas: 7.9 },
-      { mes: "Abr", moedas: 130, notas: 8.0 },
-      { mes: "Mai", moedas: 135, notas: 8.1 },
-      { mes: "Jun", moedas: 140, notas: 8.2 },
-    ],
-  },
-  {
-    turma: "3º B",
-    disciplina: "Português",
-    professor: "Profa. Ana",
-    mediaMoedas: 110,
-    mediaNotas: 8.2,
-    totalAlunos: 28,
-    distribuicaoMoedas: [
-      { nome: "Lucas", moedas: 140 },
-      { nome: "Julia", moedas: 125 },
-      { nome: "Carlos", moedas: 85 },
-      { nome: "Sofia", moedas: 75 },
-      { nome: "Rafael", moedas: 105 },
-    ],
-    evolucaoMensal: [
-      { mes: "Jan", moedas: 90, notas: 7.8 },
-      { mes: "Fev", moedas: 102, notas: 8.1 },
-      { mes: "Mar", moedas: 114, notas: 8.3 },
-      { mes: "Abr", moedas: 118, notas: 8.4 },
-      { mes: "Mai", moedas: 122, notas: 8.3 },
-      { mes: "Jun", moedas: 125, notas: 8.5 },
-    ],
-  },
-];
 
 type Periodo = "semana" | "mes" | "bimestre" | "semestre" | "ano";
 
 export default function RelatoriosTurmasPage() {
   const [periodo, setPeriodo] = useState<Periodo>("semestre");
   const [turmaIndex, setTurmaIndex] = useState(0);
+  const [turmas, setTurmas] = useState<DadosTurma[]>([]);
 
-  const turmaRef = mockTurmas[turmaIndex];
+  useEffect(() => {
+    (async () => {
+      try {
+        const data = await api.get("/admin/relatorios/turmas");
+        setTurmas(
+          (data ?? []).map((t: any): DadosTurma => ({
+            turma: t.turma,
+            disciplina: t.disciplina,
+            professor: t.professor,
+            mediaMoedas: t.media_moedas,
+            mediaNotas: t.media_notas ?? 0,
+            totalAlunos: t.total_alunos,
+            distribuicaoMoedas: t.distribuicao_moedas.map((d: any) => ({ nome: d.nome, moedas: d.moedas })),
+            evolucaoMensal: t.evolucao_mensal.map((e: any) => ({ mes: e.mes, moedas: e.moedas, notas: e.notas ?? 0 })),
+          })),
+        );
+      } catch (err) {
+        console.error("Erro ao carregar relatorio de turmas:", err);
+      }
+    })();
+  }, []);
+
+  const turmaRef = turmas[turmaIndex];
 
   const evolucao = useMemo(() => {
+    if (!turmaRef) return [];
     const base = turmaRef.evolucaoMensal;
     const size = base.length;
     switch (periodo) {
@@ -121,11 +98,11 @@ export default function RelatoriosTurmasPage() {
   }, [periodo, turmaRef]);
 
   const ranking = useMemo(
-    () => [...turmaRef.distribuicaoMoedas].sort((a, b) => b.moedas - a.moedas),
+    () => (turmaRef ? [...turmaRef.distribuicaoMoedas].sort((a, b) => b.moedas - a.moedas) : []),
     [turmaRef]
   );
 
-  const mediaMoedasTurma = turmaRef.mediaMoedas;
+  const mediaMoedasTurma = turmaRef?.mediaMoedas ?? 0;
 
   // Calcula tendência
   const tendencia = useMemo(() => {
@@ -134,6 +111,16 @@ export default function RelatoriosTurmasPage() {
     const ultimo = evolucao[evolucao.length - 1].moedas;
     return ((ultimo - primeiro) / primeiro) * 100;
   }, [evolucao]);
+
+  if (!turmaRef) {
+    return (
+      <AdminLayout>
+        <div className="p-6 text-center text-muted-foreground">
+          {turmas.length === 0 ? "Carregando..." : "Nenhuma turma/disciplina encontrada."}
+        </div>
+      </AdminLayout>
+    );
+  }
 
   return (
     <AdminLayout>
@@ -162,7 +149,7 @@ export default function RelatoriosTurmasPage() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-gray-600">Turmas Totais</p>
-                    <p className="text-2xl font-bold text-gray-900 mt-1">{mockTurmas.length}</p>
+                    <p className="text-2xl font-bold text-gray-900 mt-1">{turmas.length}</p>
                   </div>
                   <div className="h-10 w-10 rounded-lg bg-purple-100 flex items-center justify-center">
                     <BookOpen className="h-5 w-5 text-purple-600" />
@@ -177,7 +164,7 @@ export default function RelatoriosTurmasPage() {
                   <div>
                     <p className="text-sm font-medium text-gray-600">Alunos Total</p>
                     <p className="text-2xl font-bold text-gray-900 mt-1">
-                      {mockTurmas.reduce((acc, t) => acc + t.totalAlunos, 0)}
+                      {turmas.reduce((acc, t) => acc + t.totalAlunos, 0)}
                     </p>
                   </div>
                   <div className="h-10 w-10 rounded-lg bg-blue-100 flex items-center justify-center">
@@ -194,8 +181,8 @@ export default function RelatoriosTurmasPage() {
                     <p className="text-sm font-medium text-gray-600">Média de Moedas</p>
                     <p className="text-2xl font-bold text-gray-900 mt-1">
                       {(
-                        mockTurmas.reduce((acc, t) => acc + t.mediaMoedas, 0) /
-                        mockTurmas.length
+                        turmas.reduce((acc, t) => acc + t.mediaMoedas, 0) /
+                        turmas.length
                       ).toFixed(0)}
                     </p>
                   </div>
@@ -213,8 +200,8 @@ export default function RelatoriosTurmasPage() {
                     <p className="text-sm font-medium text-gray-600">Média de Notas</p>
                     <p className="text-2xl font-bold text-gray-900 mt-1">
                       {(
-                        mockTurmas.reduce((acc, t) => acc + t.mediaNotas, 0) /
-                        mockTurmas.length
+                        turmas.reduce((acc, t) => acc + t.mediaNotas, 0) /
+                        turmas.length
                       ).toFixed(1)}
                     </p>
                   </div>
@@ -238,7 +225,7 @@ export default function RelatoriosTurmasPage() {
                   <SelectValue placeholder="Selecionar turma" />
                 </SelectTrigger>
                 <SelectContent>
-                  {mockTurmas.map((t, idx) => (
+                  {turmas.map((t, idx) => (
                     <SelectItem key={idx} value={String(idx)}>
                       {t.turma} • {t.disciplina} • {t.professor}
                     </SelectItem>

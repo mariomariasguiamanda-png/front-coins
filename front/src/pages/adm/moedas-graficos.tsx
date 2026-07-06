@@ -1,5 +1,6 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { api } from "@/lib/api";
 import { AdminLayout } from "@/components/adm/AdminLayout";
 import { AdmBackButton } from "@/components/adm/AdmBackButton";
 import { Card, CardContent } from "@/components/ui/Card";
@@ -35,60 +36,104 @@ interface MonthlyData {
   balance: number;
 }
 
+const MESES_PT = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
+
 export default function MoedasGraficosPage() {
   const [periodo, setPeriodo] = useState<string>("current");
+  const [saldos, setSaldos] = useState<any[]>([]);
+  const [transacoes, setTransacoes] = useState<any[]>([]);
 
-  // Mock data - substituir por dados reais da API
-  const classesSaldo: ClassBalance[] = [
-    { class: "1º A", totalBalance: 12500, students: 25, average: 500 },
-    { class: "1º B", totalBalance: 11200, students: 24, average: 467 },
-    { class: "2º A", totalBalance: 15800, students: 26, average: 608 },
-    { class: "2º B", totalBalance: 13400, students: 25, average: 536 },
-    { class: "3º A", totalBalance: 18900, students: 28, average: 675 },
-  ];
+  useEffect(() => {
+    (async () => {
+      try {
+        const [dataSaldos, dataTransacoes] = await Promise.all([
+          api.get("/admin/moedas/saldos"),
+          api.get("/admin/moedas/transacoes"),
+        ]);
+        setSaldos(dataSaldos ?? []);
+        setTransacoes(dataTransacoes ?? []);
+      } catch (err) {
+        console.error("Erro ao carregar dados dos gráficos:", err);
+      }
+    })();
+  }, []);
 
-  const topPositivos: TopStudent[] = [
-    { name: "Carlos Mendes", class: "3º A", balance: 680 },
-    { name: "João Silva", class: "1º A", balance: 450 },
-    { name: "Ana Costa", class: "2º B", balance: 420 },
-    { name: "Pedro Santos", class: "2º A", balance: 380 },
-    { name: "Maria Oliveira", class: "1º B", balance: 350 },
-    { name: "Lucas Ferreira", class: "3º A", balance: 320 },
-    { name: "Julia Lima", class: "2º A", balance: 310 },
-    { name: "Rafael Costa", class: "1º A", balance: 290 },
-    { name: "Beatriz Alves", class: "2º B", balance: 280 },
-    { name: "Gabriel Silva", class: "3º A", balance: 270 },
-  ];
+  // Saldo agregado por turma
+  const classesSaldo: ClassBalance[] = useMemo(() => {
+    const porTurma = new Map<string, { total: number; alunos: number }>();
+    for (const a of saldos) {
+      const turma = a.turma ?? "Sem turma";
+      const atual = porTurma.get(turma) ?? { total: 0, alunos: 0 };
+      atual.total += a.saldo_total ?? 0;
+      atual.alunos += 1;
+      porTurma.set(turma, atual);
+    }
+    return Array.from(porTurma.entries())
+      .map(([turma, v]) => ({
+        class: turma,
+        totalBalance: v.total,
+        students: v.alunos,
+        average: v.alunos > 0 ? Math.round(v.total / v.alunos) : 0,
+      }))
+      .sort((a, b) => b.totalBalance - a.totalBalance);
+  }, [saldos]);
 
-  const topNegativos: TopStudent[] = [
-    { name: "Pedro Oliveira", class: "2º A", balance: -50 },
-    { name: "Marcos Santos", class: "1º B", balance: -30 },
-    { name: "Laura Costa", class: "3º A", balance: -20 },
-    { name: "Felipe Souza", class: "2º B", balance: -15 },
-    { name: "Camila Lima", class: "1º A", balance: -10 },
-  ];
+  const topPositivos: TopStudent[] = useMemo(
+    () =>
+      [...saldos]
+        .sort((a, b) => (b.saldo_total ?? 0) - (a.saldo_total ?? 0))
+        .slice(0, 10)
+        .map((a) => ({ name: a.nome, class: a.turma ?? "Sem turma", balance: a.saldo_total ?? 0 })),
+    [saldos],
+  );
 
-  const evolucaoMensal: MonthlyData[] = [
-    { month: "Jun", received: 25000, spent: 18000, balance: 7000 },
-    { month: "Jul", received: 28000, spent: 21000, balance: 14000 },
-    { month: "Ago", received: 32000, spent: 24000, balance: 22000 },
-    { month: "Set", received: 30000, spent: 26000, balance: 26000 },
-    { month: "Out", received: 35000, spent: 28000, balance: 33000 },
-    { month: "Nov", received: 38000, spent: 30000, balance: 41000 },
-  ];
+  const topNegativos: TopStudent[] = useMemo(
+    () =>
+      saldos
+        .filter((a) => (a.saldo_total ?? 0) < 0)
+        .sort((a, b) => (a.saldo_total ?? 0) - (b.saldo_total ?? 0))
+        .slice(0, 5)
+        .map((a) => ({ name: a.nome, class: a.turma ?? "Sem turma", balance: a.saldo_total ?? 0 })),
+    [saldos],
+  );
 
-  const maxBalance = Math.max(...classesSaldo.map(c => c.totalBalance));
-  const maxTopBalance = Math.max(...topPositivos.map(s => s.balance));
-  const maxNegBalance = Math.abs(Math.min(...topNegativos.map(s => s.balance)));
-  const maxEvolution = Math.max(...evolucaoMensal.map(m => Math.max(m.received, m.spent)));
+  // Evolução mensal (últimos 6 meses) derivada das transações reais
+  const evolucaoMensal: MonthlyData[] = useMemo(() => {
+    const meses: MonthlyData[] = [];
+    let acumulado = 0;
+    for (let i = 5; i >= 0; i--) {
+      const inicio = new Date();
+      inicio.setMonth(inicio.getMonth() - i, 1);
+      inicio.setHours(0, 0, 0, 0);
+      const fim = new Date(inicio);
+      fim.setMonth(fim.getMonth() + 1, 0);
+      fim.setHours(23, 59, 59, 999);
+
+      const doMes = transacoes.filter((t) => {
+        if (!t.criado_em) return false;
+        const d = new Date(t.criado_em);
+        return d >= inicio && d <= fim;
+      });
+      const received = doMes.filter((t) => t.quantidade > 0).reduce((s, t) => s + t.quantidade, 0);
+      const spent = Math.abs(doMes.filter((t) => t.quantidade < 0).reduce((s, t) => s + t.quantidade, 0));
+      acumulado += received - spent;
+      meses.push({ month: MESES_PT[inicio.getMonth()], received, spent, balance: acumulado });
+    }
+    return meses;
+  }, [transacoes]);
+
+  const maxBalance = Math.max(1, ...classesSaldo.map(c => c.totalBalance));
+  const maxTopBalance = Math.max(1, ...topPositivos.map(s => s.balance));
+  const maxNegBalance = Math.max(1, ...topNegativos.map(s => Math.abs(s.balance)));
+  const maxEvolution = Math.max(1, ...evolucaoMensal.map(m => Math.max(m.received, m.spent)));
 
   const totais = useMemo(() => {
     const totalReceived = evolucaoMensal.reduce((sum, m) => sum + m.received, 0);
     const totalSpent = evolucaoMensal.reduce((sum, m) => sum + m.spent, 0);
-    const currentBalance = evolucaoMensal[evolucaoMensal.length - 1]?.balance || 0;
-    
+    const currentBalance = saldos.reduce((sum, a) => sum + (a.saldo_total ?? 0), 0);
+
     return { totalReceived, totalSpent, currentBalance };
-  }, []);
+  }, [evolucaoMensal, saldos]);
 
   const handleExportar = async () => {
     try {

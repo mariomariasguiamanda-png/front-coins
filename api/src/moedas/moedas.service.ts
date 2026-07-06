@@ -1,6 +1,7 @@
 import { Injectable, UnprocessableEntityException } from '@nestjs/common';
 import { DatabaseService } from '../database/database.service';
 import { ProfessorDisciplinaService } from '../common/services/professor-disciplina.service';
+import { NotificacoesService } from '../notificacoes/notificacoes.service';
 import { ConfigPrecoDto } from './dto/config-preco.dto';
 import type { AuthUser } from '../common/types/auth-user';
 
@@ -12,7 +13,83 @@ export class MoedasService {
   constructor(
     private db: DatabaseService,
     private professorDisciplinaService: ProfessorDisciplinaService,
+    private notificacoesService: NotificacoesService,
   ) {}
+
+  // Variante do setConfigPreco para o admin: sem checagem de posse da
+  // disciplina, e o histórico fica com id_professor nulo (autoria de admin).
+  async setConfigPrecoAdmin(dto: ConfigPrecoDto) {
+    const id_disciplina = BigInt(dto.id_disciplina);
+
+    const anterior = await this.db.config_compra_pontos.findUnique({ where: { id_disciplina } });
+    const preco_anterior = anterior?.preco_moedas_por_ponto ?? DEFAULT_PRECO_MOEDAS_POR_PONTO;
+    const pontos_anterior = anterior?.pontos_por_compra_max ?? DEFAULT_PONTOS_POR_COMPRA_MAX;
+
+    const config = await this.db.config_compra_pontos.upsert({
+      where: { id_disciplina },
+      create: {
+        id_disciplina,
+        pontos_por_compra_max: dto.pontos_por_compra_max ?? DEFAULT_PONTOS_POR_COMPRA_MAX,
+        preco_moedas_por_ponto: dto.preco_moedas_por_ponto ?? DEFAULT_PRECO_MOEDAS_POR_PONTO,
+      },
+      update: {
+        pontos_por_compra_max: dto.pontos_por_compra_max,
+        preco_moedas_por_ponto: dto.preco_moedas_por_ponto,
+        atualizado_em: new Date(),
+      },
+    });
+
+    await this.db.config_compra_pontos_historico.create({
+      data: {
+        id_disciplina,
+        preco_anterior,
+        preco_novo: config.preco_moedas_por_ponto,
+        pontos_anterior,
+        pontos_novo: config.pontos_por_compra_max,
+      },
+    });
+
+    return {
+      id_disciplina: Number(config.id_disciplina),
+      pontos_por_compra_max: config.pontos_por_compra_max,
+      preco_moedas_por_ponto: config.preco_moedas_por_ponto,
+    };
+  }
+
+  async getConfigPrecosAdmin() {
+    const [disciplinas, configs, matriculasPorDisc, saldosPorDisc] = await Promise.all([
+      this.db.disciplinas.findMany({
+        where: { ativo: true },
+        select: { id_disciplina: true, nome: true },
+        orderBy: { nome: 'asc' },
+      }),
+      this.db.config_compra_pontos.findMany(),
+      this.db.matriculas_aluno_disciplina.groupBy({
+        by: ['id_disciplina'],
+        _count: { _all: true },
+      }),
+      this.db.moedas_saldo.groupBy({ by: ['id_disciplina'], _sum: { saldo: true } }),
+    ]);
+
+    const mapaConfig = new Map(configs.map((c) => [String(c.id_disciplina), c]));
+    const mapaAlunos = new Map(
+      matriculasPorDisc.map((m) => [String(m.id_disciplina), m._count._all]),
+    );
+    const mapaSaldo = new Map(saldosPorDisc.map((s) => [String(s.id_disciplina), s._sum.saldo ?? 0]));
+
+    return disciplinas.map((d) => {
+      const chave = String(d.id_disciplina);
+      const config = mapaConfig.get(chave);
+      return {
+        id_disciplina: Number(d.id_disciplina),
+        nome: d.nome,
+        pontos_por_compra_max: config?.pontos_por_compra_max ?? DEFAULT_PONTOS_POR_COMPRA_MAX,
+        preco_moedas_por_ponto: config?.preco_moedas_por_ponto ?? DEFAULT_PRECO_MOEDAS_POR_PONTO,
+        total_alunos: mapaAlunos.get(chave) ?? 0,
+        moedas_circulacao: mapaSaldo.get(chave) ?? 0,
+      };
+    });
+  }
 
   async setConfigPreco(dto: ConfigPrecoDto, professor: AuthUser) {
     const id_disciplina = BigInt(dto.id_disciplina);
@@ -118,7 +195,7 @@ export class MoedasService {
         id: Number(h.id),
         disciplina: h.disciplinas.nome,
         alteracao: partes.length ? partes.join(' | ') : 'Configuração salva sem alteração de valores',
-        usuario: h.professores.usuarios.nome,
+        usuario: h.professores?.usuarios.nome ?? 'Administração',
         data: h.criado_em,
       };
     });
@@ -328,30 +405,77 @@ export class MoedasService {
         id_transacao: Number(transacao.id_transacao),
         saldo_novo: novoSaldo.saldo,
       };
+    }).then(async (resultado) => {
+      // Notifica o aluno depois que a transação de banco fechou com sucesso
+      const [aluno, disciplina] = await Promise.all([
+        this.db.alunos.findUnique({ where: { id_aluno }, select: { id_usuario: true } }),
+        this.db.disciplinas.findUnique({
+          where: { id_disciplina },
+          select: { nome: true },
+        }),
+      ]);
+      if (aluno) {
+        await this.notificacoesService.criar({
+          id_usuario: Number(aluno.id_usuario),
+          titulo: quantidade >= 0 ? 'Você recebeu moedas' : 'Ajuste de moedas na sua conta',
+          mensagem: `A administração ${quantidade >= 0 ? 'creditou' : 'debitou'} ${Math.abs(quantidade)} moeda${Math.abs(quantidade) > 1 ? 's' : ''} em ${disciplina?.nome ?? 'uma disciplina'}. Motivo: ${motivo}`,
+          tipo: quantidade >= 0 ? 'success' : 'warning',
+          categoria: 'conquista',
+          disciplina: disciplina?.nome,
+        });
+      }
+      return resultado;
     });
   }
 
   async getSaldosGerais() {
-    const alunos = await this.db.alunos.findMany({
-      include: {
-        usuarios: { select: { nome: true } },
-        turmas: { select: { nome: true } },
-        moedas_saldo: { include: { disciplinas: { select: { nome: true } } } },
-      },
-    });
+    const [alunos, recebidos, gastos, ultimas] = await Promise.all([
+      this.db.alunos.findMany({
+        include: {
+          usuarios: { select: { nome: true, email: true } },
+          turmas: { select: { nome: true } },
+          moedas_saldo: { include: { disciplinas: { select: { nome: true } } } },
+        },
+      }),
+      this.db.transacoes_moedas.groupBy({
+        by: ['id_aluno'],
+        where: { quantidade: { gt: 0 } },
+        _sum: { quantidade: true },
+      }),
+      this.db.transacoes_moedas.groupBy({
+        by: ['id_aluno'],
+        where: { quantidade: { lt: 0 } },
+        _sum: { quantidade: true },
+      }),
+      this.db.transacoes_moedas.groupBy({
+        by: ['id_aluno'],
+        _max: { criado_em: true },
+      }),
+    ]);
 
-    return alunos.map((a) => ({
-      id_aluno: Number(a.id_aluno),
-      nome: a.usuarios.nome,
-      matricula: a.matricula,
-      turma: a.turmas?.nome ?? null,
-      saldo_total: a.moedas_saldo.reduce((sum, s) => sum + (s.saldo ?? 0), 0),
-      por_disciplina: a.moedas_saldo.map((s) => ({
-        id_disciplina: Number(s.id_disciplina),
-        nome: s.disciplinas.nome,
-        saldo: s.saldo,
-      })),
-    }));
+    const mapaRecebido = new Map(recebidos.map((r) => [Number(r.id_aluno), r._sum.quantidade ?? 0]));
+    const mapaGasto = new Map(gastos.map((g) => [Number(g.id_aluno), Math.abs(g._sum.quantidade ?? 0)]));
+    const mapaUltima = new Map(ultimas.map((u) => [Number(u.id_aluno), u._max.criado_em]));
+
+    return alunos.map((a) => {
+      const id = Number(a.id_aluno);
+      return {
+        id_aluno: id,
+        nome: a.usuarios.nome,
+        email: a.usuarios.email,
+        matricula: a.matricula,
+        turma: a.turmas?.nome ?? null,
+        saldo_total: a.moedas_saldo.reduce((sum, s) => sum + (s.saldo ?? 0), 0),
+        total_recebido: mapaRecebido.get(id) ?? 0,
+        total_gasto: mapaGasto.get(id) ?? 0,
+        ultima_transacao: mapaUltima.get(id) ?? null,
+        por_disciplina: a.moedas_saldo.map((s) => ({
+          id_disciplina: Number(s.id_disciplina),
+          nome: s.disciplinas.nome,
+          saldo: s.saldo,
+        })),
+      };
+    });
   }
 
   async getTransacoesGerais(filtros: {
@@ -370,7 +494,7 @@ export class MoedasService {
         disciplinas: { select: { nome: true } },
       },
       orderBy: { criado_em: 'desc' },
-      take: 200,
+      take: 1000,
     });
     return transacoes;
   }
@@ -379,7 +503,13 @@ export class MoedasService {
     const compras = await this.db.compras_pontos.findMany({
       where: { status },
       include: {
-        alunos: { select: { matricula: true, usuarios: { select: { nome: true } } } },
+        alunos: {
+          select: {
+            matricula: true,
+            usuarios: { select: { nome: true } },
+            turmas: { select: { nome: true } },
+          },
+        },
         disciplinas: { select: { nome: true } },
       },
       orderBy: { criado_em: 'desc' },
@@ -388,7 +518,7 @@ export class MoedasService {
     return compras;
   }
 
-  async cancelarCompra(id_compra: bigint, admin: AuthUser) {
+  async cancelarCompra(id_compra: bigint, admin: AuthUser, motivo?: string) {
     const compra = await this.db.compras_pontos.findUnique({ where: { id_compra } });
     if (!compra) throw new UnprocessableEntityException('Compra não encontrada');
     if (compra.status === 'cancelada') {
@@ -420,11 +550,28 @@ export class MoedasService {
           tipo: 'ajuste_admin',
           quantidade: compra.custo_em_moedas,
           criado_por_usuario_id: admin.sub,
-          descricao: `Estorno da compra #${Number(id_compra)} (cancelada pelo admin)`,
+          descricao: motivo
+            ? `Estorno da compra #${Number(id_compra)} (cancelada pelo admin: ${motivo})`
+            : `Estorno da compra #${Number(id_compra)} (cancelada pelo admin)`,
         },
       });
 
       return { id_compra: Number(id_compra), id_transacao: Number(transacao.id_transacao) };
+    }).then(async (resultado) => {
+      const aluno = await this.db.alunos.findUnique({
+        where: { id_aluno: compra.id_aluno },
+        select: { id_usuario: true },
+      });
+      if (aluno) {
+        await this.notificacoesService.criar({
+          id_usuario: Number(aluno.id_usuario),
+          titulo: 'Compra de pontos cancelada',
+          mensagem: `Sua compra de ${compra.quantidade_pontos} ponto${compra.quantidade_pontos > 1 ? 's' : ''} foi cancelada pela administração${motivo ? ` (motivo: ${motivo})` : ''} e as ${compra.custo_em_moedas} moedas foram estornadas para o seu saldo.`,
+          tipo: 'warning',
+          categoria: 'sistema',
+        });
+      }
+      return resultado;
     });
   }
 }

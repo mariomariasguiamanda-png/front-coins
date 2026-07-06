@@ -10,8 +10,7 @@ import { useToast } from "@/components/ui/Toast";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { getSystemSettings, updateSystemSettings, diffSystemSettings, type SystemSettings, type AcademicEvent, type AcademicPeriod } from "@/services/api/system-settings";
-import { createLog } from "@/services/api/logs";
-import { createNotification, composeMessages } from "@/services/api/notifications";
+import { broadcastParaAlunos } from "@/services/api/system-settings";
 
 export default function ConfigCalendarioPage() {
   const { show } = useToast();
@@ -54,16 +53,16 @@ export default function ConfigCalendarioPage() {
     setEventDraft({ tipo: "prova", notificar: true });
     setEventEditId(null);
     if (newEvent.notificar) {
-      await createNotification(
-        composeMessages.academicEventCreated({
-          adminNome: "Administrador (sessão)",
-          titulo: newEvent.titulo,
-          periodo: selectedPeriod.nome,
-          dataInicio: newEvent.dataInicio,
-          dataFim: newEvent.dataFim,
-        }) as any
-      );
-      show({ variant: "success", title: "Evento adicionado", description: "Notificações automáticas disparadas." });
+      try {
+        // Notifica todos os alunos ativos (in-app) sobre o novo evento
+        await broadcastParaAlunos(
+          `Novo evento no calendário: ${newEvent.titulo}`,
+          `${newEvent.titulo} (${selectedPeriod.nome}) de ${newEvent.dataInicio} a ${newEvent.dataFim}${newEvent.descricao ? ` — ${newEvent.descricao}` : ""}`,
+        );
+        show({ variant: "success", title: "Evento adicionado", description: "Alunos notificados." });
+      } catch {
+        show({ variant: "error", title: "Evento adicionado", description: "Falha ao notificar os alunos." });
+      }
     }
   };
 
@@ -131,10 +130,9 @@ export default function ConfigCalendarioPage() {
               if (!diffs.length) return;
               try {
                 setSaving(true);
+                // Auditoria fica por conta do backend (interceptor de admin)
                 const saved = await updateSystemSettings(draft);
                 setData(saved); setDraft(saved);
-                await createLog({ usuarioNome: "Administrador (sessão)", usuarioPerfil: "Administrador", acao: `Atualizou calendário: ${diffs.join(", ")}` });
-                await createNotification({ message: `Calendário atualizado.`, actionType: "permissions_changed", recipients: ["Administrador", "Coordenador"] });
                 show({ variant: "success", title: "Configurações salvas" });
               } finally { setSaving(false); }
             }}><Save className="mr-2 h-4 w-4"/>Salvar alterações</Button>

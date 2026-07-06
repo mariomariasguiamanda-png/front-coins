@@ -8,7 +8,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Upload, Save } from "lucide-react";
 import { useToast } from "@/components/ui/Toast";
 import { getSystemSettings, updateSystemSettings, diffSystemSettings, type SystemSettings } from "@/services/api/system-settings";
-import { createLog } from "@/services/api/logs";
 
 export default function ConfigVisualPage() {
   const { show } = useToast();
@@ -69,15 +68,6 @@ export default function ConfigVisualPage() {
                   setDraft(saved);
                   
                   show({ variant: "success", title: "✓ Configurações salvas!" });
-                  
-                  const diffs = diffSystemSettings(data, draft);
-                  if (diffs.length > 0) {
-                    await createLog({ 
-                      usuarioNome: "Administrador", 
-                      usuarioPerfil: "Administrador", 
-                      acao: `Identidade visual: ${diffs.join(", ")}` 
-                    });
-                  }
                 } catch (error) {
                   console.error("Erro ao salvar:", error);
                   show({ variant: "error", title: "Erro ao salvar" });

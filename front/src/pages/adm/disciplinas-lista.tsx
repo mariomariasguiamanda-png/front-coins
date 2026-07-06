@@ -18,6 +18,7 @@ import {
   GraduationCap,
   CheckCircle2
 } from "lucide-react";
+import { api } from "@/lib/api";
 import { CreateDisciplineDialog } from "@/components/adm/dialogs/CreateDisciplineDialog";
 import { EditDisciplineDialog } from "@/components/adm/dialogs/EditDisciplineDialog";
 import { ViewDisciplineHistoryDialog } from "@/components/adm/dialogs/ViewDisciplineHistoryDialog";
@@ -52,93 +53,6 @@ interface Discipline {
   }>;
 }
 
-const initialDisciplines: Discipline[] = [
-  {
-    id: "1",
-    code: "MAT001",
-    name: "Matemática",
-    color: "#4F46E5",
-    icon: "calculator",
-    classes: ["1º A", "1º B", "2º A"],
-    teachers: [
-      { id: "1", name: "João Silva", role: "principal" },
-      { id: "2", name: "Maria Santos", role: "collaborator" }
-    ],
-    points: { maxPoints: 50, pointPrice: 20 },
-    status: "active",
-    createdAt: "2023-01-01",
-    updatedAt: "2023-10-12",
-    history: [
-      {
-        timestamp: "2023-10-12T10:00:00Z",
-        changedBy: "Admin",
-        changes: {}
-      }
-    ]
-  },
-  {
-    id: "2",
-    code: "PORT001",
-    name: "Português",
-    color: "#059669",
-    icon: "book",
-    classes: ["1º A", "1º B", "2º A"],
-    teachers: [{ id: "3", name: "Ana Oliveira", role: "principal" }],
-    points: { maxPoints: 40, pointPrice: 15 },
-    status: "active",
-    createdAt: "2023-01-01",
-    updatedAt: "2023-10-12",
-    history: []
-  },
-  {
-    id: "3",
-    code: "FIS001",
-    name: "Física",
-    color: "#DC2626",
-    icon: "atom",
-    classes: ["2º A", "2º B", "3º A"],
-    teachers: [
-      { id: "4", name: "Carlos Mendes", role: "principal" }
-    ],
-    points: { maxPoints: 45, pointPrice: 18 },
-    status: "active",
-    createdAt: "2023-01-01",
-    updatedAt: "2023-10-15",
-    history: []
-  },
-  {
-    id: "4",
-    code: "QUIM001",
-    name: "Química",
-    color: "#7C3AED",
-    icon: "flask",
-    classes: ["2º A", "3º A"],
-    teachers: [
-      { id: "5", name: "Paula Costa", role: "principal" }
-    ],
-    points: { maxPoints: 45, pointPrice: 18 },
-    status: "active",
-    createdAt: "2023-01-01",
-    updatedAt: "2023-10-10",
-    history: []
-  },
-  {
-    id: "5",
-    code: "BIO001",
-    name: "Biologia",
-    color: "#10B981",
-    icon: "leaf",
-    classes: ["2º B", "3º A", "3º B"],
-    teachers: [
-      { id: "6", name: "Roberto Lima", role: "principal" }
-    ],
-    points: { maxPoints: 40, pointPrice: 15 },
-    status: "active",
-    createdAt: "2023-01-01",
-    updatedAt: "2023-10-08",
-    history: []
-  }
-];
 
 function DisciplineCard({
   discipline,
@@ -267,34 +181,97 @@ function DisciplineCard({
   );
 }
 
-export default function DisciplinasListaPage() {
-  // Load disciplines from localStorage or use initial data
-  const [disciplines, setDisciplines] = useState<Discipline[]>(() => {
-    if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("adm-disciplines");
-      if (saved) {
-        try {
-          return JSON.parse(saved);
-        } catch (error) {
-          console.error("Erro ao carregar disciplinas:", error);
-        }
-      }
-    }
-    return initialDisciplines;
-  });
+const CORES = ["#4F46E5", "#059669", "#DC2626", "#7C3AED", "#10B981", "#F59E0B", "#0EA5E9", "#EC4899"];
 
+export default function DisciplinasListaPage() {
+  const [disciplines, setDisciplines] = useState<Discipline[]>([]);
   const [search, setSearch] = useState("");
   const [showArchived, setShowArchived] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
   const [editDiscipline, setEditDiscipline] = useState<Discipline | null>(null);
   const [historyDiscipline, setHistoryDiscipline] = useState<Discipline | null>(null);
 
-  // Save disciplines to localStorage whenever they change
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      localStorage.setItem("adm-disciplines", JSON.stringify(disciplines));
+  // Monta a lista real: disciplinas + preços de pontos + professores vinculados
+  const carregar = async () => {
+    try {
+      const [discs, configs, professores] = await Promise.all([
+        api.get("/disciplinas"),
+        api.get("/admin/moedas/config-precos"),
+        api.get("/professores"),
+      ]);
+
+      const mapaConfig = new Map<number, any>(
+        (configs ?? []).map((c: any) => [Number(c.id_disciplina), c]),
+      );
+
+      const professoresPorDisciplina = new Map<number, DisciplineTeacher[]>();
+      for (const p of professores ?? []) {
+        for (const idDisc of p.disciplinas ?? []) {
+          if (!professoresPorDisciplina.has(idDisc)) professoresPorDisciplina.set(idDisc, []);
+          professoresPorDisciplina.get(idDisc)!.push({
+            id: String(p.id_professor),
+            name: p.nome,
+            role: professoresPorDisciplina.get(idDisc)!.length === 0 ? "principal" : "collaborator",
+          });
+        }
+      }
+
+      setDisciplines(
+        (discs ?? []).map((d: any, idx: number): Discipline => {
+          const config = mapaConfig.get(Number(d.id_disciplina));
+          return {
+            id: String(d.id_disciplina),
+            code: d.codigo ?? "",
+            name: d.nome,
+            color: CORES[idx % CORES.length],
+            icon: "book",
+            classes: [],
+            teachers: professoresPorDisciplina.get(Number(d.id_disciplina)) ?? [],
+            points: {
+              maxPoints: config?.pontos_por_compra_max ?? 10,
+              pointPrice: config?.preco_moedas_por_ponto ?? 10,
+            },
+            status: d.ativo === false ? "archived" : "active",
+            createdAt: d.criado_em ?? "",
+            updatedAt: d.criado_em ?? "",
+            history: [],
+          };
+        }),
+      );
+    } catch (err) {
+      console.error("Erro ao carregar disciplinas:", err);
     }
-  }, [disciplines]);
+  };
+
+  useEffect(() => {
+    carregar();
+  }, []);
+
+  const handleCreate = async (data: any) => {
+    try {
+      await api.post("/admin/disciplinas", {
+        nome: data.name,
+        codigo: data.code,
+      });
+      await carregar();
+    } catch (err: any) {
+      console.error(err);
+      alert(err?.message ?? "Erro ao criar disciplina");
+    }
+  };
+
+  const handleEdit = async (data: any) => {
+    try {
+      await api.patch(`/admin/disciplinas/${data.id}`, {
+        nome: data.name,
+        codigo: data.code,
+      });
+      await carregar();
+    } catch (err: any) {
+      console.error(err);
+      alert(err?.message ?? "Erro ao editar disciplina");
+    }
+  };
 
   const list = useMemo(() => {
     const s = search.trim().toLowerCase();
@@ -312,17 +289,29 @@ export default function DisciplinasListaPage() {
     moedas: list.reduce((sum, d) => sum + d.points.maxPoints, 0),
   }), [list]);
 
-  const handleArchiveToggle = (id: string) => {
-    setDisciplines((prev) => prev.map((d) => (d.id === id ? { ...d, status: d.status === "active" ? "archived" as const : "active" as const } : d)));
-    alert("Status da disciplina atualizado.");
+  const handleArchiveToggle = async (id: string) => {
+    const disciplina = disciplines.find((d) => d.id === id);
+    if (!disciplina) return;
+    try {
+      if (disciplina.status === "active") {
+        // Soft delete (ativo=false) no backend
+        await api.delete(`/admin/disciplinas/${id}`);
+      } else {
+        await api.patch(`/admin/disciplinas/${id}`, { ativo: true });
+      }
+      await carregar();
+    } catch (err: any) {
+      console.error(err);
+      alert(err?.message ?? "Erro ao atualizar o status da disciplina");
+    }
   };
 
   return (
     <AdminLayout>
       <div className="space-y-6 pb-8">
         {/* Dialogs */}
-        <CreateDisciplineDialog open={createOpen} onClose={() => setCreateOpen(false)} onSave={(data: any) => console.log("create", data)} />
-        <EditDisciplineDialog open={!!editDiscipline} onClose={() => setEditDiscipline(null)} onSave={(data: any) => console.log("edit", data)} discipline={editDiscipline as any} />
+        <CreateDisciplineDialog open={createOpen} onClose={() => setCreateOpen(false)} onSave={handleCreate} />
+        <EditDisciplineDialog open={!!editDiscipline} onClose={() => setEditDiscipline(null)} onSave={handleEdit} discipline={editDiscipline as any} />
         <ViewDisciplineHistoryDialog open={!!historyDiscipline} onClose={() => setHistoryDiscipline(null)} discipline={historyDiscipline as any} />
 
         {/* Header */}
