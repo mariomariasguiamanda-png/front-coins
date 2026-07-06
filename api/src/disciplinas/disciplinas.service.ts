@@ -285,4 +285,43 @@ export class DisciplinasService {
     await this.findOne(id);
     return this.db.disciplinas.update({ where: { id_disciplina: id }, data: { ativo: false } });
   }
+
+  async getAdminStats() {
+    const [total, ativas, arquivadas, professores, alunos, moedas] = await Promise.all([
+      this.db.disciplinas.count(),
+      this.db.disciplinas.count({ where: { ativo: true } }),
+      this.db.disciplinas.count({ where: { ativo: false } }),
+      this.db.professores.count(),
+      this.db.alunos.count(),
+      this.db.moedas_saldo.aggregate({ _sum: { saldo: true } }),
+    ]);
+
+    return {
+      total,
+      ativas,
+      arquivadas,
+      professores,
+      alunos,
+      moedas: moedas._sum.saldo ?? 0,
+    };
+  }
+
+  async addProfessor(id_disciplina: bigint, id_professor: bigint) {
+    const existing = await this.db.professor_disciplina.findUnique({
+      where: { id_professor_id_disciplina: { id_professor, id_disciplina } },
+    });
+    if (existing) return existing;
+
+    return this.db.professor_disciplina.create({
+      data: { id_disciplina, id_professor },
+    });
+  }
+
+  async removeProfessor(id_disciplina: bigint, id_professor: bigint) {
+    return this.db.professor_disciplina
+      .delete({
+        where: { id_professor_id_disciplina: { id_professor, id_disciplina } },
+      })
+      .catch(() => null);
+  }
 }

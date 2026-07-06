@@ -45,6 +45,12 @@ export class DisciplinasController {
     return this.disciplinasService.findByProfessor(user);
   }
 
+  @Get('admin/disciplinas/stats')
+  @Roles('admin')
+  getAdminStats() {
+    return this.disciplinasService.getAdminStats();
+  }
+
   @Get('disciplinas/:id')
   findOne(@Param('id') id: string) {
     return this.disciplinasService.findOne(BigInt(id));
@@ -66,5 +72,23 @@ export class DisciplinasController {
   @Roles('admin')
   remove(@Param('id') id: string) {
     return this.disciplinasService.remove(BigInt(id));
+  }
+
+  @Post('admin/disciplinas/:id/professores')
+  @Roles('admin')
+  addProfessor(
+    @Param('id') id_disciplina: string,
+    @Body('id_professor') id_professor: string,
+  ) {
+    return this.disciplinasService.addProfessor(BigInt(id_disciplina), BigInt(id_professor));
+  }
+
+  @Delete('admin/disciplinas/:id/professores/:id_professor')
+  @Roles('admin')
+  removeProfessor(
+    @Param('id') id_disciplina: string,
+    @Param('id_professor') id_professor: string,
+  ) {
+    return this.disciplinasService.removeProfessor(BigInt(id_disciplina), BigInt(id_professor));
   }
 }
