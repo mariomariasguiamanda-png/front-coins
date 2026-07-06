@@ -414,7 +414,7 @@ export default function DashboardPage() {
                     </div>
                   </div>
                   <Link 
-                    href="/adm/suporte-chamados"
+                    href="/adm/suporte-chamados?from=dashboard"
                     className="text-xs text-amber-700 hover:text-amber-800 font-medium"
                   >
                     Ver →
@@ -430,7 +430,7 @@ export default function DashboardPage() {
                     </div>
                   </div>
                   <Link 
-                    href="/adm/usuarios-lista"
+                    href="/adm/usuarios-lista?from=dashboard"
                     className="text-xs text-blue-700 hover:text-blue-800 font-medium"
                   >
                     Ver →

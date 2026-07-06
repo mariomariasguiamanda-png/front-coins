@@ -21,7 +21,11 @@ import { useToast } from "@/components/ui/Toast";
 
 const mockTickets: Ticket[] = [];
 
+import { useRouter } from "next/router";
+
 export default function SuporteChamadosPage() {
+  const router = useRouter();
+  const fromDashboard = router.query.from === "dashboard";
   const { show } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("todos");
@@ -82,7 +86,7 @@ export default function SuporteChamadosPage() {
                 <p className="text-gray-600 mt-1">Atendimento e resolução de solicitações</p>
               </div>
             </div>
-            <AdmBackButton href="/adm/suporte" className="no-underline" />
+            <AdmBackButton href={fromDashboard ? "/adm/dashboard" : "/adm/suporte"} className="no-underline" />
           </div>
 
           {/* Stats Cards */}

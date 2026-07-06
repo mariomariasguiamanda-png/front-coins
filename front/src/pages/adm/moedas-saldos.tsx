@@ -28,7 +28,11 @@ type SaldoAluno = {
   por_disciplina: { id_disciplina: number; nome: string; saldo: number | null }[];
 };
 
+import { useRouter } from "next/router";
+
 export default function MoedasSaldosPage() {
+  const router = useRouter();
+  const fromDashboard = router.query.from === "dashboard";
   const [saldos, setSaldos] = useState<SaldoAluno[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -114,7 +118,7 @@ export default function MoedasSaldosPage() {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <AdmBackButton href="/adm/moedas" className="hidden md:block" />
+            <AdmBackButton href={fromDashboard ? "/adm/dashboard" : "/adm/moedas"} className="hidden md:block" />
             <Button className="rounded-lg bg-violet-600 hover:bg-violet-700" onClick={handleExportar}>
               <Download className="mr-2 h-4 w-4" />
               Exportar CSV

@@ -356,7 +356,12 @@ function UsersTable({
   );
 }
 
-export default function UsuariosListaPage() {
+import { useRouter } from "next/router";
+
+export default function UsuariosLista() {
+  const router = useRouter();
+  const fromDashboard = router.query.from === "dashboard";
+  const [activeTab, setActiveTab] = useState<UserType | "all">("all");
   const [search, setSearch] = useState("");
   const [tipo, setTipo] = useState<"all" | UserType>("all");
   const [viewUser, setViewUser] = useState<User | null>(null);
@@ -645,7 +650,7 @@ export default function UsuariosListaPage() {
             </p>
           </div>
           <div className="flex gap-2">
-            <AdmBackButton href="/adm/usuarios" />
+            <AdmBackButton href={fromDashboard ? "/adm/dashboard" : "/adm/usuarios"} />
             <Button
               variant="outline"
               className="rounded-lg inline-flex items-center gap-2"
