@@ -23,10 +23,19 @@ export class UsuariosService {
         tipo_usuario: true,
         status: true,
         criado_em: true,
+        foto_url: true, // usuarios.foto_url só é preenchido pra admin
+        alunos: { select: { foto_url: true } },
+        professores: { select: { foto_url: true } },
       },
       orderBy: { criado_em: 'desc' },
     });
-    return usuarios;
+
+    // Cada papel guarda a foto num lugar diferente (aluno/professor têm
+    // tabela própria; admin não tem tabela própria, usa usuarios.foto_url).
+    return usuarios.map(({ alunos, professores, foto_url, ...resto }) => ({
+      ...resto,
+      foto_url: alunos?.foto_url ?? professores?.foto_url ?? foto_url ?? null,
+    }));
   }
 
   async findOne(id_usuario: bigint) {

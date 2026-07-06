@@ -47,7 +47,7 @@ import {
   Calendar,
 } from "lucide-react";
 import { toast } from "sonner";
-import { api } from "@/lib/api";
+import { api, resolveMediaUrl } from "@/lib/api";
 
 type UserType = "student" | "teacher" | "admin";
 
@@ -60,6 +60,7 @@ type User = {
   status: "active" | "inactive" | "pending";
   createdAt: string;
   lastAccess?: string;
+  fotoUrl?: string | null;
 };
 
 function getTypeLabel(type: UserType) {
@@ -101,23 +102,31 @@ function UserCard({
       <CardContent className="p-5">
         <div className="flex items-start justify-between mb-4">
           <div className="flex items-center gap-3">
-            <div
-              className={`h-12 w-12 rounded-full ${
-                user.type === "student"
-                  ? "bg-blue-100"
-                  : user.type === "teacher"
-                  ? "bg-green-100"
-                  : "bg-purple-100"
-              } flex items-center justify-center`}
-            >
-              {user.type === "student" ? (
-                <Users className="h-6 w-6 text-blue-600" />
-              ) : user.type === "teacher" ? (
-                <GraduationCap className="h-6 w-6 text-green-600" />
-              ) : (
-                <Users className="h-6 w-6 text-purple-600" />
-              )}
-            </div>
+            {user.fotoUrl ? (
+              <img
+                src={user.fotoUrl}
+                alt={user.name}
+                className="h-12 w-12 rounded-full object-cover flex-shrink-0"
+              />
+            ) : (
+              <div
+                className={`h-12 w-12 rounded-full ${
+                  user.type === "student"
+                    ? "bg-blue-100"
+                    : user.type === "teacher"
+                    ? "bg-green-100"
+                    : "bg-purple-100"
+                } flex items-center justify-center`}
+              >
+                {user.type === "student" ? (
+                  <Users className="h-6 w-6 text-blue-600" />
+                ) : user.type === "teacher" ? (
+                  <GraduationCap className="h-6 w-6 text-green-600" />
+                ) : (
+                  <Users className="h-6 w-6 text-purple-600" />
+                )}
+              </div>
+            )}
             <div>
               <h3 className="font-semibold text-gray-900">{user.name}</h3>
               <p className="text-xs text-gray-500">{getTypeLabel(user.type)}</p>
@@ -245,23 +254,31 @@ function UsersTable({
                   >
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center gap-3">
-                        <div
-                          className={`h-10 w-10 rounded-full ${
-                            user.type === "student"
-                              ? "bg-blue-100"
-                              : user.type === "teacher"
-                              ? "bg-green-100"
-                              : "bg-purple-100"
-                          } flex items-center justify-center flex-shrink-0`}
-                        >
-                          {user.type === "student" ? (
-                            <Users className="h-5 w-5 text-blue-600" />
-                          ) : user.type === "teacher" ? (
-                            <GraduationCap className="h-5 w-5 text-green-600" />
-                          ) : (
-                            <Users className="h-5 w-5 text-purple-600" />
-                          )}
-                        </div>
+                        {user.fotoUrl ? (
+                          <img
+                            src={user.fotoUrl}
+                            alt={user.name}
+                            className="h-10 w-10 rounded-full object-cover flex-shrink-0"
+                          />
+                        ) : (
+                          <div
+                            className={`h-10 w-10 rounded-full ${
+                              user.type === "student"
+                                ? "bg-blue-100"
+                                : user.type === "teacher"
+                                ? "bg-green-100"
+                                : "bg-purple-100"
+                            } flex items-center justify-center flex-shrink-0`}
+                          >
+                            {user.type === "student" ? (
+                              <Users className="h-5 w-5 text-blue-600" />
+                            ) : user.type === "teacher" ? (
+                              <GraduationCap className="h-5 w-5 text-green-600" />
+                            ) : (
+                              <Users className="h-5 w-5 text-purple-600" />
+                            )}
+                          </div>
+                        )}
                         <div className="min-w-0 flex-1">
                           <p className="text-sm font-medium text-gray-900 truncate">
                             {user.name}
@@ -375,6 +392,7 @@ export default function UsuariosListaPage() {
           type: TIPO_API_PARA_UI[u.tipo_usuario] ?? "student",
           status: STATUS_API_PARA_UI[u.status] ?? "active",
           createdAt: u.criado_em ?? "",
+          fotoUrl: resolveMediaUrl(u.foto_url),
         })),
       );
     } catch (err) {
