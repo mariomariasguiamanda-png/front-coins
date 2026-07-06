@@ -5,9 +5,10 @@ export class CreateUsuarioDto {
   @IsEmail()
   email: string;
 
+  @IsOptional()
   @IsString()
   @MinLength(6)
-  senha: string;
+  senha?: string;
 
   @IsString()
   @IsNotEmpty()
@@ -20,10 +21,7 @@ export class CreateUsuarioDto {
   @IsString()
   telefone?: string;
 
-  @ValidateIf((dto: CreateUsuarioDto) => dto.tipo_usuario === 'aluno')
-  @IsString()
-  @IsNotEmpty()
-  matricula?: string;
+
 
   @IsOptional()
   @IsString()

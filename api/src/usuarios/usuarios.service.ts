@@ -5,9 +5,15 @@ import { CreateUsuarioDto } from './dto/create-usuario.dto';
 import { UpdateUsuarioDto } from './dto/update-usuario.dto';
 import { UpdateStatusUsuarioDto } from './dto/update-status-usuario.dto';
 
+import { MailService } from '../common/mail/mail.service';
+import * as crypto from 'crypto';
+
 @Injectable()
 export class UsuariosService {
-  constructor(private db: DatabaseService) {}
+  constructor(
+    private db: DatabaseService,
+    private mailService: MailService,
+  ) {}
 
   async findAll(tipo_usuario?: string, status?: string) {
     const usuarios = await this.db.usuarios.findMany({
@@ -56,9 +62,11 @@ export class UsuariosService {
     const existing = await this.db.usuarios.findUnique({ where: { email: dto.email } });
     if (existing) throw new ConflictException('Email já em uso');
 
-    const senha_hash = await bcrypt.hash(dto.senha, 10);
+    // Gera uma senha aleatória de 8 caracteres se não for fornecida (ex: Qwe8!xyz)
+    const rawPassword = dto.senha || crypto.randomBytes(4).toString('hex');
+    const senha_hash = await bcrypt.hash(rawPassword, 10);
 
-    return this.db.$transaction(async (tx) => {
+    const result = await this.db.$transaction(async (tx) => {
       const usuario = await tx.usuarios.create({
         data: {
           email: dto.email,
@@ -70,8 +78,12 @@ export class UsuariosService {
       });
 
       if (dto.tipo_usuario === 'aluno') {
+        const totalUsuarios = await tx.usuarios.count();
+        const currentYear = new Date().getFullYear();
+        const matriculaAutomatica = `${currentYear}${String(totalUsuarios).padStart(3, '0')}`;
+
         await tx.alunos.create({
-          data: { id_usuario: usuario.id_usuario, matricula: dto.matricula as string },
+          data: { id_usuario: usuario.id_usuario, matricula: matriculaAutomatica },
         });
       } else if (dto.tipo_usuario === 'professor') {
         await tx.professores.create({
@@ -81,6 +93,11 @@ export class UsuariosService {
 
       return { id_usuario: Number(usuario.id_usuario), email: usuario.email };
     });
+
+    // Dispara o e-mail de boas vindas com a senha gerada (apenas se geramos ou recebemos, mas enviamos sempre aqui)
+    await this.mailService.sendWelcomePassword(dto.email, dto.nome, rawPassword);
+
+    return result;
   }
 
   async update(id_usuario: bigint, dto: UpdateUsuarioDto) {

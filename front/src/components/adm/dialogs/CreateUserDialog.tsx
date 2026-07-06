@@ -27,8 +27,6 @@ interface CreateUserDialogProps {
     phone: string;
     type: "student" | "teacher" | "admin";
     status: "active" | "inactive";
-    password: string;
-    matricula?: string;
   }) => Promise<void>;
 }
 
@@ -43,12 +41,18 @@ export function CreateUserDialog({
     email: "",
     phone: "",
     type: "student" as "student" | "teacher" | "admin",
-    matricula: "",
-    password: "",
-    confirmPassword: "",
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const formatPhone = (value: string) => {
+    const digits = value.replace(/\D/g, "");
+    if (digits.length === 0) return "";
+    if (digits.length <= 2) return `(${digits}`;
+    if (digits.length <= 6) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`;
+    if (digits.length <= 10) return `(${digits.slice(0, 2)}) ${digits.slice(2, 6)}-${digits.slice(6)}`;
+    return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7, 11)}`;
+  };
 
   const validate = () => {
     const newErrors: Record<string, string> = {};
@@ -70,20 +74,6 @@ export function CreateUserDialog({
       newErrors.phone = "Telefone inválido. Use formato: (11) 98765-4321";
     }
 
-    if (!formData.password.trim()) {
-      newErrors.password = "Senha é obrigatória";
-    } else if (formData.password.length < 6) {
-      newErrors.password = "Mínimo 6 caracteres";
-    }
-
-    if (formData.confirmPassword !== formData.password) {
-      newErrors.confirmPassword = "Senhas não coincidem";
-    }
-
-    if (formData.type === "student" && !formData.matricula.trim()) {
-      newErrors.matricula = "Matrícula é obrigatória para aluno";
-    }
-
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -103,8 +93,6 @@ export function CreateUserDialog({
         phone: formData.phone,
         type: formData.type,
         status: "active", // 👈 sempre cria como ativo
-        password: formData.password,
-        matricula: formData.type === "student" ? formData.matricula : undefined,
       });
       handleClose();
     } catch (error) {
@@ -126,9 +114,6 @@ export function CreateUserDialog({
       email: "",
       phone: "",
       type: "student",
-      matricula: "",
-      password: "",
-      confirmPassword: "",
     });
     setErrors({});
     onClose();
@@ -223,8 +208,9 @@ export function CreateUserDialog({
                   errors.phone ? "border-red-500" : ""
                 }`}
                 value={formData.phone}
+                maxLength={15}
                 onChange={(e) =>
-                  setFormData({ ...formData, phone: e.target.value })
+                  setFormData({ ...formData, phone: formatPhone(e.target.value) })
                 }
               />
             </div>
@@ -270,79 +256,9 @@ export function CreateUserDialog({
             </Select>
           </div>
 
-          {/* Matrícula (só para aluno) */}
-          {formData.type === "student" && (
-            <div className="space-y-2">
-              <Label
-                htmlFor="matricula"
-                className="text-sm font-medium text-gray-700"
-              >
-                Matrícula *
-              </Label>
-              <Input
-                id="matricula"
-                placeholder="Ex: 2026001"
-                className={`bg-white ${
-                  errors.matricula ? "border-red-500" : ""
-                }`}
-                value={formData.matricula}
-                onChange={(e) =>
-                  setFormData({ ...formData, matricula: e.target.value })
-                }
-              />
-              {errors.matricula && (
-                <p className="text-sm text-red-600">{errors.matricula}</p>
-              )}
-            </div>
-          )}
+          {/* Matrícula agora é automática no backend */}
 
-          {/* Senha */}
-          <div className="space-y-2">
-            <Label
-              htmlFor="password"
-              className="text-sm font-medium text-gray-700"
-            >
-              Senha *
-            </Label>
-            <Input
-              id="password"
-              type="password"
-              placeholder="Senha temporária"
-              className={`bg-white ${errors.password ? "border-red-500" : ""}`}
-              value={formData.password}
-              onChange={(e) =>
-                setFormData({ ...formData, password: e.target.value })
-              }
-            />
-            {errors.password && (
-              <p className="text-sm text-red-600">{errors.password}</p>
-            )}
-          </div>
-
-          {/* Confirmar senha */}
-          <div className="space-y-2">
-            <Label
-              htmlFor="confirmPassword"
-              className="text-sm font-medium text-gray-700"
-            >
-              Confirmar Senha *
-            </Label>
-            <Input
-              id="confirmPassword"
-              type="password"
-              placeholder="Repita a senha"
-              className={`bg-white ${
-                errors.confirmPassword ? "border-red-500" : ""
-              }`}
-              value={formData.confirmPassword}
-              onChange={(e) =>
-                setFormData({ ...formData, confirmPassword: e.target.value })
-              }
-            />
-            {errors.confirmPassword && (
-              <p className="text-sm text-red-600">{errors.confirmPassword}</p>
-            )}
-          </div>
+          {/* Senha e Confirmar senha removidos (geração automática) */}
 
           {errors.submit && (
             <div className="rounded-lg bg-red-50 border border-red-200 p-3">

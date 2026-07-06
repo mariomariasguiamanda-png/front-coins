@@ -86,4 +86,56 @@ export class MailService {
       html: `<p><strong>De:</strong> ${chamado.usuarioNome} (${chamado.usuarioEmail})</p><p><strong>Assunto:</strong> ${chamado.assunto ?? '(sem assunto)'}</p><p>${chamado.mensagem}</p>${anexosHtml}`,
     });
   }
+
+  async sendWelcomePassword(email: string, nome: string, senhaTemp: string) {
+    const transporter = this.getTransporter();
+
+    if (!transporter) {
+      this.logger.warn(
+        `SMTP não configurado. E-mail de boas-vindas não enviado para ${email}. Senha gerada: ${senhaTemp}`,
+      );
+      return;
+    }
+
+    const html = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #f8fafc; border-radius: 12px; overflow: hidden; border: 1px solid #e2e8f0;">
+        <div style="background-color: #7c3aed; padding: 32px 20px; text-align: center;">
+          <h1 style="color: white; margin: 0; font-size: 24px;">Bem-vindo(a) ao Coins!</h1>
+        </div>
+        <div style="padding: 32px 20px; background-color: white;">
+          <p style="color: #334155; font-size: 16px; margin-top: 0;">Olá <strong>${nome}</strong>,</p>
+          <p style="color: #475569; font-size: 16px; line-height: 1.5;">
+            Sua conta foi criada com sucesso pelo administrador do sistema.
+          </p>
+          <div style="background-color: #f1f5f9; padding: 20px; border-radius: 8px; margin: 24px 0; text-align: center;">
+            <p style="color: #64748b; font-size: 14px; margin: 0 0 8px 0; text-transform: uppercase; font-weight: bold;">Sua Senha Provisória</p>
+            <p style="color: #0f172a; font-size: 24px; margin: 0; font-family: monospace; letter-spacing: 2px;"><strong>${senhaTemp}</strong></p>
+          </div>
+          <p style="color: #475569; font-size: 15px; line-height: 1.5;">
+            Recomendamos que você altere essa senha assim que fizer o seu primeiro login. Você pode fazer isso acessando a seção <strong>Meu Perfil</strong>.
+          </p>
+          <p style="color: #475569; font-size: 15px; line-height: 1.5;">
+            Caso prefira, você também pode usar a opção "Esqueci minha senha" na tela de login a qualquer momento.
+          </p>
+        </div>
+        <div style="background-color: #f8fafc; padding: 20px; text-align: center; border-top: 1px solid #e2e8f0;">
+          <p style="color: #94a3b8; font-size: 12px; margin: 0;">
+            Se você tiver alguma dúvida, entre em contato com o suporte.
+          </p>
+        </div>
+      </div>
+    `;
+
+    try {
+      await transporter.sendMail({
+        from: process.env.SMTP_FROM ?? 'coins@no-reply.local',
+        to: email,
+        subject: 'Bem-vindo(a)! Sua conta foi criada',
+        html,
+      });
+      this.logger.log(`E-mail de boas-vindas enviado com sucesso para ${email}`);
+    } catch (error) {
+      this.logger.error(`Erro ao enviar e-mail de boas-vindas para ${email}:`, error);
+    }
+  }
 }
