@@ -63,11 +63,14 @@ export default function SuporteFaqsPage() {
                 <HelpCircle className="h-6 w-6 text-white" />
               </div>
               <div>
-                <h1 className="text-3xl font-bold text-gray-900">Base de Conhecimento</h1>
+                <div className="flex items-center gap-3">
+              <AdmBackButton href="/adm/suporte"  />
+              <h1 className="text-3xl font-bold text-gray-900">Base de Conhecimento</h1>
+            </div>
                 <p className="text-gray-600 mt-1">FAQs e perguntas frequentes organizadas</p>
               </div>
             </div>
-            <AdmBackButton href="/adm/suporte" className="no-underline" />
+            
           </div>
 
         </header>

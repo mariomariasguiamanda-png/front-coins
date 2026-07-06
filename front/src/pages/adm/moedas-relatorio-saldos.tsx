@@ -137,13 +137,16 @@ export default function MoedasRelatorioSaldosPage() {
         {/* Header */}
         <header className="flex items-start justify-between gap-4">
           <div className="space-y-1">
-            <h1 className="text-3xl font-bold text-gray-900">Controle de Saldos</h1>
+            <div className="flex items-center gap-3">
+              <AdmBackButton href="/adm/moedas" />
+              <h1 className="text-3xl font-bold text-gray-900">Controle de Saldos</h1>
+            </div>
             <p className="text-muted-foreground">
               Visualize relatórios completos, histórico de movimentações e saldos por aluno
             </p>
           </div>
           <div className="flex gap-2">
-            <AdmBackButton href="/adm/moedas" />
+            
             <Button variant="outline" className="rounded-lg inline-flex items-center gap-2" onClick={handleExportar}>
               <Download className="h-4 w-4" /> Exportar Relatório
             </Button>

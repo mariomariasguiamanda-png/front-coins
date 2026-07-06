@@ -82,11 +82,14 @@ export default function SuporteChamadosPage() {
                 <MessageCircle className="h-6 w-6 text-white" />
               </div>
               <div>
-                <h1 className="text-3xl font-bold text-gray-900">Gerenciar Chamados</h1>
+                <div className="flex items-center gap-3">
+              <AdmBackButton href={fromDashboard ? "/adm/dashboard" : "/adm/suporte"}  />
+              <h1 className="text-3xl font-bold text-gray-900">Gerenciar Chamados</h1>
+            </div>
                 <p className="text-gray-600 mt-1">Atendimento e resolução de solicitações</p>
               </div>
             </div>
-            <AdmBackButton href={fromDashboard ? "/adm/dashboard" : "/adm/suporte"} className="no-underline" />
+            
           </div>
 
           {/* Stats Cards */}

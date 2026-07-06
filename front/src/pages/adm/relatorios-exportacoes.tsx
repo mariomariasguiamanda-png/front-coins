@@ -165,13 +165,16 @@ export default function RelatoriosExportacoesPage() {
                 <Download className="h-6 w-6 text-white" />
               </div>
               <div>
-                <h1 className="text-3xl font-bold text-gray-900">Exportações em CSV</h1>
+                <div className="flex items-center gap-3">
+              <AdmBackButton href="/adm/relatorios-hub"  />
+              <h1 className="text-3xl font-bold text-gray-900">Exportações em CSV</h1>
+            </div>
                 <p className="text-gray-600 mt-1">
                   Exporte dados de alunos, turmas ou disciplinas
                 </p>
               </div>
             </div>
-            <AdmBackButton href="/adm/relatorios-hub" className="no-underline" />
+            
           </div>
 
           {/* Stats Cards */}

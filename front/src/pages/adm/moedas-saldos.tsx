@@ -113,12 +113,15 @@ export default function MoedasSaldosPage() {
               <Wallet className="h-6 w-6 text-white" />
             </div>
             <div>
+              <div className="flex items-center gap-3">
+              <AdmBackButton href={fromDashboard ? "/adm/dashboard" : "/adm/moedas"}  />
               <h1 className="text-3xl font-bold text-gray-900">Saldos de Moedas</h1>
+            </div>
               <p className="text-gray-600 mt-1">Saldo atual e movimentação de cada aluno</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <AdmBackButton href={fromDashboard ? "/adm/dashboard" : "/adm/moedas"} className="hidden md:block" />
+            
             <Button className="rounded-lg bg-violet-600 hover:bg-violet-700" onClick={handleExportar}>
               <Download className="mr-2 h-4 w-4" />
               Exportar CSV

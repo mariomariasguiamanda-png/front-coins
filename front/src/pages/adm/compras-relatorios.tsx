@@ -122,11 +122,14 @@ export default function ComprasRelatoriosPage() {
                 <TrendingUp className="h-6 w-6 text-white" />
               </div>
               <div>
-                <h1 className="text-3xl font-bold text-gray-900">Relatórios e Análises</h1>
+                <div className="flex items-center gap-3">
+              <AdmBackButton href="/adm/compras"  />
+              <h1 className="text-3xl font-bold text-gray-900">Relatórios e Análises</h1>
+            </div>
                 <p className="text-gray-600 mt-1">Histórico detalhado por disciplina e período</p>
               </div>
             </div>
-            <AdmBackButton href="/adm/compras" className="no-underline" />
+            
           </div>
 
           {/* Stats Cards */}

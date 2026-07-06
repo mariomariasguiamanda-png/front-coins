@@ -10,14 +10,12 @@ interface AdmBackButtonProps {
 
 export function AdmBackButton({
   href,
-  label = "Voltar ao hub",
   className,
 }: AdmBackButtonProps) {
   return (
     <Link href={href} className={className}>
-      <Button variant="outline" className="rounded-lg inline-flex items-center gap-2">
-        <ArrowLeft className="h-4 w-4" />
-        {label}
+      <Button variant="ghost" size="icon" className="rounded-full hover:bg-slate-100 h-10 w-10 shrink-0" aria-label="Voltar">
+        <ArrowLeft className="h-5 w-5 text-slate-600" />
       </Button>
     </Link>
   );

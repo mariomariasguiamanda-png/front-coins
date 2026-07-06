@@ -199,11 +199,14 @@ export default function UsuariosPermissoesPage() {
       <div className="space-y-6 pb-8">
         <header className="flex items-center justify-between">
           <div className="space-y-1">
-            <h1 className="text-3xl font-bold text-gray-900">Perfis e Permissões</h1>
+            <div className="flex items-center gap-3">
+              <AdmBackButton href="/adm/usuarios" />
+              <h1 className="text-3xl font-bold text-gray-900">Perfis e Permissões</h1>
+            </div>
             <p className="text-gray-600">Defina acessos por perfil do sistema</p>
           </div>
           <div className="flex gap-2">
-            <AdmBackButton href="/adm/usuarios" />
+            
             <Button
               type="button"
               onClick={save}

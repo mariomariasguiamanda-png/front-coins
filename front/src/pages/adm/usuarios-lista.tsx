@@ -45,6 +45,10 @@ import {
   Mail,
   Phone,
   Calendar,
+  Filter,
+  RefreshCw,
+  Settings,
+  MoreVertical,
 } from "lucide-react";
 import { toast } from "sonner";
 import { api, resolveMediaUrl } from "@/lib/api";
@@ -368,6 +372,7 @@ export default function UsuariosLista() {
   const [editUser, setEditUser] = useState<User | null>(null);
   const [createUserOpen, setCreateUserOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
+  const [isActionsOpen, setIsActionsOpen] = useState(false);
   const [viewMode, setViewMode] = useState<"table" | "grid">("table");
   const [loading, setLoading] = useState(true);
   const [statusConfirmUser, setStatusConfirmUser] = useState<User | null>(null);
@@ -640,27 +645,40 @@ export default function UsuariosLista() {
         {/* Header */}
         <header className="flex items-start justify-between gap-4">
           <div className="space-y-1">
-            <h1 className="text-3xl font-bold text-gray-900">Lista de Usuários</h1>
+            <div className="flex items-center gap-3">
+              <AdmBackButton href={fromDashboard ? "/adm/dashboard" : "/adm/usuarios"} />
+              <h1 className="text-3xl font-bold text-gray-900">Lista de Usuários</h1>
+            </div>
             <p className="text-muted-foreground">
               Gerencie alunos, professores e administradores do sistema
             </p>
           </div>
           <div className="flex gap-2">
-            <AdmBackButton href={fromDashboard ? "/adm/dashboard" : "/adm/usuarios"} />
-            <Button
-              variant="outline"
-              className="rounded-lg inline-flex items-center gap-2"
-              onClick={() => setImportOpen(true)}
-            >
-              <Upload className="h-4 w-4" /> Importar
-            </Button>
-            <Button
-              variant="outline"
-              className="rounded-lg inline-flex items-center gap-2"
-              onClick={handleExportar}
-            >
-              <Download className="h-4 w-4" /> Exportar
-            </Button>
+            <div className="relative">
+              <Button 
+                variant="outline" 
+                className="rounded-lg inline-flex items-center gap-2"
+                onClick={() => setIsActionsOpen(!isActionsOpen)}
+              >
+                <MoreVertical className="h-4 w-4" /> Mais ações
+              </Button>
+              {isActionsOpen && (
+                <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-100 rounded-xl shadow-lg z-50 overflow-hidden">
+                  <button 
+                    onClick={() => { setImportOpen(true); setIsActionsOpen(false); }}
+                    className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                  >
+                    <Upload className="h-4 w-4" /> Importar Usuários
+                  </button>
+                  <button 
+                    onClick={() => { handleExportar(); setIsActionsOpen(false); }}
+                    className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                  >
+                    <Download className="h-4 w-4" /> Exportar Planilha
+                  </button>
+                </div>
+              )}
+            </div>
             <Button
               className="rounded-lg inline-flex items-center gap-2"
               onClick={() => setCreateUserOpen(true)}

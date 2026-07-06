@@ -211,13 +211,16 @@ ${evolucaoMensal.map(m => `${m.month}: Recebido ${m.received.toLocaleString()}, 
         {/* Header */}
         <header className="flex items-start justify-between gap-4">
           <div className="space-y-1">
-            <h1 className="text-3xl font-bold text-gray-900">Gráficos Detalhados</h1>
+            <div className="flex items-center gap-3">
+              <AdmBackButton href="/adm/moedas-relatorio-saldos" />
+              <h1 className="text-3xl font-bold text-gray-900">Gráficos Detalhados</h1>
+            </div>
             <p className="text-muted-foreground">
               Análise visual completa de saldos, distribuição e evolução temporal
             </p>
           </div>
           <div className="flex gap-2 no-print">
-            <AdmBackButton href="/adm/moedas-relatorio-saldos" />
+            
             <Select value={periodo} onValueChange={setPeriodo}>
               <SelectTrigger className="rounded-lg bg-white min-w-[160px]">
                 <SelectValue placeholder="Período" />

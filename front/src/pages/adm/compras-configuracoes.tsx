@@ -72,13 +72,16 @@ export default function ComprasConfiguracoesPage() {
                 <Settings className="h-6 w-6 text-white" />
               </div>
               <div>
-                <h1 className="text-3xl font-bold text-gray-900">Configurações de Compras</h1>
+                <div className="flex items-center gap-3">
+              <AdmBackButton href="/adm/compras"  />
+              <h1 className="text-3xl font-bold text-gray-900">Configurações de Compras</h1>
+            </div>
                 <p className="text-gray-600 mt-1">
                   Preço e limite da compra de pontos, por disciplina
                 </p>
               </div>
             </div>
-            <AdmBackButton href="/adm/compras" className="no-underline" />
+            
           </div>
         </header>
 

@@ -83,13 +83,16 @@ export default function MoedasConfiguracoesPage() {
                 <Settings className="h-6 w-6 text-white" />
               </div>
               <div>
-                <h1 className="text-3xl font-bold text-gray-900">Regras e Limites</h1>
+                <div className="flex items-center gap-3">
+              <AdmBackButton href="/adm/moedas"  />
+              <h1 className="text-3xl font-bold text-gray-900">Regras e Limites</h1>
+            </div>
                 <p className="text-gray-600 mt-1">
                   Configure as regras de distribuição automática de moedas
                 </p>
               </div>
             </div>
-            <AdmBackButton href="/adm/moedas" className="no-underline" />
+            
           </div>
 
           {/* Stats Cards */}
