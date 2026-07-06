@@ -334,8 +334,7 @@ export default function GestaoDisciplinasPage() {
         <ViewDisciplineHistoryDialog
           open={!!historyDiscipline}
           onClose={() => setHistoryDiscipline(null)}
-          history={historyDiscipline?.history || []}
-          disciplineName={historyDiscipline?.name || ""}
+          discipline={historyDiscipline}
         />
         <ManageTeachersDialog
           open={!!manageTeachersDiscipline}
