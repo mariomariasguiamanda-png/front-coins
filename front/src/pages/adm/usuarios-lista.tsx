@@ -350,75 +350,42 @@ export default function UsuariosListaPage() {
   const [loading, setLoading] = useState(true);
   const [statusConfirmUser, setStatusConfirmUser] = useState<User | null>(null);
 
-  const [users, setUsers] = useState<User[]>(() => {
-    if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("adm-users");
-      if (saved) {
-        try {
-          return JSON.parse(saved);
-        } catch (error) {
-          console.error("Erro ao carregar usuários:", error);
-        }
-      }
-    }
-    return [
-      {
-        id: "1",
-        name: "João Silva",
-        email: "joao.silva@escola.edu.br",
-        phone: "(11) 98765-4321",
-        type: "student",
-        status: "active",
-        createdAt: "2023-10-01",
-        lastAccess: "2024-11-02",
-      },
-      {
-        id: "2",
-        name: "Maria Santos",
-        email: "maria.santos@escola.edu.br",
-        phone: "(11) 98765-4322",
-        type: "teacher",
-        status: "pending",
-        createdAt: "2023-10-02",
-      },
-      {
-        id: "3",
-        name: "Pedro Oliveira",
-        email: "pedro.oliveira@escola.edu.br",
-        type: "student",
-        status: "active",
-        createdAt: "2023-09-15",
-      },
-      {
-        id: "4",
-        name: "Ana Costa",
-        email: "ana.costa@escola.edu.br",
-        type: "teacher",
-        status: "active",
-        createdAt: "2023-08-20",
-      },
-      {
-        id: "5",
-        name: "Carlos Mendes",
-        email: "carlos.mendes@escola.edu.br",
-        type: "student",
-        status: "inactive",
-        createdAt: "2023-07-10",
-      },
-    ];
-  });
+  const [users, setUsers] = useState<User[]>([]);
 
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      localStorage.setItem("adm-users", JSON.stringify(users));
-    }
-  }, [users]);
+  const TIPO_API_PARA_UI: Record<string, UserType> = {
+    aluno: "student",
+    professor: "teacher",
+    admin: "admin",
+  };
+  const STATUS_API_PARA_UI: Record<string, User["status"]> = {
+    ativo: "active",
+    inativo: "inactive",
+    pendente: "pending",
+  };
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
+  const carregarUsuarios = async () => {
+    try {
+      const rows = await api.get("/admin/usuarios");
+      setUsers(
+        (rows ?? []).map((u: any): User => ({
+          id: String(u.id_usuario),
+          name: u.nome,
+          email: u.email,
+          phone: u.telefone ?? undefined,
+          type: TIPO_API_PARA_UI[u.tipo_usuario] ?? "student",
+          status: STATUS_API_PARA_UI[u.status] ?? "active",
+          createdAt: u.criado_em ?? "",
+        })),
+      );
+    } catch (err) {
+      console.error("Erro ao carregar usuários:", err);
+    } finally {
       setLoading(false);
-    }, 800);
-    return () => clearTimeout(timer);
+    }
+  };
+
+  useEffect(() => {
+    carregarUsuarios();
   }, []);
 
   const filtered = useMemo(() => {
@@ -553,11 +520,15 @@ export default function UsuariosListaPage() {
     setStatusConfirmUser(user);
   };
 
-  const confirmToggleStatus = () => {
+  const confirmToggleStatus = async () => {
     if (!statusConfirmUser) return;
     const newStatus = statusConfirmUser.status === "active" ? "inactive" : "active";
 
     try {
+      await api.patch(`/admin/usuarios/${statusConfirmUser.id}/status`, {
+        status: newStatus === "active" ? "ativo" : "inativo",
+      });
+
       setUsers((prevUsers) =>
         prevUsers.map((u) =>
           u.id === statusConfirmUser.id ? { ...u, status: newStatus } : u
@@ -576,6 +547,27 @@ export default function UsuariosListaPage() {
     }
   };
 
+  const handleEditUser = async (data: any) => {
+    if (!editUser) return;
+    try {
+      await api.patch(`/admin/usuarios/${editUser.id}`, {
+        nome: data.name,
+        email: data.email,
+        telefone: data.phone,
+      });
+      setUsers((prev) =>
+        prev.map((u) =>
+          u.id === editUser.id ? { ...u, name: data.name, email: data.email, phone: data.phone } : u
+        )
+      );
+      toast.success("Usuário atualizado com sucesso!");
+      setEditUser(null);
+    } catch (error: any) {
+      console.error("Erro ao editar usuário:", error);
+      toast.error(error?.message ?? "Erro ao editar usuário");
+    }
+  };
+
   return (
     <AdminLayout>
       <div className="space-y-6 pb-8">
@@ -587,9 +579,7 @@ export default function UsuariosListaPage() {
         <EditUserDialog
           open={!!editUser}
           onClose={() => setEditUser(null)}
-          onSave={(data: any) => {
-            console.log("save user", data);
-          }}
+          onSave={handleEditUser}
           user={editUser as any}
         />
         <CreateUserDialog
