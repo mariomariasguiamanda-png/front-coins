@@ -474,17 +474,13 @@ export default function UsuariosLista() {
     phone: string;
     type: UserType;
     status: "active" | "inactive";
-    password: string;
-    matricula?: string;
   }) => {
     try {
       const created = await api.post("/admin/usuarios", {
         nome: data.name,
         email: data.email,
         telefone: data.phone,
-        senha: data.password,
         tipo_usuario: tipoUsuarioParaApi(data.type),
-        matricula: data.matricula,
       });
 
       // Atualiza a lista local para refletir imediatamente na UI
